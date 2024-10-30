@@ -8,43 +8,58 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { usePrayers } from "../context/PrayerContext";
+import { useTheme } from "../context/ThemeContext";
 
 export default function HomeScreen({ navigation }) {
   const { prayers } = usePrayers();
+  const { theme } = useTheme();
 
   const renderPrayerCard = ({ item }) => (
     <TouchableOpacity
-      style={styles.card}
+      style={[styles.card, { backgroundColor: theme.card }]}
       onPress={() => navigation.navigate("PrayerDetail", { prayerId: item.id })}
     >
       <View style={styles.cardHeader}>
         <Image source={{ uri: item.userImage }} style={styles.profileImage} />
         <View style={styles.headerText}>
-          <Text style={styles.userName}>{item.userName}</Text>
-          <Text style={styles.date}>{item.date}</Text>
+          <Text style={[styles.userName, { color: theme.text }]}>
+            {item.userName}
+          </Text>
+          <Text style={[styles.date, { color: theme.textSecondary }]}>
+            {item.date}
+          </Text>
         </View>
       </View>
       <View style={styles.titleContainer}>
-        <Text style={styles.title}>{item.title}</Text>
+        <Text style={[styles.title, { color: theme.text }]}>{item.title}</Text>
         <View style={styles.categoryContainer}>
-          <Text style={styles.category}>{item.category}</Text>
+          <Text style={[styles.category, { color: theme.text }]}>
+            {item.category}
+          </Text>
         </View>
       </View>
-      <Text style={styles.description}>{item.description}</Text>
+      <Text style={[styles.description, { color: theme.text }]}>
+        {item.description}
+      </Text>
       <View style={styles.cardFooter}>
-        <Text style={styles.footerText}>{item.comments} Comments</Text>
-        <Text style={styles.footerText}>{item.updates} Updates</Text>
+        <Text style={[styles.footerText, { color: theme.textSecondary }]}>
+          {item.comments} Comments
+        </Text>
+        <Text style={[styles.footerText, { color: theme.textSecondary }]}>
+          {item.updates} Updates
+        </Text>
       </View>
     </TouchableOpacity>
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <FlatList
         data={prayers}
         renderItem={renderPrayerCard}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
       />
     </View>
   );

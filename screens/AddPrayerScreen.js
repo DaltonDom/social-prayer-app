@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { usePrayers } from "../context/PrayerContext";
+import { useTheme } from "../context/ThemeContext";
 
 export default function AddPrayerScreen({ navigation }) {
   const { addPrayer } = usePrayers();
@@ -31,6 +32,8 @@ export default function AddPrayerScreen({ navigation }) {
     "Relationships",
     "Other",
   ];
+
+  const { theme } = useTheme();
 
   const handleSubmit = () => {
     if (!prayerData.description.trim()) {
@@ -73,14 +76,27 @@ export default function AddPrayerScreen({ navigation }) {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.background }]}
     >
-      <ScrollView style={styles.scrollView}>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.form}>
-          <Text style={styles.label}>Title (Optional)</Text>
+          <Text style={[styles.label, { color: theme.text }]}>
+            Title (Optional)
+          </Text>
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              {
+                backgroundColor: theme.card,
+                borderColor: theme.border,
+                color: theme.text,
+              },
+            ]}
             placeholder="Enter a title for your prayer request"
+            placeholderTextColor={theme.textSecondary}
             value={prayerData.title}
             onChangeText={(text) =>
               setPrayerData({ ...prayerData, title: text })

@@ -15,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { usePrayers } from "../context/PrayerContext";
 import EditProfileModal from "../components/EditProfileModal";
 import ChangePasswordModal from "../components/ChangePasswordModal";
+import { useTheme } from "../context/ThemeContext";
 
 export default function ProfileScreen({ navigation }) {
   const { prayers, deletePrayer } = usePrayers();
@@ -22,6 +23,7 @@ export default function ProfileScreen({ navigation }) {
   const [emailUpdates, setEmailUpdates] = useState(true);
   const [editProfileVisible, setEditProfileVisible] = useState(false);
   const [changePasswordVisible, setChangePasswordVisible] = useState(false);
+  const { isDarkMode, toggleTheme, theme } = useTheme();
 
   // Filter prayers to only show user's prayers
   const userPrayers = prayers.filter(
@@ -57,7 +59,7 @@ export default function ProfileScreen({ navigation }) {
   };
 
   const renderPrayerItem = ({ item }) => (
-    <Animated.View style={styles.prayerCard}>
+    <Animated.View style={[styles.prayerCard, { backgroundColor: theme.card }]}>
       <TouchableOpacity
         style={styles.prayerContent}
         onPress={() =>
@@ -65,7 +67,9 @@ export default function ProfileScreen({ navigation }) {
         }
       >
         <View style={styles.prayerHeader}>
-          <Text style={styles.prayerTitle}>{item.title}</Text>
+          <Text style={[styles.prayerTitle, { color: theme.text }]}>
+            {item.title}
+          </Text>
           <TouchableOpacity
             onPress={() => handleDeletePrayer(item.id)}
             style={styles.deleteButton}
@@ -73,15 +77,29 @@ export default function ProfileScreen({ navigation }) {
             <Ionicons name="trash-outline" size={20} color="#FF3B30" />
           </TouchableOpacity>
         </View>
-        <View style={styles.categoryTag}>
-          <Text style={styles.categoryText}>{item.category}</Text>
+        <View
+          style={[
+            styles.categoryTag,
+            { backgroundColor: `${theme.primary}20` },
+          ]}
+        >
+          <Text style={[styles.categoryText, { color: theme.primary }]}>
+            {item.category}
+          </Text>
         </View>
-        <Text numberOfLines={2} style={styles.prayerDescription}>
+        <Text
+          numberOfLines={2}
+          style={[styles.prayerDescription, { color: theme.text }]}
+        >
           {item.description}
         </Text>
-        <View style={styles.prayerStats}>
-          <Text style={styles.statsText}>{item.comments} Comments</Text>
-          <Text style={styles.statsText}>{item.updates} Updates</Text>
+        <View style={[styles.prayerStats, { borderTopColor: theme.border }]}>
+          <Text style={[styles.statsText, { color: theme.textSecondary }]}>
+            {item.comments} Comments
+          </Text>
+          <Text style={[styles.statsText, { color: theme.textSecondary }]}>
+            {item.updates} Updates
+          </Text>
         </View>
       </TouchableOpacity>
     </Animated.View>
@@ -89,9 +107,12 @@ export default function ProfileScreen({ navigation }) {
 
   return (
     <>
-      <ScrollView style={styles.container}>
+      <ScrollView
+        style={[styles.container, { backgroundColor: theme.background }]}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Profile Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { backgroundColor: theme.card }]}>
           <View style={styles.profileImageContainer}>
             <Image
               source={{ uri: userInfo.profileImage }}
@@ -117,8 +138,10 @@ export default function ProfileScreen({ navigation }) {
         </View>
 
         {/* Settings Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Settings</Text>
+        <View style={[styles.section, { backgroundColor: theme.card }]}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>
+            Settings
+          </Text>
           <TouchableOpacity
             style={styles.settingItem}
             onPress={() => setEditProfileVisible(true)}
@@ -161,24 +184,47 @@ export default function ProfileScreen({ navigation }) {
               trackColor={{ false: "#767577", true: "#6B4EFF" }}
             />
           </View>
+          <View style={styles.settingItem}>
+            <View style={styles.settingLeft}>
+              <Ionicons
+                name={isDarkMode ? "moon" : "moon-outline"}
+                size={24}
+                color={theme.textSecondary}
+              />
+              <Text style={[styles.settingText, { color: theme.text }]}>
+                Dark Mode
+              </Text>
+            </View>
+            <Switch
+              value={isDarkMode}
+              onValueChange={toggleTheme}
+              trackColor={{ false: "#767577", true: theme.primary }}
+            />
+          </View>
         </View>
 
         {/* My Prayers Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>My Prayers</Text>
+        <View style={[styles.section, { backgroundColor: theme.card }]}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>
+            My Prayers
+          </Text>
           <FlatList
             data={userPrayers}
             renderItem={renderPrayerItem}
             keyExtractor={(item) => item.id}
             scrollEnabled={false}
             ListEmptyComponent={
-              <Text style={styles.emptyText}>No prayers added yet</Text>
+              <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+                No prayers added yet
+              </Text>
             }
           />
         </View>
 
         {/* Logout Button */}
-        <TouchableOpacity style={styles.logoutButton}>
+        <TouchableOpacity
+          style={[styles.logoutButton, { backgroundColor: theme.card }]}
+        >
           <Ionicons name="log-out-outline" size={24} color="#FF3B30" />
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>

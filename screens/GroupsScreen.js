@@ -9,6 +9,7 @@ import {
   Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "../context/ThemeContext";
 
 const DUMMY_GROUPS = [
   {
@@ -41,47 +42,72 @@ const DUMMY_GROUPS = [
 ];
 
 export default function GroupsScreen({ navigation }) {
+  const { theme } = useTheme();
+
   const renderGroupCard = ({ item }) => (
-    <TouchableOpacity style={styles.card}>
+    <TouchableOpacity style={[styles.card, { backgroundColor: theme.card }]}>
       <View style={styles.cardHeader}>
         <Image source={{ uri: item.logo }} style={styles.groupLogo} />
         <View style={styles.headerText}>
-          <Text style={styles.groupName}>{item.name}</Text>
-          <Text style={styles.memberCount}>{item.members} members</Text>
+          <Text style={[styles.groupName, { color: theme.text }]}>
+            {item.name}
+          </Text>
+          <Text style={[styles.memberCount, { color: theme.textSecondary }]}>
+            {item.members} members
+          </Text>
         </View>
       </View>
-      <Text style={styles.description}>{item.description}</Text>
-      <View style={styles.cardFooter}>
+      <Text style={[styles.description, { color: theme.text }]}>
+        {item.description}
+      </Text>
+      <View style={[styles.cardFooter, { borderTopColor: theme.border }]}>
         <View style={styles.footerItem}>
-          <Ionicons name="time-outline" size={16} color="#666" />
-          <Text style={styles.footerText}>{item.lastActive}</Text>
+          <Ionicons name="time-outline" size={16} color={theme.textSecondary} />
+          <Text style={[styles.footerText, { color: theme.textSecondary }]}>
+            {item.lastActive}
+          </Text>
         </View>
         <View style={styles.footerItem}>
-          <Ionicons name="prayer" size={16} color="#666" />
-          <Text style={styles.footerText}>{item.prayerCount} prayers</Text>
+          <Ionicons
+            name="heart-outline"
+            size={16}
+            color={theme.textSecondary}
+          />
+          <Text style={[styles.footerText, { color: theme.textSecondary }]}>
+            {item.prayerCount} prayers
+          </Text>
         </View>
       </View>
     </TouchableOpacity>
   );
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.searchContainer}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: theme.card, borderBottomColor: theme.border },
+        ]}
+      >
+        <View
+          style={[styles.searchContainer, { backgroundColor: theme.searchBg }]}
+        >
           <Ionicons
             name="search"
             size={20}
-            color="#666"
+            color={theme.textSecondary}
             style={styles.searchIcon}
           />
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: theme.text }]}
             placeholder="Search groups..."
-            placeholderTextColor="#666"
+            placeholderTextColor={theme.textSecondary}
           />
         </View>
-        <TouchableOpacity style={styles.addButton}>
-          <Ionicons name="add" size={24} color="white" />
+        <TouchableOpacity
+          style={[styles.addButton, { backgroundColor: theme.primary }]}
+        >
+          <Ionicons name="add" size={24} color={theme.card} />
         </TouchableOpacity>
       </View>
       <FlatList
@@ -89,6 +115,7 @@ export default function GroupsScreen({ navigation }) {
         renderItem={renderGroupCard}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
       />
     </View>
   );

@@ -1,9 +1,14 @@
 import { StatusBar } from "expo-status-bar";
-import { NavigationContainer } from "@react-navigation/native";
+import {
+  NavigationContainer,
+  DefaultTheme,
+  DarkTheme,
+} from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { PrayerProvider } from "./context/PrayerContext";
+import { ThemeProvider, useTheme } from "./context/ThemeContext";
 
 // Screen imports
 import HomeScreen from "./screens/HomeScreen";
@@ -17,6 +22,8 @@ const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
 function TabNavigator() {
+  const { theme } = useTheme();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -37,8 +44,16 @@ function TabNavigator() {
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: "#6B4EFF",
-        tabBarInactiveTintColor: "gray",
+        tabBarActiveTintColor: theme.primary,
+        tabBarInactiveTintColor: theme.textSecondary,
+        tabBarStyle: {
+          backgroundColor: theme.card,
+          borderTopColor: theme.border,
+        },
+        headerStyle: {
+          backgroundColor: theme.card,
+        },
+        headerTintColor: theme.text,
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
@@ -50,10 +65,34 @@ function TabNavigator() {
   );
 }
 
-export default function App() {
+function MainApp() {
+  const { theme, isDarkMode } = useTheme();
+
+  const navigationTheme = isDarkMode
+    ? {
+        ...DarkTheme,
+        colors: {
+          ...DarkTheme.colors,
+          background: theme.background,
+          card: theme.card,
+          text: theme.text,
+          border: theme.border,
+        },
+      }
+    : {
+        ...DefaultTheme,
+        colors: {
+          ...DefaultTheme.colors,
+          background: theme.background,
+          card: theme.card,
+          text: theme.text,
+          border: theme.border,
+        },
+      };
+
   return (
     <PrayerProvider>
-      <NavigationContainer>
+      <NavigationContainer theme={navigationTheme}>
         <Stack.Navigator>
           <Stack.Screen
             name="MainTabs"
@@ -66,8 +105,16 @@ export default function App() {
             options={{ title: "Prayer Details" }}
           />
         </Stack.Navigator>
-        <StatusBar style="auto" />
+        <StatusBar style={isDarkMode ? "light" : "dark"} />
       </NavigationContainer>
     </PrayerProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <MainApp />
+    </ThemeProvider>
   );
 }
