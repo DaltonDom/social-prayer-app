@@ -3,6 +3,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { PrayerProvider } from "./context/PrayerContext";
 
 // Screen imports
 import HomeScreen from "./screens/HomeScreen";
@@ -51,20 +52,22 @@ function TabNavigator() {
 
 export default function App() {
   return (
-    <NavigationContainer>
-      <Stack.Navigator>
-        <Stack.Screen
-          name="MainTabs"
-          component={TabNavigator}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="PrayerDetail"
-          component={PrayerDetailScreen}
-          options={{ title: "Prayer Details" }}
-        />
-      </Stack.Navigator>
-      <StatusBar style="auto" />
-    </NavigationContainer>
+    <PrayerProvider>
+      <NavigationContainer>
+        <Stack.Navigator>
+          <Stack.Screen
+            name="MainTabs"
+            component={TabNavigator}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="PrayerDetail"
+            component={PrayerDetailScreen}
+            options={{ title: "Prayer Details" }}
+          />
+        </Stack.Navigator>
+        <StatusBar style="auto" />
+      </NavigationContainer>
+    </PrayerProvider>
   );
 }

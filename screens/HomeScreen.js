@@ -7,120 +7,11 @@ import {
   Image,
   TouchableOpacity,
 } from "react-native";
-
-const DUMMY_PRAYERS = [
-  {
-    id: "1",
-    userName: "John Doe",
-    userImage: "https://via.placeholder.com/50",
-    date: "2024-03-15",
-    description: "Please pray for my upcoming surgery next week.",
-    comments: 5,
-    updates: 2,
-  },
-  {
-    id: "2",
-    userName: "Sarah Wilson",
-    userImage: "https://via.placeholder.com/50",
-    date: "2024-03-14",
-    description:
-      "Requesting prayers for my mom's recovery from COVID-19. She's been in the hospital for a week now.",
-    comments: 12,
-    updates: 3,
-  },
-  {
-    id: "3",
-    userName: "Michael Chen",
-    userImage: "https://via.placeholder.com/50",
-    date: "2024-03-14",
-    description:
-      "Need prayers for my job interview tomorrow. Really hoping this opportunity works out.",
-    comments: 8,
-    updates: 1,
-  },
-  {
-    id: "4",
-    userName: "Emily Rodriguez",
-    userImage: "https://via.placeholder.com/50",
-    date: "2024-03-13",
-    description:
-      "Please pray for my sister's pregnancy. She's in her third trimester and experiencing complications.",
-    comments: 15,
-    updates: 4,
-  },
-  {
-    id: "5",
-    userName: "David Kim",
-    userImage: "https://via.placeholder.com/50",
-    date: "2024-03-13",
-    description:
-      "Grateful for this community. Please pray for my marriage restoration.",
-    comments: 20,
-    updates: 5,
-  },
-  {
-    id: "6",
-    userName: "Lisa Thompson",
-    userImage: "https://via.placeholder.com/50",
-    date: "2024-03-12",
-    description:
-      "Need wisdom for an important decision about moving to a new city for work.",
-    comments: 7,
-    updates: 2,
-  },
-  {
-    id: "7",
-    userName: "James Wilson",
-    userImage: "https://via.placeholder.com/50",
-    date: "2024-03-12",
-    description:
-      "Please pray for my son's college applications. Waiting to hear back from universities.",
-    comments: 9,
-    updates: 1,
-  },
-  {
-    id: "8",
-    userName: "Maria Garcia",
-    userImage: "https://via.placeholder.com/50",
-    date: "2024-03-11",
-    description:
-      "Requesting prayer for our church's upcoming mission trip to South America.",
-    comments: 25,
-    updates: 6,
-  },
-  {
-    id: "9",
-    userName: "Robert Johnson",
-    userImage: "https://via.placeholder.com/50",
-    date: "2024-03-11",
-    description:
-      "Need prayer for strength and peace. Going through a difficult season in life.",
-    comments: 18,
-    updates: 3,
-  },
-  {
-    id: "10",
-    userName: "Anna Lee",
-    userImage: "https://via.placeholder.com/50",
-    date: "2024-03-10",
-    description:
-      "Please pray for my dad's cancer treatment. Starting chemotherapy next week.",
-    comments: 30,
-    updates: 7,
-  },
-  {
-    id: "11",
-    userName: "Thomas Brown",
-    userImage: "https://via.placeholder.com/50",
-    date: "2024-03-10",
-    description:
-      "Seeking prayers for our small group ministry. We're launching new groups next month.",
-    comments: 6,
-    updates: 2,
-  },
-];
+import { usePrayers } from "../context/PrayerContext";
 
 export default function HomeScreen({ navigation }) {
+  const { prayers } = usePrayers();
+
   const renderPrayerCard = ({ item }) => (
     <TouchableOpacity
       style={styles.card}
@@ -131,6 +22,12 @@ export default function HomeScreen({ navigation }) {
         <View style={styles.headerText}>
           <Text style={styles.userName}>{item.userName}</Text>
           <Text style={styles.date}>{item.date}</Text>
+        </View>
+      </View>
+      <View style={styles.titleContainer}>
+        <Text style={styles.title}>{item.title}</Text>
+        <View style={styles.categoryContainer}>
+          <Text style={styles.category}>{item.category}</Text>
         </View>
       </View>
       <Text style={styles.description}>{item.description}</Text>
@@ -144,7 +41,7 @@ export default function HomeScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <FlatList
-        data={DUMMY_PRAYERS}
+        data={prayers}
         renderItem={renderPrayerCard}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
@@ -212,5 +109,28 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 12,
     color: "#666",
+  },
+  titleContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    flex: 1,
+  },
+  categoryContainer: {
+    backgroundColor: "#6B4EFF20",
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 16,
+  },
+  category: {
+    color: "#6B4EFF",
+    fontSize: 12,
+    fontWeight: "600",
   },
 });
