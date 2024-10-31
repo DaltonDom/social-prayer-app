@@ -13,6 +13,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { usePrayers } from "../context/PrayerContext";
 import { useTheme } from "../context/ThemeContext";
+import GroupDropdown from "../components/GroupDropdown";
 
 export default function AddPrayerScreen({ navigation }) {
   const { addPrayer } = usePrayers();
@@ -35,6 +36,23 @@ export default function AddPrayerScreen({ navigation }) {
 
   const { theme } = useTheme();
 
+  const [selectedGroup, setSelectedGroup] = useState(null);
+
+  const availableGroups = [
+    {
+      id: "1",
+      name: "Youth Prayer Warriors",
+    },
+    {
+      id: "2",
+      name: "Family & Marriage",
+    },
+    {
+      id: "3",
+      name: "Healing Ministry",
+    },
+  ];
+
   const handleSubmit = () => {
     if (!prayerData.description.trim()) {
       Alert.alert("Error", "Please enter a prayer description");
@@ -51,8 +69,12 @@ export default function AddPrayerScreen({ navigation }) {
       return;
     }
 
-    // Add the new prayer
-    addPrayer(prayerData);
+    // Add the new prayer with group information
+    addPrayer({
+      ...prayerData,
+      groupId: selectedGroup?.id,
+      groupName: selectedGroup?.name,
+    });
 
     // Show success message and navigate back
     Alert.alert("Success", "Prayer request added successfully", [
@@ -104,10 +126,21 @@ export default function AddPrayerScreen({ navigation }) {
             maxLength={50}
           />
 
-          <Text style={styles.label}>Prayer Description*</Text>
+          <Text style={[styles.label, { color: theme.text }]}>
+            Prayer Description*
+          </Text>
           <TextInput
-            style={[styles.input, styles.textArea]}
+            style={[
+              styles.input,
+              styles.textArea,
+              {
+                backgroundColor: theme.card,
+                borderColor: theme.border,
+                color: theme.text,
+              },
+            ]}
             placeholder="Share your prayer request..."
+            placeholderTextColor={theme.textSecondary}
             value={prayerData.description}
             onChangeText={(text) =>
               setPrayerData({ ...prayerData, description: text })
@@ -117,7 +150,7 @@ export default function AddPrayerScreen({ navigation }) {
             textAlignVertical="top"
           />
 
-          <Text style={styles.label}>Category</Text>
+          <Text style={[styles.label, { color: theme.text }]}>Category</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -128,8 +161,13 @@ export default function AddPrayerScreen({ navigation }) {
                 key={category}
                 style={[
                   styles.categoryButton,
-                  prayerData.category === category &&
-                    styles.categoryButtonActive,
+                  {
+                    backgroundColor:
+                      prayerData.category === category
+                        ? theme.primary
+                        : theme.card,
+                    borderColor: theme.border,
+                  },
                 ]}
                 onPress={() =>
                   setPrayerData({ ...prayerData, category: category })
@@ -138,8 +176,10 @@ export default function AddPrayerScreen({ navigation }) {
                 <Text
                   style={[
                     styles.categoryText,
-                    prayerData.category === category &&
-                      styles.categoryTextActive,
+                    {
+                      color:
+                        prayerData.category === category ? "white" : theme.text,
+                    },
                   ]}
                 >
                   {category}
@@ -148,13 +188,27 @@ export default function AddPrayerScreen({ navigation }) {
             ))}
           </ScrollView>
 
+          <Text style={[styles.label, { color: theme.text }]}>Group</Text>
+          <GroupDropdown
+            groups={availableGroups}
+            selectedGroup={selectedGroup}
+            onSelect={setSelectedGroup}
+          />
+
           <View style={styles.toggleContainer}>
             <View style={styles.toggleOption}>
-              <Text style={styles.toggleLabel}>Private Prayer</Text>
+              <Text style={[styles.toggleLabel, { color: theme.text }]}>
+                Private Prayer
+              </Text>
               <TouchableOpacity
                 style={[
                   styles.toggle,
-                  prayerData.isPrivate && styles.toggleActive,
+                  {
+                    backgroundColor: prayerData.isPrivate
+                      ? theme.primary
+                      : theme.card,
+                    borderColor: theme.border,
+                  },
                 ]}
                 onPress={() =>
                   setPrayerData({
@@ -166,17 +220,24 @@ export default function AddPrayerScreen({ navigation }) {
                 <Ionicons
                   name={prayerData.isPrivate ? "eye-off" : "eye"}
                   size={20}
-                  color={prayerData.isPrivate ? "white" : "#666"}
+                  color={prayerData.isPrivate ? "white" : theme.textSecondary}
                 />
               </TouchableOpacity>
             </View>
 
             <View style={styles.toggleOption}>
-              <Text style={styles.toggleLabel}>Allow Comments</Text>
+              <Text style={[styles.toggleLabel, { color: theme.text }]}>
+                Allow Comments
+              </Text>
               <TouchableOpacity
                 style={[
                   styles.toggle,
-                  prayerData.allowComments && styles.toggleActive,
+                  {
+                    backgroundColor: prayerData.allowComments
+                      ? theme.primary
+                      : theme.card,
+                    borderColor: theme.border,
+                  },
                 ]}
                 onPress={() =>
                   setPrayerData({
@@ -192,7 +253,9 @@ export default function AddPrayerScreen({ navigation }) {
                       : "chatbubble-outline"
                   }
                   size={20}
-                  color={prayerData.allowComments ? "white" : "#666"}
+                  color={
+                    prayerData.allowComments ? "white" : theme.textSecondary
+                  }
                 />
               </TouchableOpacity>
             </View>

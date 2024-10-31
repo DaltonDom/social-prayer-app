@@ -122,17 +122,31 @@ export default function ProfileScreen({ navigation }) {
               <Ionicons name="camera" size={20} color="white" />
             </TouchableOpacity>
           </View>
-          <Text style={styles.userName}>{userInfo.name}</Text>
-          <Text style={styles.userEmail}>{userInfo.email}</Text>
+          <Text style={[styles.userName, { color: theme.text }]}>
+            {userInfo.name}
+          </Text>
+          <Text style={[styles.userEmail, { color: theme.textSecondary }]}>
+            {userInfo.email}
+          </Text>
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{userInfo.totalPrayers}</Text>
-              <Text style={styles.statLabel}>Prayers</Text>
+              <Text style={[styles.statNumber, { color: theme.primary }]}>
+                {userInfo.totalPrayers}
+              </Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
+                Prayers
+              </Text>
             </View>
-            <View style={styles.statDivider} />
+            <View
+              style={[styles.statDivider, { backgroundColor: theme.border }]}
+            />
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{userInfo.totalComments}</Text>
-              <Text style={styles.statLabel}>Comments</Text>
+              <Text style={[styles.statNumber, { color: theme.primary }]}>
+                {userInfo.totalComments}
+              </Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
+                Comments
+              </Text>
             </View>
           </View>
         </View>
@@ -147,41 +161,73 @@ export default function ProfileScreen({ navigation }) {
             onPress={() => setEditProfileVisible(true)}
           >
             <View style={styles.settingLeft}>
-              <Ionicons name="person-outline" size={24} color="#666" />
-              <Text style={styles.settingText}>Edit Profile</Text>
+              <Ionicons
+                name="person-outline"
+                size={24}
+                color={theme.textSecondary}
+              />
+              <Text style={[styles.settingText, { color: theme.text }]}>
+                Edit Profile
+              </Text>
             </View>
-            <Ionicons name="chevron-forward" size={24} color="#666" />
+            <Ionicons
+              name="chevron-forward"
+              size={24}
+              color={theme.textSecondary}
+            />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.settingItem}
             onPress={() => setChangePasswordVisible(true)}
           >
             <View style={styles.settingLeft}>
-              <Ionicons name="lock-closed-outline" size={24} color="#666" />
-              <Text style={styles.settingText}>Change Password</Text>
+              <Ionicons
+                name="lock-closed-outline"
+                size={24}
+                color={theme.textSecondary}
+              />
+              <Text style={[styles.settingText, { color: theme.text }]}>
+                Change Password
+              </Text>
             </View>
-            <Ionicons name="chevron-forward" size={24} color="#666" />
+            <Ionicons
+              name="chevron-forward"
+              size={24}
+              color={theme.textSecondary}
+            />
           </TouchableOpacity>
           <View style={styles.settingItem}>
             <View style={styles.settingLeft}>
-              <Ionicons name="notifications-outline" size={24} color="#666" />
-              <Text style={styles.settingText}>Notifications</Text>
+              <Ionicons
+                name="notifications-outline"
+                size={24}
+                color={theme.textSecondary}
+              />
+              <Text style={[styles.settingText, { color: theme.text }]}>
+                Notifications
+              </Text>
             </View>
             <Switch
               value={notifications}
               onValueChange={setNotifications}
-              trackColor={{ false: "#767577", true: "#6B4EFF" }}
+              trackColor={{ false: "#767577", true: theme.primary }}
             />
           </View>
           <View style={styles.settingItem}>
             <View style={styles.settingLeft}>
-              <Ionicons name="mail-outline" size={24} color="#666" />
-              <Text style={styles.settingText}>Email Updates</Text>
+              <Ionicons
+                name="mail-outline"
+                size={24}
+                color={theme.textSecondary}
+              />
+              <Text style={[styles.settingText, { color: theme.text }]}>
+                Email Updates
+              </Text>
             </View>
             <Switch
               value={emailUpdates}
               onValueChange={setEmailUpdates}
-              trackColor={{ false: "#767577", true: "#6B4EFF" }}
+              trackColor={{ false: "#767577", true: theme.primary }}
             />
           </View>
           <View style={styles.settingItem}>
