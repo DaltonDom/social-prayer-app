@@ -21,7 +21,6 @@ export default function AddPrayerScreen({ navigation }) {
     title: "",
     description: "",
     category: "",
-    isPrivate: false,
     allowComments: true,
   });
 
@@ -87,7 +86,6 @@ export default function AddPrayerScreen({ navigation }) {
             title: "",
             description: "",
             category: "",
-            isPrivate: false,
             allowComments: true,
           });
         },
@@ -196,35 +194,6 @@ export default function AddPrayerScreen({ navigation }) {
           />
 
           <View style={styles.toggleContainer}>
-            <View style={styles.toggleOption}>
-              <Text style={[styles.toggleLabel, { color: theme.text }]}>
-                Private Prayer
-              </Text>
-              <TouchableOpacity
-                style={[
-                  styles.toggle,
-                  {
-                    backgroundColor: prayerData.isPrivate
-                      ? theme.primary
-                      : theme.card,
-                    borderColor: theme.border,
-                  },
-                ]}
-                onPress={() =>
-                  setPrayerData({
-                    ...prayerData,
-                    isPrivate: !prayerData.isPrivate,
-                  })
-                }
-              >
-                <Ionicons
-                  name={prayerData.isPrivate ? "eye-off" : "eye"}
-                  size={20}
-                  color={prayerData.isPrivate ? "white" : theme.textSecondary}
-                />
-              </TouchableOpacity>
-            </View>
-
             <View style={styles.toggleOption}>
               <Text style={[styles.toggleLabel, { color: theme.text }]}>
                 Allow Comments

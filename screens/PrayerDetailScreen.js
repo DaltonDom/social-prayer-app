@@ -9,15 +9,17 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  Switch,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { usePrayers } from "../context/PrayerContext";
 import { useTheme } from "../context/ThemeContext";
+import GroupDropdown from "../components/GroupDropdown";
 
 export default function PrayerDetailScreen({ route, navigation }) {
   const { theme } = useTheme();
   const { prayerId } = route.params;
-  const { prayers } = usePrayers();
+  const { prayers, addUpdate } = usePrayers();
   const prayer = prayers.find((p) => p.id === prayerId) || {
     userName: "",
     userImage: "",
@@ -32,6 +34,28 @@ export default function PrayerDetailScreen({ route, navigation }) {
   const [comments, setComments] = useState(prayer.comments_list || []);
   const [updates, setUpdates] = useState(prayer.updates_list || []);
   const [newComment, setNewComment] = useState("");
+  const [showUpdateInput, setShowUpdateInput] = useState(false);
+  const [newUpdate, setNewUpdate] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedPrayer, setEditedPrayer] = useState(null);
+  const [selectedGroup, setSelectedGroup] = useState(
+    prayer.groupId ? { id: prayer.groupId, name: prayer.groupName } : null
+  );
+
+  const availableGroups = [
+    {
+      id: "1",
+      name: "Youth Prayer Warriors",
+    },
+    {
+      id: "2",
+      name: "Family & Marriage",
+    },
+    {
+      id: "3",
+      name: "Healing Ministry",
+    },
+  ];
 
   const handleAddComment = () => {
     if (newComment.trim()) {
@@ -47,6 +71,35 @@ export default function PrayerDetailScreen({ route, navigation }) {
     }
   };
 
+  const handleAddUpdate = () => {
+    if (newUpdate.trim()) {
+      addUpdate(prayerId, newUpdate);
+      const newUpdateObj = {
+        id: (updates.length + 1).toString(),
+        date: new Date().toISOString().split("T")[0],
+        text: newUpdate,
+      };
+      setUpdates([...updates, newUpdateObj]);
+      setNewUpdate("");
+      setShowUpdateInput(false);
+    }
+  };
+
+  const handleEditPrayer = () => {
+    setEditedPrayer({
+      ...prayer,
+      allowComments: prayer.allowComments !== false, // default to true if not set
+      groupId: selectedGroup?.id,
+      groupName: selectedGroup?.name,
+    });
+    setIsEditing(true);
+  };
+
+  const handleSaveEdits = () => {
+    // Here you would update the prayer in your context/backend
+    setIsEditing(false);
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -56,21 +109,80 @@ export default function PrayerDetailScreen({ route, navigation }) {
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
-        {/* Prayer Header */}
+        {/* Prayer Header with Edit Button */}
         <View style={[styles.header, { backgroundColor: theme.card }]}>
-          <Image
-            source={{ uri: prayer.userImage }}
-            style={styles.profileImage}
-          />
-          <View style={styles.headerText}>
-            <Text style={[styles.userName, { color: theme.text }]}>
-              {prayer.userName}
-            </Text>
-            <Text style={[styles.date, { color: theme.textSecondary }]}>
-              {prayer.date}
-            </Text>
+          <View style={styles.headerContent}>
+            <Image
+              source={{ uri: prayer.userImage }}
+              style={styles.profileImage}
+            />
+            <View style={styles.headerText}>
+              <Text style={[styles.userName, { color: theme.text }]}>
+                {prayer.userName}
+              </Text>
+              <Text style={[styles.date, { color: theme.textSecondary }]}>
+                {prayer.date}
+              </Text>
+            </View>
+            {prayer.userName === "Your Name" && (
+              <TouchableOpacity
+                style={styles.editButton}
+                onPress={handleEditPrayer}
+              >
+                <Ionicons name="pencil" size={20} color={theme.primary} />
+              </TouchableOpacity>
+            )}
           </View>
         </View>
+
+        {/* Edit Mode */}
+        {isEditing && prayer.userName === "Your Name" && (
+          <View style={[styles.editSection, { backgroundColor: theme.card }]}>
+            <Text style={[styles.editTitle, { color: theme.text }]}>
+              Edit Prayer Settings
+            </Text>
+
+            <Text style={[styles.label, { color: theme.text }]}>Group</Text>
+            <GroupDropdown
+              groups={availableGroups}
+              selectedGroup={selectedGroup}
+              onSelect={setSelectedGroup}
+            />
+
+            <View style={styles.toggleOption}>
+              <Text style={[styles.toggleLabel, { color: theme.text }]}>
+                Allow Comments
+              </Text>
+              <Switch
+                value={editedPrayer.allowComments}
+                onValueChange={(value) =>
+                  setEditedPrayer({ ...editedPrayer, allowComments: value })
+                }
+                trackColor={{ false: "#767577", true: theme.primary }}
+              />
+            </View>
+
+            <View style={styles.editButtons}>
+              <TouchableOpacity
+                style={[
+                  styles.cancelButton,
+                  { backgroundColor: theme.searchBg },
+                ]}
+                onPress={() => setIsEditing(false)}
+              >
+                <Text style={{ color: theme.textSecondary }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.saveButton, { backgroundColor: theme.primary }]}
+                onPress={handleSaveEdits}
+              >
+                <Text style={{ color: "white", fontWeight: "600" }}>
+                  Save Changes
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
 
         {/* Prayer Content */}
         <View style={[styles.prayerContent, { backgroundColor: theme.card }]}>
@@ -94,41 +206,95 @@ export default function PrayerDetailScreen({ route, navigation }) {
 
         {/* Updates Section */}
         <View style={[styles.section, { backgroundColor: theme.card }]}>
-          <View style={[styles.sectionHeader, { backgroundColor: theme.card }]}>
+          <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>
               Updates
             </Text>
-            {prayer.userName === "Your Name" && (
+            {prayer.userName === "Your Name" && !showUpdateInput && (
               <TouchableOpacity
                 style={[
                   styles.addUpdateButton,
-                  { backgroundColor: theme.primary },
+                  { backgroundColor: `${theme.primary}15` },
                 ]}
+                onPress={() => setShowUpdateInput(true)}
               >
-                <Ionicons
-                  name="add-circle-outline"
-                  size={24}
-                  color={theme.card}
-                />
-                <Text style={[styles.addUpdateText, { color: theme.card }]}>
+                <Ionicons name="add-circle" size={20} color={theme.primary} />
+                <Text style={[styles.addUpdateText, { color: theme.primary }]}>
                   Add Update
                 </Text>
               </TouchableOpacity>
             )}
           </View>
-          {updates.map((update) => (
-            <View
-              key={update.id}
-              style={[styles.updateItem, { backgroundColor: theme.card }]}
-            >
-              <Text style={[styles.updateDate, { color: theme.textSecondary }]}>
-                {update.date}
-              </Text>
-              <Text style={[styles.updateText, { color: theme.text }]}>
-                {update.text}
-              </Text>
+
+          {showUpdateInput && (
+            <View style={styles.updateInputContainer}>
+              <TextInput
+                style={[
+                  styles.updateInput,
+                  {
+                    backgroundColor: theme.searchBg,
+                    color: theme.text,
+                    borderColor: theme.border,
+                  },
+                ]}
+                placeholder="Share an update about your prayer request..."
+                placeholderTextColor={theme.textSecondary}
+                value={newUpdate}
+                onChangeText={setNewUpdate}
+                multiline
+                numberOfLines={4}
+              />
+              <View style={styles.updateButtons}>
+                <TouchableOpacity
+                  style={[
+                    styles.cancelButton,
+                    { backgroundColor: theme.searchBg },
+                  ]}
+                  onPress={() => {
+                    setShowUpdateInput(false);
+                    setNewUpdate("");
+                  }}
+                >
+                  <Text style={{ color: theme.textSecondary }}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.postButton,
+                    { backgroundColor: theme.primary },
+                  ]}
+                  onPress={handleAddUpdate}
+                >
+                  <Text style={{ color: "white", fontWeight: "600" }}>
+                    Post Update
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          ))}
+          )}
+
+          <View style={styles.updatesContainer}>
+            {updates.map((update) => (
+              <View
+                key={update.id}
+                style={[
+                  styles.updateItem,
+                  {
+                    backgroundColor: theme.searchBg,
+                    borderLeftColor: theme.primary,
+                  },
+                ]}
+              >
+                <Text
+                  style={[styles.updateDate, { color: theme.textSecondary }]}
+                >
+                  {update.date}
+                </Text>
+                <Text style={[styles.updateText, { color: theme.text }]}>
+                  {update.text}
+                </Text>
+              </View>
+            ))}
+          </View>
         </View>
 
         {/* Comments Section */}
@@ -285,21 +451,22 @@ const styles = StyleSheet.create({
   addUpdateButton: {
     flexDirection: "row",
     alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 4,
   },
   addUpdateText: {
-    color: "#6B4EFF",
-    marginLeft: 4,
     fontWeight: "600",
+    fontSize: 14,
   },
   updateItem: {
-    backgroundColor: "#f8f8f8",
     padding: 12,
     borderRadius: 8,
-    marginBottom: 8,
+    borderLeftWidth: 4,
   },
   updateDate: {
     fontSize: 12,
-    color: "#666",
     marginBottom: 4,
   },
   updateText: {
@@ -361,5 +528,80 @@ const styles = StyleSheet.create({
     backgroundColor: "#6B4EFF",
     justifyContent: "center",
     alignItems: "center",
+  },
+  updateInputContainer: {
+    marginBottom: 16,
+    backgroundColor: "transparent",
+  },
+  updateInput: {
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    minHeight: 100,
+    borderWidth: 1,
+    fontSize: 16,
+  },
+  updateButtons: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 8,
+  },
+  cancelButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  postButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  updatesContainer: {
+    marginTop: 12,
+    gap: 12,
+  },
+  headerContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  editButton: {
+    padding: 8,
+    marginLeft: "auto",
+  },
+  editSection: {
+    padding: 16,
+    marginTop: 1,
+  },
+  editTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 8,
+    marginTop: 16,
+  },
+  toggleOption: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 16,
+    marginBottom: 24,
+  },
+  toggleLabel: {
+    fontSize: 16,
+  },
+  editButtons: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 8,
+  },
+  saveButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
   },
 });

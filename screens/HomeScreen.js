@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { usePrayers } from "../context/PrayerContext";
 import { useTheme } from "../context/ThemeContext";
+import Ionicons from "react-native-vector-icons/Ionicons";
 
 export default function HomeScreen({ navigation }) {
   const { prayers } = usePrayers();
@@ -32,8 +33,29 @@ export default function HomeScreen({ navigation }) {
       </View>
       <View style={styles.titleContainer}>
         <Text style={[styles.title, { color: theme.text }]}>{item.title}</Text>
-        <View style={styles.categoryContainer}>
-          <Text style={[styles.category, { color: theme.text }]}>
+      </View>
+      <View style={styles.tagsContainer}>
+        {item.groupName && (
+          <View
+            style={[
+              styles.tag,
+              styles.groupTag,
+              { backgroundColor: `${theme.primary}15` },
+            ]}
+          >
+            <Ionicons name="people" size={14} color={theme.primary} />
+            <Text style={[styles.tagText, { color: theme.primary }]}>
+              {item.groupName}
+            </Text>
+          </View>
+        )}
+        <View style={[styles.tag, { backgroundColor: `${theme.primary}10` }]}>
+          <Ionicons
+            name={getCategoryIcon(item.category)}
+            size={14}
+            color={theme.primary}
+          />
+          <Text style={[styles.tagText, { color: theme.primary }]}>
             {item.category}
           </Text>
         </View>
@@ -41,7 +63,7 @@ export default function HomeScreen({ navigation }) {
       <Text style={[styles.description, { color: theme.text }]}>
         {item.description}
       </Text>
-      <View style={styles.cardFooter}>
+      <View style={[styles.cardFooter, { borderTopColor: theme.border }]}>
         <Text style={[styles.footerText, { color: theme.textSecondary }]}>
           {item.comments} Comments
         </Text>
@@ -51,6 +73,24 @@ export default function HomeScreen({ navigation }) {
       </View>
     </TouchableOpacity>
   );
+
+  // Helper function to get category icons
+  const getCategoryIcon = (category) => {
+    switch (category) {
+      case "Health":
+        return "fitness";
+      case "Family":
+        return "home";
+      case "Work":
+        return "briefcase";
+      case "Spiritual Growth":
+        return "leaf";
+      case "Relationships":
+        return "heart";
+      default:
+        return "bookmark";
+    }
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -146,6 +186,29 @@ const styles = StyleSheet.create({
   category: {
     color: "#6B4EFF",
     fontSize: 12,
+    fontWeight: "600",
+  },
+  tagsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 12,
+  },
+  tag: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 4,
+  },
+  groupTag: {
+    borderStyle: "dashed",
+    borderWidth: 1,
+    borderColor: "#6B4EFF30",
+  },
+  tagText: {
+    fontSize: 13,
     fontWeight: "600",
   },
 });

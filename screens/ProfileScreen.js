@@ -35,10 +35,12 @@ export default function ProfileScreen({ navigation }) {
     email: "john.smith@example.com",
     profileImage: "https://via.placeholder.com/150",
     joinDate: "March 2024",
-    totalPrayers: userPrayers.length,
     totalComments: 45,
     bio: "Passionate about prayer and community.",
   });
+
+  // Remove totalPrayers from userInfo state and use computed value instead
+  const totalPrayers = userPrayers.length;
 
   const handleDeletePrayer = (prayerId) => {
     Alert.alert(
@@ -131,7 +133,7 @@ export default function ProfileScreen({ navigation }) {
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
               <Text style={[styles.statNumber, { color: theme.primary }]}>
-                {userInfo.totalPrayers}
+                {totalPrayers}
               </Text>
               <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
                 Prayers
