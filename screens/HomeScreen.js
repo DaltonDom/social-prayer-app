@@ -32,6 +32,18 @@ export default function HomeScreen({ navigation }) {
         </View>
       </View>
       <View style={styles.titleContainer}>
+        <View
+          style={[
+            styles.categoryTag,
+            { backgroundColor: `${theme.primary}10` },
+          ]}
+        >
+          <Ionicons
+            name={getCategoryIcon(item.category)}
+            size={16}
+            color={theme.primary}
+          />
+        </View>
         <Text style={[styles.title, { color: theme.text }]}>{item.title}</Text>
       </View>
       <View style={styles.tagsContainer}>
@@ -49,16 +61,6 @@ export default function HomeScreen({ navigation }) {
             </Text>
           </View>
         )}
-        <View style={[styles.tag, { backgroundColor: `${theme.primary}10` }]}>
-          <Ionicons
-            name={getCategoryIcon(item.category)}
-            size={14}
-            color={theme.primary}
-          />
-          <Text style={[styles.tagText, { color: theme.primary }]}>
-            {item.category}
-          </Text>
-        </View>
       </View>
       <Text style={[styles.description, { color: theme.text }]}>
         {item.description}
@@ -167,9 +169,9 @@ const styles = StyleSheet.create({
   },
   titleContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 4,
+    gap: 8,
   },
   title: {
     fontSize: 18,
@@ -177,16 +179,12 @@ const styles = StyleSheet.create({
     color: "#333",
     flex: 1,
   },
-  categoryContainer: {
-    backgroundColor: "#6B4EFF20",
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 16,
-  },
-  category: {
-    color: "#6B4EFF",
-    fontSize: 12,
-    fontWeight: "600",
+  categoryTag: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 6,
+    borderRadius: 12,
+    aspectRatio: 1,
   },
   tagsContainer: {
     flexDirection: "row",

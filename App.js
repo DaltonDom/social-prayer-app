@@ -9,13 +9,15 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { PrayerProvider } from "./context/PrayerContext";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
+import { JournalProvider } from "./context/JournalContext";
+import AddJournalScreen from "./screens/AddJournalScreen";
 
 // Screen imports
 import HomeScreen from "./screens/HomeScreen";
 import GroupsScreen from "./screens/GroupsScreen";
 import AddPrayerScreen from "./screens/AddPrayerScreen";
-import FriendsScreen from "./screens/FriendsScreen";
 import ProfileScreen from "./screens/ProfileScreen";
+import JournalScreen from "./screens/JournalScreen";
 import PrayerDetailScreen from "./screens/PrayerDetailScreen";
 
 const Tab = createBottomTabNavigator();
@@ -32,14 +34,14 @@ function TabNavigator() {
 
           if (route.name === "Home") {
             iconName = focused ? "home" : "home-outline";
-          } else if (route.name === "Groups") {
-            iconName = focused ? "people" : "people-outline";
+          } else if (route.name === "Search") {
+            iconName = focused ? "search" : "search-outline";
           } else if (route.name === "Add") {
             iconName = focused ? "add-circle" : "add-circle-outline";
-          } else if (route.name === "Friends") {
-            iconName = focused ? "person" : "person-outline";
+          } else if (route.name === "Journal") {
+            iconName = focused ? "book" : "book-outline";
           } else if (route.name === "Profile") {
-            iconName = focused ? "settings" : "settings-outline";
+            iconName = focused ? "person" : "person-outline";
           }
 
           return <Ionicons name={iconName} size={size} color={color} />;
@@ -57,9 +59,9 @@ function TabNavigator() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Groups" component={GroupsScreen} />
+      <Tab.Screen name="Search" component={GroupsScreen} />
       <Tab.Screen name="Add" component={AddPrayerScreen} />
-      <Tab.Screen name="Friends" component={FriendsScreen} />
+      <Tab.Screen name="Journal" component={JournalScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
@@ -104,6 +106,11 @@ function MainApp() {
             component={PrayerDetailScreen}
             options={{ title: "Prayer Details" }}
           />
+          <Stack.Screen
+            name="AddJournal"
+            component={AddJournalScreen}
+            options={{ title: "New Journal Entry" }}
+          />
         </Stack.Navigator>
         <StatusBar style={isDarkMode ? "light" : "dark"} />
       </NavigationContainer>
@@ -114,7 +121,9 @@ function MainApp() {
 export default function App() {
   return (
     <ThemeProvider>
-      <MainApp />
+      <JournalProvider>
+        <MainApp />
+      </JournalProvider>
     </ThemeProvider>
   );
 }

@@ -53,11 +53,6 @@ export default function AddPrayerScreen({ navigation }) {
   ];
 
   const handleSubmit = () => {
-    if (!prayerData.description.trim()) {
-      Alert.alert("Error", "Please enter a prayer description");
-      return;
-    }
-
     if (!prayerData.title.trim()) {
       Alert.alert("Error", "Please enter a prayer title");
       return;
@@ -68,26 +63,29 @@ export default function AddPrayerScreen({ navigation }) {
       return;
     }
 
-    // Add the new prayer with group information
+    if (!prayerData.description.trim()) {
+      Alert.alert("Error", "Please enter a prayer description");
+      return;
+    }
+
     addPrayer({
       ...prayerData,
       groupId: selectedGroup?.id,
       groupName: selectedGroup?.name,
     });
 
-    // Show success message and navigate back
     Alert.alert("Success", "Prayer request added successfully", [
       {
         text: "OK",
         onPress: () => {
           navigation.navigate("Home");
-          // Reset form
           setPrayerData({
             title: "",
             description: "",
             category: "",
             allowComments: true,
           });
+          setSelectedGroup(null);
         },
       },
     ]);
@@ -103,51 +101,17 @@ export default function AddPrayerScreen({ navigation }) {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.form}>
+          {/* Group Selection (Optional) */}
           <Text style={[styles.label, { color: theme.text }]}>
-            Title (Optional)
+            Group (Optional)
           </Text>
-          <TextInput
-            style={[
-              styles.input,
-              {
-                backgroundColor: theme.card,
-                borderColor: theme.border,
-                color: theme.text,
-              },
-            ]}
-            placeholder="Enter a title for your prayer request"
-            placeholderTextColor={theme.textSecondary}
-            value={prayerData.title}
-            onChangeText={(text) =>
-              setPrayerData({ ...prayerData, title: text })
-            }
-            maxLength={50}
+          <GroupDropdown
+            groups={availableGroups}
+            selectedGroup={selectedGroup}
+            onSelect={setSelectedGroup}
           />
 
-          <Text style={[styles.label, { color: theme.text }]}>
-            Prayer Description*
-          </Text>
-          <TextInput
-            style={[
-              styles.input,
-              styles.textArea,
-              {
-                backgroundColor: theme.card,
-                borderColor: theme.border,
-                color: theme.text,
-              },
-            ]}
-            placeholder="Share your prayer request..."
-            placeholderTextColor={theme.textSecondary}
-            value={prayerData.description}
-            onChangeText={(text) =>
-              setPrayerData({ ...prayerData, description: text })
-            }
-            multiline
-            numberOfLines={6}
-            textAlignVertical="top"
-          />
-
+          {/* Category Selection */}
           <Text style={[styles.label, { color: theme.text }]}>Category</Text>
           <ScrollView
             horizontal
@@ -186,13 +150,52 @@ export default function AddPrayerScreen({ navigation }) {
             ))}
           </ScrollView>
 
-          <Text style={[styles.label, { color: theme.text }]}>Group</Text>
-          <GroupDropdown
-            groups={availableGroups}
-            selectedGroup={selectedGroup}
-            onSelect={setSelectedGroup}
+          {/* Title Input */}
+          <Text style={[styles.label, { color: theme.text }]}>Title</Text>
+          <TextInput
+            style={[
+              styles.input,
+              {
+                backgroundColor: theme.card,
+                borderColor: theme.border,
+                color: theme.text,
+              },
+            ]}
+            placeholder="Enter a title for your prayer request"
+            placeholderTextColor={theme.textSecondary}
+            value={prayerData.title}
+            onChangeText={(text) =>
+              setPrayerData({ ...prayerData, title: text })
+            }
+            maxLength={50}
           />
 
+          {/* Prayer Description */}
+          <Text style={[styles.label, { color: theme.text }]}>
+            Prayer Description
+          </Text>
+          <TextInput
+            style={[
+              styles.input,
+              styles.textArea,
+              {
+                backgroundColor: theme.card,
+                borderColor: theme.border,
+                color: theme.text,
+              },
+            ]}
+            placeholder="Share your prayer request..."
+            placeholderTextColor={theme.textSecondary}
+            value={prayerData.description}
+            onChangeText={(text) =>
+              setPrayerData({ ...prayerData, description: text })
+            }
+            multiline
+            numberOfLines={6}
+            textAlignVertical="top"
+          />
+
+          {/* Allow Comments Toggle */}
           <View style={styles.toggleContainer}>
             <View style={styles.toggleOption}>
               <Text style={[styles.toggleLabel, { color: theme.text }]}>
