@@ -6,11 +6,13 @@ import {
   TouchableOpacity,
   FlatList,
   TextInput,
+  Platform,
 } from "react-native";
 import { useTheme } from "../context/ThemeContext";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Calendar } from "react-native-calendars";
 import { useJournals } from "../context/JournalContext";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function JournalScreen({ navigation }) {
   const { theme } = useTheme();
@@ -20,17 +22,23 @@ export default function JournalScreen({ navigation }) {
   const [searchQuery, setSearchQuery] = useState("");
 
   const renderJournalItem = ({ item }) => (
-    <View style={[styles.journalCard, { backgroundColor: theme.card }]}>
+    <TouchableOpacity
+      style={[styles.journalCard, { backgroundColor: theme.card }]}
+      onPress={() => navigation.navigate("JournalDetail", { journal: item })}
+    >
       <Text style={[styles.journalDate, { color: theme.textSecondary }]}>
         {item.date}
       </Text>
       <Text style={[styles.journalTitle, { color: theme.text }]}>
         {item.title}
       </Text>
-      <Text style={[styles.journalPreview, { color: theme.textSecondary }]}>
+      <Text
+        style={[styles.journalPreview, { color: theme.textSecondary }]}
+        numberOfLines={2}
+      >
         {item.content}
       </Text>
-    </View>
+    </TouchableOpacity>
   );
 
   const TabButton = ({ name, icon, isActive }) => (
@@ -76,8 +84,34 @@ export default function JournalScreen({ navigation }) {
     );
   };
 
+  const getMarkedDates = () => {
+    const marked = {};
+
+    journals.forEach((journal) => {
+      marked[journal.date] = {
+        marked: true,
+        dotColor: theme.primary,
+      };
+    });
+
+    if (selectedDate) {
+      marked[selectedDate] = {
+        ...marked[selectedDate],
+        selected: true,
+        selectedColor: theme.primary,
+        marked: marked[selectedDate]?.marked || false,
+        dotColor: theme.primary,
+      };
+    }
+
+    return marked;
+  };
+
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.background }]}
+      edges={["right", "left", "bottom"]}
+    >
       <View style={styles.tabBar}>
         <TabButton name="list" icon="list" isActive={activeTab === "list"} />
         <TabButton
@@ -93,7 +127,7 @@ export default function JournalScreen({ navigation }) {
       </View>
 
       {activeTab === "list" && (
-        <View style={styles.content}>
+        <View style={styles.listContent}>
           <TouchableOpacity
             style={[styles.addButton, { backgroundColor: theme.primary }]}
             onPress={handleAddPress}
@@ -118,9 +152,7 @@ export default function JournalScreen({ navigation }) {
         <View style={styles.content}>
           <Calendar
             onDayPress={(day) => setSelectedDate(day.dateString)}
-            markedDates={{
-              [selectedDate]: { selected: true, selectedColor: theme.primary },
-            }}
+            markedDates={getMarkedDates()}
             theme={{
               calendarBackground: theme.card,
               textSectionTitleColor: theme.text,
@@ -130,6 +162,8 @@ export default function JournalScreen({ navigation }) {
               dayTextColor: theme.text,
               textDisabledColor: theme.textSecondary,
               monthTextColor: theme.text,
+              dotColor: theme.primary,
+              selectedDotColor: "#ffffff",
             }}
           />
           {selectedDate && (
@@ -160,7 +194,7 @@ export default function JournalScreen({ navigation }) {
       )}
 
       {activeTab === "search" && (
-        <View style={styles.content}>
+        <View style={styles.searchContent}>
           <View
             style={[styles.searchContainer, { backgroundColor: theme.card }]}
           >
@@ -193,7 +227,7 @@ export default function JournalScreen({ navigation }) {
           )}
         </View>
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -207,6 +241,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
+    paddingTop: Platform.OS === "ios" ? 50 : 20,
   },
   tabButton: {
     flexDirection: "row",
@@ -223,6 +258,16 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 16,
+  },
+  listContent: {
+    flex: 1,
+    padding: 16,
+    paddingTop: 8,
+  },
+  searchContent: {
+    flex: 1,
+    padding: 16,
+    paddingTop: 8,
   },
   addButton: {
     flexDirection: "row",

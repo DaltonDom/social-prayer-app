@@ -10,15 +10,19 @@ import {
   Switch,
   Animated,
   Alert,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { usePrayers } from "../context/PrayerContext";
 import EditProfileModal from "../components/EditProfileModal";
 import ChangePasswordModal from "../components/ChangePasswordModal";
 import { useTheme } from "../context/ThemeContext";
+import { SafeAreaView } from "react-native-safe-area-context";
+import * as ImagePicker from "expo-image-picker";
 
 export default function ProfileScreen({ navigation }) {
-  const { prayers, deletePrayer } = usePrayers();
+  const { prayers, deletePrayer, userProfile, updateUserProfile } =
+    usePrayers();
   const [notifications, setNotifications] = useState(true);
   const [emailUpdates, setEmailUpdates] = useState(true);
   const [editProfileVisible, setEditProfileVisible] = useState(false);
@@ -35,12 +39,32 @@ export default function ProfileScreen({ navigation }) {
     email: "john.smith@example.com",
     profileImage: "https://via.placeholder.com/150",
     joinDate: "March 2024",
-    totalComments: 45,
+    friends: [
+      {
+        id: "1",
+        name: "Sarah Wilson",
+        profileImage: "https://via.placeholder.com/50",
+      },
+      {
+        id: "2",
+        name: "Michael Chen",
+        profileImage: "https://via.placeholder.com/50",
+      },
+      {
+        id: "3",
+        name: "Emma Thompson",
+        profileImage: "https://via.placeholder.com/50",
+      },
+      // Add more friends as needed
+    ],
     bio: "Passionate about prayer and community.",
   });
 
   // Remove totalPrayers from userInfo state and use computed value instead
   const totalPrayers = userPrayers.length;
+
+  // Remove totalComments and use friends length instead
+  const totalFriends = userInfo.friends.length;
 
   const handleDeletePrayer = (prayerId) => {
     Alert.alert(
@@ -69,9 +93,24 @@ export default function ProfileScreen({ navigation }) {
         }
       >
         <View style={styles.prayerHeader}>
-          <Text style={[styles.prayerTitle, { color: theme.text }]}>
-            {item.title}
-          </Text>
+          <View style={styles.prayerTitleRow}>
+            <View
+              style={[
+                styles.categoryTag,
+                { backgroundColor: `${theme.primary}15` },
+              ]}
+            >
+              <Text style={[styles.categoryText, { color: theme.primary }]}>
+                {item.category}
+              </Text>
+            </View>
+            <Text
+              style={[styles.prayerTitle, { color: theme.text }]}
+              numberOfLines={1}
+            >
+              {item.title}
+            </Text>
+          </View>
           <TouchableOpacity
             onPress={() => handleDeletePrayer(item.id)}
             style={styles.deleteButton}
@@ -79,22 +118,14 @@ export default function ProfileScreen({ navigation }) {
             <Ionicons name="trash-outline" size={20} color="#FF3B30" />
           </TouchableOpacity>
         </View>
-        <View
-          style={[
-            styles.categoryTag,
-            { backgroundColor: `${theme.primary}20` },
-          ]}
-        >
-          <Text style={[styles.categoryText, { color: theme.primary }]}>
-            {item.category}
-          </Text>
-        </View>
+
         <Text
           numberOfLines={2}
           style={[styles.prayerDescription, { color: theme.text }]}
         >
           {item.description}
         </Text>
+
         <View style={[styles.prayerStats, { borderTopColor: theme.border }]}>
           <Text style={[styles.statsText, { color: theme.textSecondary }]}>
             {item.comments} Comments
@@ -107,8 +138,56 @@ export default function ProfileScreen({ navigation }) {
     </Animated.View>
   );
 
+  const renderFriendItem = ({ item }) => (
+    <TouchableOpacity
+      style={[styles.friendItem, { backgroundColor: theme.card }]}
+      onPress={() => navigation.navigate("FriendDetail", { friend: item })}
+    >
+      <Image source={{ uri: item.profileImage }} style={styles.friendImage} />
+      <Text style={[styles.friendName, { color: theme.text }]}>
+        {item.name}
+      </Text>
+    </TouchableOpacity>
+  );
+
+  const pickImage = async () => {
+    // Request permission
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (status !== "granted") {
+      Alert.alert(
+        "Sorry, we need camera roll permissions to change your profile picture!"
+      );
+      return;
+    }
+
+    // Pick the image
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      // Update profile image in context
+      updateUserProfile({
+        ...userProfile,
+        profileImage: result.assets[0].uri,
+      });
+
+      // Update local state
+      setUserInfo((prev) => ({
+        ...prev,
+        profileImage: result.assets[0].uri,
+      }));
+    }
+  };
+
   return (
-    <>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.background }]}
+    >
       <ScrollView
         style={[styles.container, { backgroundColor: theme.background }]}
         showsVerticalScrollIndicator={false}
@@ -117,10 +196,13 @@ export default function ProfileScreen({ navigation }) {
         <View style={[styles.header, { backgroundColor: theme.card }]}>
           <View style={styles.profileImageContainer}>
             <Image
-              source={{ uri: userInfo.profileImage }}
+              source={{ uri: userProfile.profileImage }}
               style={styles.profileImage}
             />
-            <TouchableOpacity style={styles.editImageButton}>
+            <TouchableOpacity
+              style={styles.editImageButton}
+              onPress={pickImage}
+            >
               <Ionicons name="camera" size={20} color="white" />
             </TouchableOpacity>
           </View>
@@ -142,15 +224,50 @@ export default function ProfileScreen({ navigation }) {
             <View
               style={[styles.statDivider, { backgroundColor: theme.border }]}
             />
-            <View style={styles.statItem}>
+            <TouchableOpacity
+              style={styles.statItem}
+              onPress={() =>
+                navigation.navigate("FriendsList", {
+                  friends: userInfo.friends,
+                })
+              }
+            >
               <Text style={[styles.statNumber, { color: theme.primary }]}>
-                {userInfo.totalComments}
+                {totalFriends}
               </Text>
               <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
-                Comments
+                Friends
               </Text>
-            </View>
+            </TouchableOpacity>
           </View>
+        </View>
+
+        {/* Friends Section */}
+        <View style={[styles.section, { backgroundColor: theme.card }]}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>
+              Friends
+            </Text>
+            <TouchableOpacity
+              style={styles.seeAllButton}
+              onPress={() =>
+                navigation.navigate("FriendsList", {
+                  friends: userInfo.friends,
+                })
+              }
+            >
+              <Text style={[styles.seeAllText, { color: theme.primary }]}>
+                See All
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <FlatList
+            data={userInfo.friends.slice(0, 3)} // Show only first 3 friends
+            renderItem={renderFriendItem}
+            keyExtractor={(item) => item.id}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+          />
         </View>
 
         {/* Settings Section */}
@@ -289,7 +406,7 @@ export default function ProfileScreen({ navigation }) {
         visible={changePasswordVisible}
         onClose={() => setChangePasswordVisible(false)}
       />
-    </>
+    </SafeAreaView>
   );
 }
 
@@ -344,6 +461,7 @@ const styles = StyleSheet.create({
   statItem: {
     alignItems: "center",
     paddingHorizontal: 20,
+    paddingVertical: 8,
   },
   statDivider: {
     width: 1,
@@ -363,6 +481,7 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     marginTop: 16,
     padding: 16,
+    paddingBottom: 4,
   },
   sectionTitle: {
     fontSize: 18,
@@ -387,29 +506,39 @@ const styles = StyleSheet.create({
   },
   prayerCard: {
     backgroundColor: "white",
-    borderRadius: 16,
-    marginBottom: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    marginHorizontal: 4,
+    marginTop: 4,
     shadowColor: "#000",
     shadowOffset: {
-      width: 0,
-      height: 4,
+      width: 2,
+      height: 2,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
     elevation: 5,
-    transform: [{ scale: 1 }],
+    width: "98%",
+    alignSelf: "center",
   },
   prayerContent: {
     padding: 16,
   },
   deleteButton: {
-    padding: 8,
+    padding: 4,
   },
   prayerHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-start",
     marginBottom: 8,
+  },
+  prayerTitleRow: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginRight: 8,
   },
   prayerTitle: {
     fontSize: 16,
@@ -417,33 +546,27 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   categoryTag: {
-    backgroundColor: "#6B4EFF20",
-    paddingHorizontal: 12,
+    paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 16,
+    borderRadius: 8,
   },
   categoryText: {
-    color: "#6B4EFF",
     fontSize: 12,
     fontWeight: "600",
   },
-  prayerDate: {
-    fontSize: 12,
-    color: "#666",
-    marginBottom: 4,
-  },
   prayerDescription: {
     fontSize: 14,
-    color: "#333",
-    marginBottom: 8,
+    lineHeight: 20,
+    marginBottom: 12,
   },
   prayerStats: {
     flexDirection: "row",
     justifyContent: "space-between",
+    borderTopWidth: 1,
+    paddingTop: 12,
   },
   statsText: {
     fontSize: 12,
-    color: "#666",
   },
   emptyText: {
     textAlign: "center",
@@ -465,5 +588,36 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     marginLeft: 8,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  seeAllButton: {
+    padding: 4,
+  },
+  seeAllText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  friendItem: {
+    padding: 12,
+    borderRadius: 12,
+    alignItems: "center",
+    marginRight: 12,
+    width: 100,
+  },
+  friendImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    marginBottom: 8,
+  },
+  friendName: {
+    fontSize: 14,
+    fontWeight: "500",
+    textAlign: "center",
   },
 });

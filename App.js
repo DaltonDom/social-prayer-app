@@ -11,6 +11,7 @@ import { PrayerProvider } from "./context/PrayerContext";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import { JournalProvider } from "./context/JournalContext";
 import AddJournalScreen from "./screens/AddJournalScreen";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 // Screen imports
 import HomeScreen from "./screens/HomeScreen";
@@ -19,6 +20,9 @@ import AddPrayerScreen from "./screens/AddPrayerScreen";
 import ProfileScreen from "./screens/ProfileScreen";
 import JournalScreen from "./screens/JournalScreen";
 import PrayerDetailScreen from "./screens/PrayerDetailScreen";
+import JournalDetailScreen from "./screens/JournalDetailScreen";
+import FriendsListScreen from "./screens/FriendsListScreen";
+import FriendDetailScreen from "./screens/FriendDetailScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -29,6 +33,7 @@ function TabNavigator() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
+        headerShown: false,
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
 
@@ -52,10 +57,6 @@ function TabNavigator() {
           backgroundColor: theme.card,
           borderTopColor: theme.border,
         },
-        headerStyle: {
-          backgroundColor: theme.card,
-        },
-        headerTintColor: theme.text,
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
@@ -111,6 +112,21 @@ function MainApp() {
             component={AddJournalScreen}
             options={{ title: "New Journal Entry" }}
           />
+          <Stack.Screen
+            name="JournalDetail"
+            component={JournalDetailScreen}
+            options={{ title: "Journal Entry" }}
+          />
+          <Stack.Screen
+            name="FriendsList"
+            component={FriendsListScreen}
+            options={{ title: "Friends" }}
+          />
+          <Stack.Screen
+            name="FriendDetail"
+            component={FriendDetailScreen}
+            options={{ title: "Friend Profile" }}
+          />
         </Stack.Navigator>
         <StatusBar style={isDarkMode ? "light" : "dark"} />
       </NavigationContainer>
@@ -120,10 +136,12 @@ function MainApp() {
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <JournalProvider>
-        <MainApp />
-      </JournalProvider>
-    </ThemeProvider>
+    <SafeAreaProvider>
+      <ThemeProvider>
+        <JournalProvider>
+          <MainApp />
+        </JournalProvider>
+      </ThemeProvider>
+    </SafeAreaProvider>
   );
 }

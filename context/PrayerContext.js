@@ -5,10 +5,40 @@ const PrayerContext = createContext();
 
 export function PrayerProvider({ children }) {
   const [prayers, setPrayers] = useState(DUMMY_PRAYERS);
+  const [userProfile, setUserProfile] = useState({
+    name: "John Smith",
+    email: "john.smith@example.com",
+    profileImage: "https://via.placeholder.com/150",
+  });
+
+  const updateUserProfile = (newProfile) => {
+    setUserProfile(newProfile);
+    // Update profile image and name in prayers and comments
+    setPrayers((currentPrayers) =>
+      currentPrayers.map((prayer) => {
+        if (prayer.userName === userProfile.name) {
+          return {
+            ...prayer,
+            userName: newProfile.name,
+            userImage: newProfile.profileImage,
+            comments_list: prayer.comments_list?.map((comment) =>
+              comment.userName === userProfile.name
+                ? {
+                    ...comment,
+                    userName: newProfile.name,
+                    userImage: newProfile.profileImage,
+                  }
+                : comment
+            ),
+          };
+        }
+        return prayer;
+      })
+    );
+  };
 
   const addPrayer = (newPrayer) => {
     setPrayers((currentPrayers) => {
-      // Generate a unique ID based on timestamp and random number
       const uniqueId = `${Date.now()}-${Math.random()
         .toString(36)
         .substr(2, 9)}`;
@@ -16,8 +46,8 @@ export function PrayerProvider({ children }) {
       return [
         {
           id: uniqueId,
-          userName: "Your Name", // This would come from user auth
-          userImage: "https://via.placeholder.com/50",
+          userName: userProfile.name,
+          userImage: userProfile.profileImage,
           date: new Date().toISOString().split("T")[0],
           comments: 0,
           updates: 0,
@@ -69,7 +99,15 @@ export function PrayerProvider({ children }) {
 
   return (
     <PrayerContext.Provider
-      value={{ prayers, addPrayer, addUpdate, deletePrayer, updatePrayer }}
+      value={{
+        prayers,
+        addPrayer,
+        addUpdate,
+        deletePrayer,
+        updatePrayer,
+        userProfile,
+        updateUserProfile,
+      }}
     >
       {children}
     </PrayerContext.Provider>

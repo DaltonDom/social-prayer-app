@@ -6,10 +6,12 @@ import {
   Text,
   Image,
   TouchableOpacity,
+  Platform,
 } from "react-native";
 import { usePrayers } from "../context/PrayerContext";
 import { useTheme } from "../context/ThemeContext";
 import Ionicons from "react-native-vector-icons/Ionicons";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function HomeScreen({ navigation }) {
   const { prayers } = usePrayers();
@@ -95,7 +97,9 @@ export default function HomeScreen({ navigation }) {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.background }]}
+    >
       <FlatList
         data={prayers}
         renderItem={renderPrayerCard}
@@ -103,7 +107,7 @@ export default function HomeScreen({ navigation }) {
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 

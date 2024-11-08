@@ -16,8 +16,16 @@ export function JournalProvider({ children }) {
     ]);
   };
 
+  const updateJournal = (updatedJournal) => {
+    setJournals((currentJournals) =>
+      currentJournals.map((journal) =>
+        journal.id === updatedJournal.id ? updatedJournal : journal
+      )
+    );
+  };
+
   return (
-    <JournalContext.Provider value={{ journals, addJournal }}>
+    <JournalContext.Provider value={{ journals, addJournal, updateJournal }}>
       {children}
     </JournalContext.Provider>
   );

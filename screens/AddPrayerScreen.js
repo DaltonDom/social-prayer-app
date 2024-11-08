@@ -246,6 +246,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
+    paddingTop: Platform.OS === "ios" ? 50 : 20,
   },
   scrollView: {
     flex: 1,

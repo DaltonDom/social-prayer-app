@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,17 +9,53 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  Switch,
+  Keyboard,
+  Animated,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { usePrayers } from "../context/PrayerContext";
 import { useTheme } from "../context/ThemeContext";
 import GroupDropdown from "../components/GroupDropdown";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function PrayerDetailScreen({ route, navigation }) {
   const { theme } = useTheme();
   const { prayerId } = route.params;
   const { prayers, addUpdate } = usePrayers();
+  const [keyboardHeight] = useState(new Animated.Value(0));
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const keyboardWillShow = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
+      (e) => {
+        setKeyboardVisible(true);
+        Animated.timing(keyboardHeight, {
+          toValue: e.endCoordinates.height,
+          duration: 250,
+          useNativeDriver: false,
+        }).start();
+      }
+    );
+
+    const keyboardWillHide = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
+      () => {
+        setKeyboardVisible(false);
+        Animated.timing(keyboardHeight, {
+          toValue: 0,
+          duration: 250,
+          useNativeDriver: false,
+        }).start();
+      }
+    );
+
+    return () => {
+      keyboardWillShow.remove();
+      keyboardWillHide.remove();
+    };
+  }, []);
+
   const prayer = prayers.find((p) => p.id === prayerId) || {
     userName: "",
     userImage: "",
@@ -104,271 +140,289 @@ export default function PrayerDetailScreen({ route, navigation }) {
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={[styles.container, { backgroundColor: theme.background }]}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
     >
-      <ScrollView
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Prayer Header with Edit Button */}
-        <View style={[styles.header, { backgroundColor: theme.card }]}>
-          <View style={styles.headerContent}>
-            <Image
-              source={{ uri: prayer.userImage }}
-              style={styles.profileImage}
-            />
-            <View style={styles.headerText}>
-              <Text style={[styles.userName, { color: theme.text }]}>
-                {prayer.userName}
-              </Text>
-              <Text style={[styles.date, { color: theme.textSecondary }]}>
-                {prayer.date}
-              </Text>
-            </View>
-            {prayer.userName === "Your Name" && (
-              <TouchableOpacity
-                style={styles.editButton}
-                onPress={handleEditPrayer}
-              >
-                <Ionicons name="pencil" size={20} color={theme.primary} />
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-
-        {/* Edit Mode */}
-        {isEditing && prayer.userName === "Your Name" && (
-          <View style={[styles.editSection, { backgroundColor: theme.card }]}>
-            <Text style={[styles.editTitle, { color: theme.text }]}>
-              Edit Prayer Settings
-            </Text>
-
-            <Text style={[styles.label, { color: theme.text }]}>Group</Text>
-            <GroupDropdown
-              groups={availableGroups}
-              selectedGroup={selectedGroup}
-              onSelect={setSelectedGroup}
-            />
-
-            <View style={styles.toggleOption}>
-              <Text style={[styles.toggleLabel, { color: theme.text }]}>
-                Allow Comments
-              </Text>
-              <Switch
-                value={editedPrayer.allowComments}
-                onValueChange={(value) =>
-                  setEditedPrayer({ ...editedPrayer, allowComments: value })
-                }
-                trackColor={{ false: "#767577", true: theme.primary }}
+      <SafeAreaView style={{ flex: 1 }}>
+        <ScrollView
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Prayer Header with Edit Button */}
+          <View style={[styles.header, { backgroundColor: theme.card }]}>
+            <View style={styles.headerContent}>
+              <Image
+                source={{ uri: prayer.userImage }}
+                style={styles.profileImage}
               />
-            </View>
-
-            <View style={styles.editButtons}>
-              <TouchableOpacity
-                style={[
-                  styles.cancelButton,
-                  { backgroundColor: theme.searchBg },
-                ]}
-                onPress={() => setIsEditing(false)}
-              >
-                <Text style={{ color: theme.textSecondary }}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.saveButton, { backgroundColor: theme.primary }]}
-                onPress={handleSaveEdits}
-              >
-                <Text style={{ color: "white", fontWeight: "600" }}>
-                  Save Changes
+              <View style={styles.headerText}>
+                <Text style={[styles.userName, { color: theme.text }]}>
+                  {prayer.userName}
                 </Text>
-              </TouchableOpacity>
+                <Text style={[styles.date, { color: theme.textSecondary }]}>
+                  {prayer.date}
+                </Text>
+              </View>
+              {prayer.userName === "Your Name" && (
+                <TouchableOpacity
+                  style={styles.editButton}
+                  onPress={handleEditPrayer}
+                >
+                  <Ionicons name="pencil" size={20} color={theme.primary} />
+                </TouchableOpacity>
+              )}
             </View>
           </View>
-        )}
 
-        {/* Prayer Content */}
-        <View style={[styles.prayerContent, { backgroundColor: theme.card }]}>
-          <Text style={[styles.title, { color: theme.text }]}>
-            {prayer.title}
-          </Text>
-          <View
-            style={[
-              styles.categoryContainer,
-              { backgroundColor: `${theme.primary}20` },
-            ]}
-          >
-            <Text style={[styles.category, { color: theme.primary }]}>
-              {prayer.category}
-            </Text>
-          </View>
-          <Text style={[styles.description, { color: theme.text }]}>
-            {prayer.description}
-          </Text>
-        </View>
+          {/* Edit Mode */}
+          {isEditing && prayer.userName === "Your Name" && (
+            <View style={[styles.editSection, { backgroundColor: theme.card }]}>
+              <Text style={[styles.editTitle, { color: theme.text }]}>
+                Edit Prayer Settings
+              </Text>
 
-        {/* Updates Section */}
-        <View style={[styles.section, { backgroundColor: theme.card }]}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              Updates
-            </Text>
-            {prayer.userName === "Your Name" && !showUpdateInput && (
-              <TouchableOpacity
-                style={[
-                  styles.addUpdateButton,
-                  { backgroundColor: `${theme.primary}15` },
-                ]}
-                onPress={() => setShowUpdateInput(true)}
-              >
-                <Ionicons name="add-circle" size={20} color={theme.primary} />
-                <Text style={[styles.addUpdateText, { color: theme.primary }]}>
-                  Add Update
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
-
-          {showUpdateInput && (
-            <View style={styles.updateInputContainer}>
-              <TextInput
-                style={[
-                  styles.updateInput,
-                  {
-                    backgroundColor: theme.searchBg,
-                    color: theme.text,
-                    borderColor: theme.border,
-                  },
-                ]}
-                placeholder="Share an update about your prayer request..."
-                placeholderTextColor={theme.textSecondary}
-                value={newUpdate}
-                onChangeText={setNewUpdate}
-                multiline
-                numberOfLines={4}
+              <Text style={[styles.label, { color: theme.text }]}>Group</Text>
+              <GroupDropdown
+                groups={availableGroups}
+                selectedGroup={selectedGroup}
+                onSelect={setSelectedGroup}
               />
-              <View style={styles.updateButtons}>
+
+              <View style={styles.toggleOption}>
+                <Text style={[styles.toggleLabel, { color: theme.text }]}>
+                  Allow Comments
+                </Text>
+                <Switch
+                  value={editedPrayer.allowComments}
+                  onValueChange={(value) =>
+                    setEditedPrayer({ ...editedPrayer, allowComments: value })
+                  }
+                  trackColor={{ false: "#767577", true: theme.primary }}
+                />
+              </View>
+
+              <View style={styles.editButtons}>
                 <TouchableOpacity
                   style={[
                     styles.cancelButton,
                     { backgroundColor: theme.searchBg },
                   ]}
-                  onPress={() => {
-                    setShowUpdateInput(false);
-                    setNewUpdate("");
-                  }}
+                  onPress={() => setIsEditing(false)}
                 >
                   <Text style={{ color: theme.textSecondary }}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[
-                    styles.postButton,
+                    styles.saveButton,
                     { backgroundColor: theme.primary },
                   ]}
-                  onPress={handleAddUpdate}
+                  onPress={handleSaveEdits}
                 >
                   <Text style={{ color: "white", fontWeight: "600" }}>
-                    Post Update
+                    Save Changes
                   </Text>
                 </TouchableOpacity>
               </View>
             </View>
           )}
 
-          <View style={styles.updatesContainer}>
-            {updates.map((update) => (
-              <View
-                key={update.id}
-                style={[
-                  styles.updateItem,
-                  {
-                    backgroundColor: theme.searchBg,
-                    borderLeftColor: theme.primary,
-                  },
-                ]}
-              >
-                <Text
-                  style={[styles.updateDate, { color: theme.textSecondary }]}
-                >
-                  {update.date}
-                </Text>
-                <Text style={[styles.updateText, { color: theme.text }]}>
-                  {update.text}
-                </Text>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* Comments Section */}
-        <View style={[styles.section, { backgroundColor: theme.card }]}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>
-            Comments
-          </Text>
-          {comments.map((comment) => (
+          {/* Prayer Content */}
+          <View style={[styles.prayerContent, { backgroundColor: theme.card }]}>
+            <Text style={[styles.title, { color: theme.text }]}>
+              {prayer.title}
+            </Text>
             <View
-              key={comment.id}
-              style={[styles.commentItem, { backgroundColor: theme.card }]}
+              style={[
+                styles.categoryContainer,
+                { backgroundColor: `${theme.primary}20` },
+              ]}
             >
-              <Image
-                source={{ uri: comment.userImage }}
-                style={styles.commentUserImage}
-              />
+              <Text style={[styles.category, { color: theme.primary }]}>
+                {prayer.category}
+              </Text>
+            </View>
+            <Text style={[styles.description, { color: theme.text }]}>
+              {prayer.description}
+            </Text>
+          </View>
+
+          {/* Updates Section */}
+          <View style={[styles.section, { backgroundColor: theme.card }]}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                Updates
+              </Text>
+              {prayer.userName === "Your Name" && !showUpdateInput && (
+                <TouchableOpacity
+                  style={[
+                    styles.addUpdateButton,
+                    { backgroundColor: `${theme.primary}15` },
+                  ]}
+                  onPress={() => setShowUpdateInput(true)}
+                >
+                  <Ionicons name="add-circle" size={20} color={theme.primary} />
+                  <Text
+                    style={[styles.addUpdateText, { color: theme.primary }]}
+                  >
+                    Add Update
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {showUpdateInput && (
+              <View style={styles.updateInputContainer}>
+                <TextInput
+                  style={[
+                    styles.updateInput,
+                    {
+                      backgroundColor: theme.searchBg,
+                      color: theme.text,
+                      borderColor: theme.border,
+                    },
+                  ]}
+                  placeholder="Share an update about your prayer request..."
+                  placeholderTextColor={theme.textSecondary}
+                  value={newUpdate}
+                  onChangeText={setNewUpdate}
+                  multiline
+                  numberOfLines={4}
+                />
+                <View style={styles.updateButtons}>
+                  <TouchableOpacity
+                    style={[
+                      styles.cancelButton,
+                      { backgroundColor: theme.searchBg },
+                    ]}
+                    onPress={() => {
+                      setShowUpdateInput(false);
+                      setNewUpdate("");
+                    }}
+                  >
+                    <Text style={{ color: theme.textSecondary }}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.postButton,
+                      { backgroundColor: theme.primary },
+                    ]}
+                    onPress={handleAddUpdate}
+                  >
+                    <Text style={{ color: "white", fontWeight: "600" }}>
+                      Post Update
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
+            <View style={styles.updatesContainer}>
+              {updates.map((update) => (
+                <View
+                  key={update.id}
+                  style={[
+                    styles.updateItem,
+                    {
+                      backgroundColor: theme.searchBg,
+                      borderLeftColor: theme.primary,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[styles.updateDate, { color: theme.textSecondary }]}
+                  >
+                    {update.date}
+                  </Text>
+                  <Text style={[styles.updateText, { color: theme.text }]}>
+                    {update.text}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* Comments Section */}
+          <View style={[styles.section, { backgroundColor: theme.card }]}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>
+              Comments
+            </Text>
+            {comments.map((comment) => (
               <View
-                style={[styles.commentContent, { backgroundColor: theme.card }]}
+                key={comment.id}
+                style={[styles.commentItem, { backgroundColor: theme.card }]}
               >
+                <Image
+                  source={{ uri: comment.userImage }}
+                  style={styles.commentUserImage}
+                />
                 <View
                   style={[
-                    styles.commentHeader,
+                    styles.commentContent,
                     { backgroundColor: theme.card },
                   ]}
                 >
-                  <Text style={[styles.commentUserName, { color: theme.text }]}>
-                    {comment.userName}
-                  </Text>
-                  <Text
-                    style={[styles.commentDate, { color: theme.textSecondary }]}
+                  <View
+                    style={[
+                      styles.commentHeader,
+                      { backgroundColor: theme.card },
+                    ]}
                   >
-                    {comment.date}
+                    <Text
+                      style={[styles.commentUserName, { color: theme.text }]}
+                    >
+                      {comment.userName}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.commentDate,
+                        { color: theme.textSecondary },
+                      ]}
+                    >
+                      {comment.date}
+                    </Text>
+                  </View>
+                  <Text style={[styles.commentText, { color: theme.text }]}>
+                    {comment.text}
                   </Text>
                 </View>
-                <Text style={[styles.commentText, { color: theme.text }]}>
-                  {comment.text}
-                </Text>
               </View>
-            </View>
-          ))}
-        </View>
-      </ScrollView>
+            ))}
+          </View>
+        </ScrollView>
 
-      {/* Comment Input */}
-      <View
-        style={[
-          styles.commentInputContainer,
-          {
-            backgroundColor: theme.card,
-            borderTopColor: theme.border,
-          },
-        ]}
-      >
-        <TextInput
+        {/* Updated Comment Input Container */}
+        <View
           style={[
-            styles.commentInput,
+            styles.commentInputContainer,
             {
-              backgroundColor: theme.searchBg,
-              color: theme.text,
+              backgroundColor: theme.card,
+              borderTopColor: theme.border,
+              paddingBottom: Platform.OS === "ios" ? 20 : 12,
             },
           ]}
-          placeholder="Add a comment..."
-          placeholderTextColor={theme.textSecondary}
-          value={newComment}
-          onChangeText={setNewComment}
-          multiline
-        />
-        <TouchableOpacity
-          style={[styles.sendButton, { backgroundColor: theme.primary }]}
-          onPress={handleAddComment}
         >
-          <Ionicons name="send" size={24} color={theme.card} />
-        </TouchableOpacity>
-      </View>
+          <TextInput
+            style={[
+              styles.commentInput,
+              {
+                backgroundColor: theme.searchBg,
+                color: theme.text,
+              },
+            ]}
+            placeholder="Add a comment..."
+            placeholderTextColor={theme.textSecondary}
+            value={newComment}
+            onChangeText={setNewComment}
+            multiline
+          />
+          <TouchableOpacity
+            style={[styles.sendButton, { backgroundColor: theme.primary }]}
+            onPress={handleAddComment}
+          >
+            <Ionicons name="send" size={24} color={theme.card} />
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
     </KeyboardAvoidingView>
   );
 }
