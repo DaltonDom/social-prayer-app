@@ -9,7 +9,7 @@ export function JournalProvider({ children }) {
     setJournals((currentJournals) => [
       {
         id: Date.now().toString(),
-        date: new Date().toISOString().split("T")[0],
+        date: newJournal.date,
         ...newJournal,
       },
       ...currentJournals,

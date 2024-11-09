@@ -14,7 +14,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 
 export default function FriendDetailScreen({ route, navigation }) {
   const { theme } = useTheme();
-  const { friend } = route.params;
+  const { friend, onUnfriend } = route.params;
 
   const handleUnfriend = () => {
     Alert.alert(
@@ -29,8 +29,8 @@ export default function FriendDetailScreen({ route, navigation }) {
           text: "Unfriend",
           style: "destructive",
           onPress: () => {
-            // Add unfriend logic here
-            navigation.goBack();
+            onUnfriend(friend.id);
+            navigation.navigate("Profile");
           },
         },
       ]

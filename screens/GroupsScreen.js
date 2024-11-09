@@ -7,9 +7,11 @@ import {
   TouchableOpacity,
   FlatList,
   Image,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../context/ThemeContext";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const DUMMY_GROUPS = [
   {
@@ -42,7 +44,7 @@ const DUMMY_GROUPS = [
 ];
 
 export default function GroupsScreen({ navigation }) {
-  const { theme } = useTheme();
+  const { theme, isDarkMode } = useTheme();
 
   const renderGroupCard = ({ item }) => (
     <TouchableOpacity style={[styles.card, { backgroundColor: theme.card }]}>
@@ -82,7 +84,10 @@ export default function GroupsScreen({ navigation }) {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.background }]}
+      edges={["right", "left", "bottom"]}
+    >
       <View
         style={[
           styles.header,
@@ -102,6 +107,7 @@ export default function GroupsScreen({ navigation }) {
             style={[styles.searchInput, { color: theme.text }]}
             placeholder="Search groups..."
             placeholderTextColor={theme.textSecondary}
+            keyboardAppearance={isDarkMode ? "dark" : "light"}
           />
         </View>
         <TouchableOpacity
@@ -117,7 +123,7 @@ export default function GroupsScreen({ navigation }) {
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -129,6 +135,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     padding: 16,
+    paddingTop: Platform.OS === "ios" ? 60 : 40,
     alignItems: "center",
     backgroundColor: "white",
     borderBottomWidth: 1,

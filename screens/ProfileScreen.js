@@ -138,10 +138,24 @@ export default function ProfileScreen({ navigation }) {
     </Animated.View>
   );
 
+  const removeFriend = (friendId) => {
+    setUserInfo((prev) => ({
+      ...prev,
+      friends: prev.friends.filter((friend) => friend.id !== friendId),
+    }));
+  };
+
+  const navigateToFriendDetail = (friend) => {
+    navigation.navigate("FriendDetail", {
+      friend,
+      onUnfriend: removeFriend,
+    });
+  };
+
   const renderFriendItem = ({ item }) => (
     <TouchableOpacity
       style={[styles.friendItem, { backgroundColor: theme.card }]}
-      onPress={() => navigation.navigate("FriendDetail", { friend: item })}
+      onPress={() => navigateToFriendDetail(item)}
     >
       <Image source={{ uri: item.profileImage }} style={styles.friendImage} />
       <Text style={[styles.friendName, { color: theme.text }]}>
@@ -229,6 +243,7 @@ export default function ProfileScreen({ navigation }) {
               onPress={() =>
                 navigation.navigate("FriendsList", {
                   friends: userInfo.friends,
+                  onUnfriend: removeFriend,
                 })
               }
             >
@@ -253,6 +268,7 @@ export default function ProfileScreen({ navigation }) {
               onPress={() =>
                 navigation.navigate("FriendsList", {
                   friends: userInfo.friends,
+                  onUnfriend: removeFriend,
                 })
               }
             >

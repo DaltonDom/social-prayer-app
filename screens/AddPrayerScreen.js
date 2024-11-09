@@ -33,7 +33,7 @@ export default function AddPrayerScreen({ navigation }) {
     "Other",
   ];
 
-  const { theme } = useTheme();
+  const { theme, isDarkMode } = useTheme();
 
   const [selectedGroup, setSelectedGroup] = useState(null);
 
@@ -168,6 +168,7 @@ export default function AddPrayerScreen({ navigation }) {
               setPrayerData({ ...prayerData, title: text })
             }
             maxLength={50}
+            keyboardAppearance={isDarkMode ? "dark" : "light"}
           />
 
           {/* Prayer Description */}
@@ -193,6 +194,7 @@ export default function AddPrayerScreen({ navigation }) {
             multiline
             numberOfLines={6}
             textAlignVertical="top"
+            keyboardAppearance={isDarkMode ? "dark" : "light"}
           />
 
           {/* Allow Comments Toggle */}

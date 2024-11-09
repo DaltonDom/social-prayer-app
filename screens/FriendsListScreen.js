@@ -13,8 +13,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
 export default function FriendsListScreen({ route, navigation }) {
-  const { theme } = useTheme();
-  const { friends } = route.params;
+  const { theme, isDarkMode } = useTheme();
+  const { friends, onUnfriend } = route.params;
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredFriends = friends.filter((friend) =>
@@ -24,7 +24,12 @@ export default function FriendsListScreen({ route, navigation }) {
   const renderFriendItem = ({ item }) => (
     <TouchableOpacity
       style={[styles.friendItem, { backgroundColor: theme.card }]}
-      onPress={() => navigation.navigate("FriendDetail", { friend: item })}
+      onPress={() =>
+        navigation.navigate("FriendDetail", {
+          friend: item,
+          onUnfriend: onUnfriend,
+        })
+      }
     >
       <View style={styles.friendInfo}>
         <Image source={{ uri: item.profileImage }} style={styles.friendImage} />
@@ -50,6 +55,7 @@ export default function FriendsListScreen({ route, navigation }) {
           placeholderTextColor={theme.textSecondary}
           value={searchQuery}
           onChangeText={setSearchQuery}
+          keyboardAppearance={isDarkMode ? "dark" : "light"}
         />
       </View>
       <FlatList

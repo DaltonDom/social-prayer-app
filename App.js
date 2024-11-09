@@ -96,7 +96,18 @@ function MainApp() {
   return (
     <PrayerProvider>
       <NavigationContainer theme={navigationTheme}>
-        <Stack.Navigator>
+        <Stack.Navigator
+          screenOptions={{
+            headerStyle: {
+              backgroundColor: theme.card,
+            },
+            headerTintColor: theme.primary,
+            headerTitleStyle: {
+              fontWeight: "600",
+              color: theme.text,
+            },
+          }}
+        >
           <Stack.Screen
             name="MainTabs"
             component={TabNavigator}
@@ -105,7 +116,10 @@ function MainApp() {
           <Stack.Screen
             name="PrayerDetail"
             component={PrayerDetailScreen}
-            options={{ title: "Prayer Details" }}
+            options={{
+              title: "Prayer Details",
+              headerBackTitle: "Back",
+            }}
           />
           <Stack.Screen
             name="AddJournal"

@@ -15,7 +15,7 @@ import { useJournals } from "../context/JournalContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function JournalScreen({ navigation }) {
-  const { theme } = useTheme();
+  const { theme, isDarkMode } = useTheme();
   const { journals } = useJournals();
   const [activeTab, setActiveTab] = useState("list");
   const [selectedDate, setSelectedDate] = useState("");
@@ -205,6 +205,7 @@ export default function JournalScreen({ navigation }) {
               placeholderTextColor={theme.textSecondary}
               value={searchQuery}
               onChangeText={setSearchQuery}
+              keyboardAppearance={isDarkMode ? "dark" : "light"}
             />
           </View>
           {searchQuery.trim() ? (

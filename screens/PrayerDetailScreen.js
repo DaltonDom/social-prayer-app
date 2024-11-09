@@ -11,6 +11,8 @@ import {
   Platform,
   Keyboard,
   Animated,
+  Switch,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { usePrayers } from "../context/PrayerContext";
@@ -19,9 +21,9 @@ import GroupDropdown from "../components/GroupDropdown";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function PrayerDetailScreen({ route, navigation }) {
-  const { theme } = useTheme();
+  const { theme, isDarkMode } = useTheme();
   const { prayerId } = route.params;
-  const { prayers, addUpdate } = usePrayers();
+  const { prayers, addUpdate, userProfile, updatePrayer } = usePrayers();
   const [keyboardHeight] = useState(new Animated.Value(0));
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
 
@@ -97,13 +99,14 @@ export default function PrayerDetailScreen({ route, navigation }) {
     if (newComment.trim()) {
       const comment = {
         id: (comments.length + 1).toString(),
-        userName: "You",
-        userImage: "https://via.placeholder.com/40",
+        userName: userProfile.name,
+        userImage: userProfile.profileImage,
         text: newComment,
         date: new Date().toISOString().split("T")[0],
       };
       setComments([comment, ...comments]);
       setNewComment("");
+      Keyboard.dismiss();
     }
   };
 
@@ -124,7 +127,7 @@ export default function PrayerDetailScreen({ route, navigation }) {
   const handleEditPrayer = () => {
     setEditedPrayer({
       ...prayer,
-      allowComments: prayer.allowComments !== false, // default to true if not set
+      allowComments: prayer.allowComments !== false,
       groupId: selectedGroup?.id,
       groupName: selectedGroup?.name,
     });
@@ -132,21 +135,24 @@ export default function PrayerDetailScreen({ route, navigation }) {
   };
 
   const handleSaveEdits = () => {
-    // Here you would update the prayer in your context/backend
+    updatePrayer(prayer.id, editedPrayer);
     setIsEditing(false);
+    Alert.alert("Success", "Prayer settings updated successfully");
   };
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
       style={[styles.container, { backgroundColor: theme.background }]}
       keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
     >
-      <SafeAreaView style={{ flex: 1 }}>
+      <SafeAreaView style={{ flex: 1 }} edges={["left", "right", "bottom"]}>
         <ScrollView
-          style={styles.scrollView}
+          style={[styles.scrollView, { backgroundColor: theme.background }]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          contentContainerStyle={{ flexGrow: 1 }}
         >
           {/* Prayer Header with Edit Button */}
           <View style={[styles.header, { backgroundColor: theme.card }]}>
@@ -163,7 +169,7 @@ export default function PrayerDetailScreen({ route, navigation }) {
                   {prayer.date}
                 </Text>
               </View>
-              {prayer.userName === "Your Name" && (
+              {prayer.userName === userProfile.name && (
                 <TouchableOpacity
                   style={styles.editButton}
                   onPress={handleEditPrayer}
@@ -175,7 +181,7 @@ export default function PrayerDetailScreen({ route, navigation }) {
           </View>
 
           {/* Edit Mode */}
-          {isEditing && prayer.userName === "Your Name" && (
+          {isEditing && prayer.userName === userProfile.name && (
             <View style={[styles.editSection, { backgroundColor: theme.card }]}>
               <Text style={[styles.editTitle, { color: theme.text }]}>
                 Edit Prayer Settings
@@ -252,7 +258,7 @@ export default function PrayerDetailScreen({ route, navigation }) {
               <Text style={[styles.sectionTitle, { color: theme.text }]}>
                 Updates
               </Text>
-              {prayer.userName === "Your Name" && !showUpdateInput && (
+              {prayer.userName === userProfile.name && !showUpdateInput && (
                 <TouchableOpacity
                   style={[
                     styles.addUpdateButton,
@@ -317,27 +323,38 @@ export default function PrayerDetailScreen({ route, navigation }) {
             )}
 
             <View style={styles.updatesContainer}>
-              {updates.map((update) => (
-                <View
-                  key={update.id}
-                  style={[
-                    styles.updateItem,
-                    {
-                      backgroundColor: theme.searchBg,
-                      borderLeftColor: theme.primary,
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[styles.updateDate, { color: theme.textSecondary }]}
+              {updates.length > 0 ? (
+                updates.map((update) => (
+                  <View
+                    key={update.id}
+                    style={[
+                      styles.updateItem,
+                      {
+                        backgroundColor: theme.searchBg,
+                        borderLeftColor: theme.primary,
+                      },
+                    ]}
                   >
-                    {update.date}
-                  </Text>
-                  <Text style={[styles.updateText, { color: theme.text }]}>
-                    {update.text}
-                  </Text>
-                </View>
-              ))}
+                    <Text
+                      style={[
+                        styles.updateDate,
+                        { color: theme.textSecondary },
+                      ]}
+                    >
+                      {update.date}
+                    </Text>
+                    <Text style={[styles.updateText, { color: theme.text }]}>
+                      {update.text}
+                    </Text>
+                  </View>
+                ))
+              ) : (
+                <Text
+                  style={[styles.emptyText, { color: theme.textSecondary }]}
+                >
+                  No new updates
+                </Text>
+              )}
             </View>
           </View>
 
@@ -346,47 +363,53 @@ export default function PrayerDetailScreen({ route, navigation }) {
             <Text style={[styles.sectionTitle, { color: theme.text }]}>
               Comments
             </Text>
-            {comments.map((comment) => (
-              <View
-                key={comment.id}
-                style={[styles.commentItem, { backgroundColor: theme.card }]}
-              >
-                <Image
-                  source={{ uri: comment.userImage }}
-                  style={styles.commentUserImage}
-                />
+            {comments.length > 0 ? (
+              comments.map((comment) => (
                 <View
-                  style={[
-                    styles.commentContent,
-                    { backgroundColor: theme.card },
-                  ]}
+                  key={comment.id}
+                  style={[styles.commentItem, { backgroundColor: theme.card }]}
                 >
+                  <Image
+                    source={{ uri: comment.userImage }}
+                    style={styles.commentUserImage}
+                  />
                   <View
                     style={[
-                      styles.commentHeader,
+                      styles.commentContent,
                       { backgroundColor: theme.card },
                     ]}
                   >
-                    <Text
-                      style={[styles.commentUserName, { color: theme.text }]}
-                    >
-                      {comment.userName}
-                    </Text>
-                    <Text
+                    <View
                       style={[
-                        styles.commentDate,
-                        { color: theme.textSecondary },
+                        styles.commentHeader,
+                        { backgroundColor: theme.card },
                       ]}
                     >
-                      {comment.date}
+                      <Text
+                        style={[styles.commentUserName, { color: theme.text }]}
+                      >
+                        {comment.userName}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.commentDate,
+                          { color: theme.textSecondary },
+                        ]}
+                      >
+                        {comment.date}
+                      </Text>
+                    </View>
+                    <Text style={[styles.commentText, { color: theme.text }]}>
+                      {comment.text}
                     </Text>
                   </View>
-                  <Text style={[styles.commentText, { color: theme.text }]}>
-                    {comment.text}
-                  </Text>
                 </View>
-              </View>
-            ))}
+              ))
+            ) : (
+              <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+                No new comments
+              </Text>
+            )}
           </View>
         </ScrollView>
 
@@ -397,7 +420,15 @@ export default function PrayerDetailScreen({ route, navigation }) {
             {
               backgroundColor: theme.card,
               borderTopColor: theme.border,
-              paddingBottom: Platform.OS === "ios" ? 20 : 12,
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              paddingBottom: isKeyboardVisible
+                ? 15
+                : Platform.OS === "ios"
+                ? 30
+                : 12,
             },
           ]}
         >
@@ -414,6 +445,7 @@ export default function PrayerDetailScreen({ route, navigation }) {
             value={newComment}
             onChangeText={setNewComment}
             multiline
+            keyboardAppearance={isDarkMode ? "dark" : "light"}
           />
           <TouchableOpacity
             style={[styles.sendButton, { backgroundColor: theme.primary }]}
@@ -430,7 +462,6 @@ export default function PrayerDetailScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
   },
   scrollView: {
     flex: 1,
@@ -440,6 +471,14 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: "white",
     alignItems: "center",
+    marginTop: 0,
+    paddingTop: 10,
+    borderTopWidth: 0,
+  },
+  headerContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
   },
   profileImage: {
     width: 50,
@@ -461,7 +500,8 @@ const styles = StyleSheet.create({
   prayerContent: {
     backgroundColor: "white",
     padding: 16,
-    marginTop: 1,
+    marginTop: 0,
+    borderTopWidth: 0,
   },
   title: {
     fontSize: 24,
@@ -565,15 +605,22 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     borderTopWidth: 1,
     borderTopColor: "#eee",
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingBottom: Platform.OS === "ios" ? 30 : 12,
   },
   commentInput: {
     flex: 1,
     backgroundColor: "#f0f0f0",
     borderRadius: 20,
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 12,
     marginRight: 8,
     maxHeight: 100,
+    textAlignVertical: "center",
+    minHeight: 40,
   },
   sendButton: {
     width: 40,
@@ -614,11 +661,6 @@ const styles = StyleSheet.create({
     marginTop: 12,
     gap: 12,
   },
-  headerContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
   editButton: {
     padding: 8,
     marginLeft: "auto",
@@ -657,5 +699,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
+  },
+  emptyText: {
+    textAlign: "center",
+    fontSize: 14,
+    paddingVertical: 8,
   },
 });

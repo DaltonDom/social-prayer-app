@@ -23,7 +23,7 @@ const categories = [
 ];
 
 export default function AddJournalScreen({ navigation }) {
-  const { theme } = useTheme();
+  const { theme, isDarkMode } = useTheme();
   const { addJournal } = useJournals();
   const [journalData, setJournalData] = useState({
     title: "",
@@ -56,9 +56,12 @@ export default function AddJournalScreen({ navigation }) {
       return;
     }
 
+    const date = new Date(journalData.date);
+    const formattedDate = date.toLocaleDateString("en-CA");
+
     addJournal({
       ...journalData,
-      date: journalData.date.toISOString().split("T")[0],
+      date: formattedDate,
     });
 
     Alert.alert("Success", "Journal entry added successfully", [
@@ -104,6 +107,7 @@ export default function AddJournalScreen({ navigation }) {
         placeholderTextColor={theme.textSecondary}
         value={journalData.title}
         onChangeText={(text) => setJournalData({ ...journalData, title: text })}
+        keyboardAppearance={isDarkMode ? "dark" : "light"}
       />
 
       <Text style={[styles.label, { color: theme.text }]}>Category</Text>
@@ -156,6 +160,7 @@ export default function AddJournalScreen({ navigation }) {
         onChangeText={(text) =>
           setJournalData({ ...journalData, content: text })
         }
+        keyboardAppearance={isDarkMode ? "dark" : "light"}
       />
 
       <TouchableOpacity
