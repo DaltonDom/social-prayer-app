@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -12,42 +12,32 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../context/ThemeContext";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-const DUMMY_GROUPS = [
-  {
-    id: "1",
-    name: "Youth Prayer Warriors",
-    logo: "https://via.placeholder.com/50",
-    members: 45,
-    description: "A group dedicated to young people praying together",
-    lastActive: "2 hours ago",
-    prayerCount: 128,
-  },
-  {
-    id: "2",
-    name: "Family & Marriage",
-    logo: "https://via.placeholder.com/50",
-    members: 89,
-    description: "Supporting families through prayer",
-    lastActive: "5 mins ago",
-    prayerCount: 256,
-  },
-  {
-    id: "3",
-    name: "Healing Ministry",
-    logo: "https://via.placeholder.com/50",
-    members: 67,
-    description: "Praying for physical and spiritual healing",
-    lastActive: "1 day ago",
-    prayerCount: 312,
-  },
-];
+import { useGroups } from '../context/GroupContext';
 
 export default function GroupsScreen({ navigation }) {
   const { theme, isDarkMode } = useTheme();
+  const { groups } = useGroups();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredGroups, setFilteredGroups] = useState(groups);
+
+  useEffect(() => {
+    const query = searchQuery.toLowerCase();
+    const filtered = groups.filter(group => 
+      group.name.toLowerCase().includes(query) ||
+      group.description.toLowerCase().includes(query)
+    );
+    setFilteredGroups(filtered);
+  }, [searchQuery, groups]);
+
+  const handleAddGroup = () => {
+    navigation.navigate('CreateGroup');
+  };
 
   const renderGroupCard = ({ item }) => (
-    <TouchableOpacity style={[styles.card, { backgroundColor: theme.card }]}>
+    <TouchableOpacity 
+      style={[styles.card, { backgroundColor: theme.card }]}
+      onPress={() => navigation.navigate('GroupDetail', { groupId: item.id })}
+    >
       <View style={styles.cardHeader}>
         <Image source={{ uri: item.logo }} style={styles.groupLogo} />
         <View style={styles.headerText}>
@@ -107,17 +97,20 @@ export default function GroupsScreen({ navigation }) {
             style={[styles.searchInput, { color: theme.text }]}
             placeholder="Search groups..."
             placeholderTextColor={theme.textSecondary}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
             keyboardAppearance={isDarkMode ? "dark" : "light"}
           />
         </View>
         <TouchableOpacity
           style={[styles.addButton, { backgroundColor: theme.primary }]}
+          onPress={handleAddGroup}
         >
           <Ionicons name="add" size={24} color={theme.card} />
         </TouchableOpacity>
       </View>
       <FlatList
-        data={DUMMY_GROUPS}
+        data={filteredGroups}
         renderItem={renderGroupCard}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}

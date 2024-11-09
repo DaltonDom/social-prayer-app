@@ -12,6 +12,9 @@ import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import { JournalProvider } from "./context/JournalContext";
 import AddJournalScreen from "./screens/AddJournalScreen";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import GroupDetailScreen from "./screens/GroupDetailScreen";
+import CreateGroupScreen from "./screens/CreateGroupScreen";
+import { GroupProvider } from "./context/GroupContext";
 
 // Screen imports
 import HomeScreen from "./screens/HomeScreen";
@@ -39,8 +42,8 @@ function TabNavigator() {
 
           if (route.name === "Home") {
             iconName = focused ? "home" : "home-outline";
-          } else if (route.name === "Search") {
-            iconName = focused ? "search" : "search-outline";
+          } else if (route.name === "Groups") {
+            iconName = focused ? "people" : "people-outline";
           } else if (route.name === "Add") {
             iconName = focused ? "add-circle" : "add-circle-outline";
           } else if (route.name === "Journal") {
@@ -60,7 +63,7 @@ function TabNavigator() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Search" component={GroupsScreen} />
+      <Tab.Screen name="Groups" component={GroupsScreen} />
       <Tab.Screen name="Add" component={AddPrayerScreen} />
       <Tab.Screen name="Journal" component={JournalScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
@@ -141,6 +144,22 @@ function MainApp() {
             component={FriendDetailScreen}
             options={{ title: "Friend Profile" }}
           />
+          <Stack.Screen
+            name="CreateGroup"
+            component={CreateGroupScreen}
+            options={{
+              title: "New Group",
+              headerBackTitle: "Back",
+            }}
+          />
+          <Stack.Screen
+            name="GroupDetail"
+            component={GroupDetailScreen}
+            options={{
+              title: "Group Details",
+              headerBackTitle: "Back",
+            }}
+          />
         </Stack.Navigator>
         <StatusBar style={isDarkMode ? "light" : "dark"} />
       </NavigationContainer>
@@ -153,7 +172,9 @@ export default function App() {
     <SafeAreaProvider>
       <ThemeProvider>
         <JournalProvider>
-          <MainApp />
+          <GroupProvider>
+            <MainApp />
+          </GroupProvider>
         </JournalProvider>
       </ThemeProvider>
     </SafeAreaProvider>
