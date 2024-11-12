@@ -21,7 +21,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 
 export default function ProfileScreen({ navigation }) {
-  const { prayers, deletePrayer, userProfile, updateUserProfile } =
+  const { getUserPrayers, deletePrayer, userProfile, updateUserProfile } =
     usePrayers();
   const [notifications, setNotifications] = useState(true);
   const [emailUpdates, setEmailUpdates] = useState(true);
@@ -30,9 +30,7 @@ export default function ProfileScreen({ navigation }) {
   const { isDarkMode, toggleTheme, theme } = useTheme();
 
   // Filter prayers to only show user's prayers
-  const userPrayers = prayers.filter(
-    (prayer) => prayer.userName === "Your Name"
-  );
+  const userPrayers = getUserPrayers();
 
   const [userInfo, setUserInfo] = useState({
     name: "John Smith",

@@ -1,112 +1,149 @@
-import React, { useState } from 'react';
+import React from "react";
 import {
   View,
   Text,
   StyleSheet,
   Image,
+  FlatList,
   TouchableOpacity,
-  ScrollView,
-  Alert,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../context/ThemeContext';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useGroups } from '../context/GroupContext';
+} from "react-native";
+import { useTheme } from "../context/ThemeContext";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { usePrayers } from "../context/PrayerContext";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function GroupDetailScreen({ route, navigation }) {
   const { theme } = useTheme();
-  const { groups } = useGroups();
-  const { groupId } = route.params;
-  const [isMember, setIsMember] = useState(false);
+  const { group } = route.params;
+  const { getGroupPrayers } = usePrayers();
+  const groupPrayers = getGroupPrayers(group.id);
 
-  const group = groups.find(g => g.id === groupId);
-
-  if (!group) {
-    return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-        <Text style={[styles.errorText, { color: theme.text }]}>Group not found</Text>
-      </SafeAreaView>
-    );
-  }
-
-  const handleJoinGroup = () => {
-    Alert.alert(
-      'Join Group',
-      'Would you like to join this group?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Join',
-          onPress: () => {
-            setIsMember(true);
-            Alert.alert('Success', 'You have joined the group!');
-          },
-        },
-      ]
-    );
-  };
+  const renderPrayerItem = ({ item }) => (
+    <TouchableOpacity
+      style={[styles.prayerCard, { backgroundColor: theme.card }]}
+      onPress={() => navigation.navigate("PrayerDetail", { prayerId: item.id })}
+    >
+      <View style={styles.cardHeader}>
+        <Image source={{ uri: item.userImage }} style={styles.profileImage} />
+        <View style={styles.headerText}>
+          <Text style={[styles.userName, { color: theme.text }]}>
+            {item.userName}
+          </Text>
+          <Text style={[styles.date, { color: theme.textSecondary }]}>
+            {item.date}
+          </Text>
+        </View>
+      </View>
+      <View style={styles.titleContainer}>
+        <View
+          style={[
+            styles.categoryTag,
+            { backgroundColor: `${theme.primary}15` },
+          ]}
+        >
+          <Ionicons name="bookmark" size={14} color={theme.primary} />
+          <Text style={[styles.categoryText, { color: theme.primary }]}>
+            {item.category}
+          </Text>
+        </View>
+      </View>
+      <Text style={[styles.description, { color: theme.text }]}>
+        {item.description}
+      </Text>
+      <View style={[styles.cardFooter, { borderTopColor: theme.border }]}>
+        <Text style={[styles.footerText, { color: theme.textSecondary }]}>
+          {item.comments} Comments
+        </Text>
+        <Text style={[styles.footerText, { color: theme.textSecondary }]}>
+          {item.updates} Updates
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header Image Section */}
-        <View style={[styles.imageSection, { backgroundColor: theme.card }]}>
-          <Image 
-            source={{ uri: group.logo }} 
-            style={styles.groupImage}
-          />
-          <View style={styles.headerContent}>
-            <Text style={[styles.groupName, { color: theme.text }]}>{group.name}</Text>
-            {group.category && (
-              <View style={[styles.categoryTag, { backgroundColor: `${theme.primary}15` }]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.background }]}
+    >
+      {/* Group Header */}
+      <View style={[styles.groupHeader, { backgroundColor: theme.card }]}>
+        <Image source={{ uri: group.logo }} style={styles.groupLogo} />
+        <Text style={[styles.groupName, { color: theme.text }]}>
+          {group.name}
+        </Text>
+        <Text style={[styles.groupDescription, { color: theme.textSecondary }]}>
+          {group.description}
+        </Text>
+
+        {/* Categories Section */}
+        <View style={styles.categoriesContainer}>
+          <Text style={[styles.sectionSubtitle, { color: theme.text }]}>
+            Categories
+          </Text>
+          <View style={styles.categoriesList}>
+            {group.categories.map((category, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.categoryTag,
+                  { backgroundColor: `${theme.primary}15` },
+                ]}
+              >
                 <Text style={[styles.categoryText, { color: theme.primary }]}>
-                  {group.category}
+                  {category}
                 </Text>
               </View>
-            )}
+            ))}
           </View>
-        </View>
-
-        {/* Stats Section */}
-        <View style={[styles.statsSection, { backgroundColor: theme.card }]}>
-          <View style={styles.stat}>
-            <Text style={[styles.statNumber, { color: theme.primary }]}>{group.members}</Text>
-            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Members</Text>
-          </View>
-          <View style={[styles.statDivider, { backgroundColor: theme.border }]} />
-          <View style={styles.stat}>
-            <Text style={[styles.statNumber, { color: theme.primary }]}>{group.prayerCount}</Text>
-            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Prayers</Text>
-          </View>
-        </View>
-
-        {/* Description Section */}
-        <View style={[styles.section, { backgroundColor: theme.card }]}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>About</Text>
-          <Text style={[styles.description, { color: theme.text }]}>{group.description}</Text>
         </View>
 
         {/* Guidelines Section */}
-        {group.guidelines && (
-          <View style={[styles.section, { backgroundColor: theme.card }]}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>Guidelines</Text>
-            <Text style={[styles.description, { color: theme.text }]}>{group.guidelines}</Text>
-          </View>
-        )}
+        <View style={styles.guidelinesContainer}>
+          <Text style={[styles.sectionSubtitle, { color: theme.text }]}>
+            Guidelines
+          </Text>
+          <Text style={[styles.guidelines, { color: theme.textSecondary }]}>
+            {group.guidelines}
+          </Text>
+        </View>
 
-        {/* Join Button */}
-        {!isMember && (
-          <TouchableOpacity
-            style={[styles.joinButton, { backgroundColor: theme.primary }]}
-            onPress={handleJoinGroup}
-          >
-            <Text style={styles.joinButtonText}>Join Group</Text>
-          </TouchableOpacity>
-        )}
-      </ScrollView>
+        <View style={styles.groupStats}>
+          <View style={styles.statItem}>
+            <Text style={[styles.statNumber, { color: theme.primary }]}>
+              {group.members}
+            </Text>
+            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
+              Members
+            </Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text style={[styles.statNumber, { color: theme.primary }]}>
+              {groupPrayers.length}
+            </Text>
+            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
+              Prayers
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Prayers List */}
+      <View style={styles.prayersSection}>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>
+          Prayer Requests
+        </Text>
+        <FlatList
+          data={groupPrayers}
+          renderItem={renderPrayerItem}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.list}
+          ListEmptyComponent={
+            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+              No prayers in this group yet
+            </Text>
+          }
+        />
+      </View>
     </SafeAreaView>
   );
 }
@@ -115,84 +152,149 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  imageSection: {
+  groupHeader: {
     padding: 20,
-    alignItems: 'center',
+    alignItems: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
   },
-  groupImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    marginBottom: 16,
-  },
-  headerContent: {
-    alignItems: 'center',
+  groupLogo: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    marginBottom: 12,
   },
   groupName: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 8,
-    textAlign: 'center',
   },
-  categoryTag: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 16,
-  },
-  categoryText: {
+  groupDescription: {
     fontSize: 14,
-    fontWeight: '600',
+    textAlign: "center",
+    marginBottom: 16,
+    paddingHorizontal: 20,
   },
-  statsSection: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
-    marginTop: 1,
+  groupStats: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    width: "100%",
+    paddingHorizontal: 20,
   },
-  stat: {
-    alignItems: 'center',
-    paddingHorizontal: 24,
+  statItem: {
+    alignItems: "center",
   },
   statNumber: {
     fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 4,
+    fontWeight: "bold",
   },
   statLabel: {
     fontSize: 14,
   },
-  statDivider: {
-    width: 1,
-    height: 40,
-  },
-  section: {
+  prayersSection: {
+    flex: 1,
     padding: 16,
-    marginTop: 16,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
+    marginBottom: 16,
+  },
+  list: {
+    paddingBottom: 16,
+  },
+  prayerCard: {
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  profileImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 12,
+  },
+  headerText: {
+    flex: 1,
+  },
+  userName: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  date: {
+    fontSize: 12,
+  },
+  titleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 8,
   },
+  categoryTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 16,
+    gap: 4,
+  },
+  categoryText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
   description: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  cardFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    borderTopWidth: 1,
+    paddingTop: 12,
+  },
+  footerText: {
+    fontSize: 12,
+  },
+  emptyText: {
+    textAlign: "center",
     fontSize: 16,
-    lineHeight: 24,
+    marginTop: 24,
   },
-  joinButton: {
-    margin: 16,
-    padding: 16,
-    borderRadius: 8,
-    alignItems: 'center',
+  categoriesContainer: {
+    width: "100%",
+    marginTop: 16,
+    paddingHorizontal: 20,
   },
-  joinButtonText: {
-    color: 'white',
+  sectionSubtitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
+    marginBottom: 8,
   },
-  errorText: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginTop: 20,
+  categoriesList: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
   },
-}); 
+  guidelinesContainer: {
+    width: "100%",
+    marginTop: 16,
+    paddingHorizontal: 20,
+  },
+  guidelines: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+});

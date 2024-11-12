@@ -14,6 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { usePrayers } from "../context/PrayerContext";
 import { useTheme } from "../context/ThemeContext";
 import GroupDropdown from "../components/GroupDropdown";
+import { useGroups } from "../context/GroupContext";
 
 export default function AddPrayerScreen({ navigation }) {
   const { addPrayer } = usePrayers();
@@ -37,20 +38,12 @@ export default function AddPrayerScreen({ navigation }) {
 
   const [selectedGroup, setSelectedGroup] = useState(null);
 
-  const availableGroups = [
-    {
-      id: "1",
-      name: "Youth Prayer Warriors",
-    },
-    {
-      id: "2",
-      name: "Family & Marriage",
-    },
-    {
-      id: "3",
-      name: "Healing Ministry",
-    },
-  ];
+  const { groups } = useGroups();
+
+  const availableGroups = groups.map((group) => ({
+    id: group.id,
+    name: group.name,
+  }));
 
   const handleSubmit = () => {
     if (!prayerData.title.trim()) {

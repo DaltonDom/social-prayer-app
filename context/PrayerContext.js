@@ -13,7 +13,6 @@ export function PrayerProvider({ children }) {
 
   const updateUserProfile = (newProfile) => {
     setUserProfile(newProfile);
-    // Update profile image and name in prayers and comments
     setPrayers((currentPrayers) =>
       currentPrayers.map((prayer) => {
         if (prayer.userName === userProfile.name) {
@@ -43,21 +42,30 @@ export function PrayerProvider({ children }) {
         .toString(36)
         .substr(2, 9)}`;
 
-      return [
-        {
-          id: uniqueId,
-          userName: userProfile.name,
-          userImage: userProfile.profileImage,
-          date: new Date().toISOString().split("T")[0],
-          comments: 0,
-          updates: 0,
-          updates_list: [],
-          comments_list: [],
-          ...newPrayer,
-        },
-        ...currentPrayers,
-      ];
+      const prayerToAdd = {
+        id: uniqueId,
+        userName: userProfile.name,
+        userImage: userProfile.profileImage,
+        date: new Date().toISOString().split("T")[0],
+        comments: 0,
+        updates: 0,
+        updates_list: [],
+        comments_list: [],
+        ...newPrayer,
+        groupId: newPrayer.groupId || null,
+        groupName: newPrayer.groupName || null,
+      };
+
+      return [prayerToAdd, ...currentPrayers];
     });
+  };
+
+  const getGroupPrayers = (groupId) => {
+    return prayers.filter((prayer) => prayer.groupId === groupId);
+  };
+
+  const getUserPrayers = () => {
+    return prayers.filter((prayer) => prayer.userName === userProfile.name);
   };
 
   const addUpdate = (prayerId, updateText) => {
@@ -107,6 +115,8 @@ export function PrayerProvider({ children }) {
         updatePrayer,
         userProfile,
         updateUserProfile,
+        getGroupPrayers,
+        getUserPrayers,
       }}
     >
       {children}
