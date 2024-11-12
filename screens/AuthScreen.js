@@ -22,6 +22,8 @@ export default function AuthScreen() {
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -30,6 +32,11 @@ export default function AuthScreen() {
 
   const handleAuth = async () => {
     if (isLoading) return;
+
+    if (!isLogin && (!formData.firstName.trim() || !formData.lastName.trim())) {
+      Alert.alert("Error", "Please enter your first and last name");
+      return;
+    }
 
     if (!formData.email || !formData.password) {
       Alert.alert("Error", "Please fill in all fields");
@@ -51,11 +58,28 @@ export default function AuthScreen() {
         });
         if (error) throw error;
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { error: signUpError, data } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
+          options: {
+            data: {
+              first_name: formData.firstName,
+              last_name: formData.lastName,
+            },
+          },
         });
-        if (error) throw error;
+        if (signUpError) throw signUpError;
+
+        // Create user profile
+        const { error: profileError } = await supabase.from("profiles").insert({
+          id: data.user.id,
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          email: formData.email,
+        });
+
+        if (profileError) throw profileError;
+
         Alert.alert(
           "Success",
           "Please check your email to verify your account"
@@ -98,6 +122,56 @@ export default function AuthScreen() {
             entering={FadeInDown.delay(400).duration(1000).springify()}
             style={styles.form}
           >
+            {!isLogin && (
+              <>
+                <View
+                  style={[
+                    styles.inputContainer,
+                    { backgroundColor: theme.card },
+                  ]}
+                >
+                  <Ionicons
+                    name="person-outline"
+                    size={20}
+                    color={theme.textSecondary}
+                  />
+                  <TextInput
+                    style={[styles.input, { color: theme.text }]}
+                    placeholder="First Name"
+                    placeholderTextColor={theme.textSecondary}
+                    value={formData.firstName}
+                    onChangeText={(text) =>
+                      setFormData({ ...formData, firstName: text })
+                    }
+                    autoCapitalize="words"
+                  />
+                </View>
+
+                <View
+                  style={[
+                    styles.inputContainer,
+                    { backgroundColor: theme.card },
+                  ]}
+                >
+                  <Ionicons
+                    name="person-outline"
+                    size={20}
+                    color={theme.textSecondary}
+                  />
+                  <TextInput
+                    style={[styles.input, { color: theme.text }]}
+                    placeholder="Last Name"
+                    placeholderTextColor={theme.textSecondary}
+                    value={formData.lastName}
+                    onChangeText={(text) =>
+                      setFormData({ ...formData, lastName: text })
+                    }
+                    autoCapitalize="words"
+                  />
+                </View>
+              </>
+            )}
+
             <View
               style={[styles.inputContainer, { backgroundColor: theme.card }]}
             >

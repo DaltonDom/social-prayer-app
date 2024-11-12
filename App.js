@@ -16,6 +16,7 @@ import GroupDetailScreen from "./screens/GroupDetailScreen";
 import CreateGroupScreen from "./screens/CreateGroupScreen";
 import { GroupProvider } from "./context/GroupContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { UserProvider } from "./context/UserContext";
 import AuthScreen from "./screens/AuthScreen";
 import { View, ActivityIndicator } from "react-native";
 
@@ -167,13 +168,15 @@ export default function App() {
     <SafeAreaProvider>
       <ThemeProvider>
         <AuthProvider>
-          <PrayerProvider>
-            <JournalProvider>
-              <GroupProvider>
-                <Navigation />
-              </GroupProvider>
-            </JournalProvider>
-          </PrayerProvider>
+          <UserProvider>
+            <PrayerProvider>
+              <JournalProvider>
+                <GroupProvider>
+                  <Navigation />
+                </GroupProvider>
+              </JournalProvider>
+            </PrayerProvider>
+          </UserProvider>
         </AuthProvider>
       </ThemeProvider>
     </SafeAreaProvider>

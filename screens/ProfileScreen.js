@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -20,23 +20,28 @@ import { useTheme } from "../context/ThemeContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { supabase } from "../lib/supabase";
+import { useUser } from "../context/UserContext";
 
 export default function ProfileScreen({ navigation }) {
-  const { getUserPrayers, deletePrayer, userProfile, updateUserProfile } =
-    usePrayers();
+  const { theme, isDarkMode, toggleTheme } = useTheme();
+  const { userProfile, uploadProfileImage } = useUser();
+  const { getUserPrayers, deletePrayer } = usePrayers();
   const [notifications, setNotifications] = useState(true);
   const [emailUpdates, setEmailUpdates] = useState(true);
   const [editProfileVisible, setEditProfileVisible] = useState(false);
   const [changePasswordVisible, setChangePasswordVisible] = useState(false);
-  const { isDarkMode, toggleTheme, theme } = useTheme();
 
   // Filter prayers to only show user's prayers
   const userPrayers = getUserPrayers();
 
+  // Update userInfo to use Supabase data
   const [userInfo, setUserInfo] = useState({
-    name: "John Smith",
-    email: "john.smith@example.com",
-    profileImage: "https://via.placeholder.com/150",
+    name: `${userProfile?.first_name || ""} ${
+      userProfile?.last_name || ""
+    }`.trim(),
+    email: userProfile?.email || "",
+    profileImage:
+      userProfile?.profile_image_url || "https://via.placeholder.com/150",
     joinDate: "March 2024",
     friends: [
       {
@@ -54,10 +59,24 @@ export default function ProfileScreen({ navigation }) {
         name: "Emma Thompson",
         profileImage: "https://via.placeholder.com/50",
       },
-      // Add more friends as needed
     ],
     bio: "Passionate about prayer and community.",
   });
+
+  // Add useEffect to update userInfo when userProfile changes
+  useEffect(() => {
+    if (userProfile) {
+      setUserInfo((prevInfo) => ({
+        ...prevInfo,
+        name: `${userProfile.first_name || ""} ${
+          userProfile.last_name || ""
+        }`.trim(),
+        email: userProfile.email || "",
+        profileImage:
+          userProfile.profile_image_url || "https://via.placeholder.com/150",
+      }));
+    }
+  }, [userProfile]);
 
   // Remove totalPrayers from userInfo state and use computed value instead
   const totalPrayers = userPrayers.length;
@@ -164,36 +183,55 @@ export default function ProfileScreen({ navigation }) {
   );
 
   const pickImage = async () => {
-    // Request permission
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    try {
+      // Request permission
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-    if (status !== "granted") {
-      Alert.alert(
-        "Sorry, we need camera roll permissions to change your profile picture!"
-      );
-      return;
-    }
+      if (status !== "granted") {
+        Alert.alert(
+          "Sorry, we need camera roll permissions to change your profile picture!"
+        );
+        return;
+      }
 
-    // Pick the image
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 1,
-    });
-
-    if (!result.canceled) {
-      // Update profile image in context
-      updateUserProfile({
-        ...userProfile,
-        profileImage: result.assets[0].uri,
+      // Pick the image
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 1,
       });
 
-      // Update local state
-      setUserInfo((prev) => ({
-        ...prev,
-        profileImage: result.assets[0].uri,
-      }));
+      if (!result.canceled) {
+        // Show loading indicator
+        setUserInfo((prev) => ({
+          ...prev,
+          profileImage: result.assets[0].uri, // Show local image immediately
+        }));
+
+        // Upload to Supabase
+        const { publicUrl, error } = await uploadProfileImage(
+          result.assets[0].uri
+        );
+
+        if (error) {
+          Alert.alert("Error", "Failed to upload profile picture");
+          return;
+        }
+
+        // Update local state with the Supabase URL
+        setUserInfo((prev) => ({
+          ...prev,
+          profileImage: publicUrl,
+        }));
+      }
+    } catch (error) {
+      Alert.alert(
+        "Error",
+        "An error occurred while updating your profile picture"
+      );
+      console.error(error);
     }
   };
 
@@ -219,7 +257,7 @@ export default function ProfileScreen({ navigation }) {
         <View style={[styles.header, { backgroundColor: theme.card }]}>
           <View style={styles.profileImageContainer}>
             <Image
-              source={{ uri: userProfile.profileImage }}
+              source={{ uri: userInfo.profileImage }}
               style={styles.profileImage}
             />
             <TouchableOpacity
