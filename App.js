@@ -15,6 +15,9 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import GroupDetailScreen from "./screens/GroupDetailScreen";
 import CreateGroupScreen from "./screens/CreateGroupScreen";
 import { GroupProvider } from "./context/GroupContext";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import AuthScreen from "./screens/AuthScreen";
+import { View, ActivityIndicator } from "react-native";
 
 // Screen imports
 import HomeScreen from "./screens/HomeScreen";
@@ -71,34 +74,22 @@ function TabNavigator() {
   );
 }
 
-function MainApp() {
-  const { theme, isDarkMode } = useTheme();
+function Navigation() {
+  const { user, loading } = useAuth();
+  const { theme } = useTheme();
 
-  const navigationTheme = isDarkMode
-    ? {
-        ...DarkTheme,
-        colors: {
-          ...DarkTheme.colors,
-          background: theme.background,
-          card: theme.card,
-          text: theme.text,
-          border: theme.border,
-        },
-      }
-    : {
-        ...DefaultTheme,
-        colors: {
-          ...DefaultTheme.colors,
-          background: theme.background,
-          card: theme.card,
-          text: theme.text,
-          border: theme.border,
-        },
-      };
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
 
   return (
-    <PrayerProvider>
-      <NavigationContainer theme={navigationTheme}>
+    <NavigationContainer>
+      {user ? (
+        // Your existing app stack
         <Stack.Navigator
           screenOptions={{
             headerStyle: {
@@ -161,9 +152,13 @@ function MainApp() {
             }}
           />
         </Stack.Navigator>
-        <StatusBar style={isDarkMode ? "light" : "dark"} />
-      </NavigationContainer>
-    </PrayerProvider>
+      ) : (
+        // Auth stack
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="Auth" component={AuthScreen} />
+        </Stack.Navigator>
+      )}
+    </NavigationContainer>
   );
 }
 
@@ -171,11 +166,15 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <JournalProvider>
-          <GroupProvider>
-            <MainApp />
-          </GroupProvider>
-        </JournalProvider>
+        <AuthProvider>
+          <PrayerProvider>
+            <JournalProvider>
+              <GroupProvider>
+                <Navigation />
+              </GroupProvider>
+            </JournalProvider>
+          </PrayerProvider>
+        </AuthProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );

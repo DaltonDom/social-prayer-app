@@ -19,6 +19,7 @@ import ChangePasswordModal from "../components/ChangePasswordModal";
 import { useTheme } from "../context/ThemeContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
+import { supabase } from "../lib/supabase";
 
 export default function ProfileScreen({ navigation }) {
   const { getUserPrayers, deletePrayer, userProfile, updateUserProfile } =
@@ -193,6 +194,16 @@ export default function ProfileScreen({ navigation }) {
         ...prev,
         profileImage: result.assets[0].uri,
       }));
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      // No need to navigate manually as AuthContext will handle this
+    } catch (error) {
+      Alert.alert("Error", error.message);
     }
   };
 
@@ -403,6 +414,7 @@ export default function ProfileScreen({ navigation }) {
         {/* Logout Button */}
         <TouchableOpacity
           style={[styles.logoutButton, { backgroundColor: theme.card }]}
+          onPress={handleLogout}
         >
           <Ionicons name="log-out-outline" size={24} color="#FF3B30" />
           <Text style={styles.logoutText}>Logout</Text>
