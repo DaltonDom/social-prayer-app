@@ -104,55 +104,61 @@ export function UserProvider({ children }) {
 
   const uploadProfileImage = async (imageUri) => {
     try {
-      // Get the file extension
-      const ext = imageUri.substring(imageUri.lastIndexOf(".") + 1);
+      // Get the file extension from the URI
+      const ext = imageUri.split(".").pop().toLowerCase();
 
-      // Create a unique file name with user ID as folder name
-      const fileName = `${userProfile.id}/${Date.now()}.${ext}`;
+      // Create a unique file name
+      const fileName = `${Date.now()}.${ext}`;
+      const filePath = `${userProfile.id}/${fileName}`;
 
-      // Convert image URI to Blob
-      const fetchResponse = await fetch(imageUri);
-      const blobData = await fetchResponse.blob();
+      // Convert image to base64
+      const response = await fetch(imageUri);
+      const blob = await response.blob();
 
-      // Create FormData
-      const formData = new FormData();
-      formData.append("file", {
-        uri: imageUri,
-        name: fileName,
-        type: `image/${ext}`,
+      // Convert blob to base64
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = async () => {
+          try {
+            const base64Data = reader.result.split(",")[1];
+            const { data, error: uploadError } = await supabase.storage
+              .from("profile-images")
+              .upload(filePath, decode(base64Data), {
+                contentType: `image/${ext}`,
+                upsert: true,
+              });
+
+            if (uploadError) throw uploadError;
+
+            // Get the public URL
+            const {
+              data: { publicUrl },
+            } = supabase.storage.from("profile-images").getPublicUrl(filePath);
+
+            // Update profile with new image URL
+            const { error: updateError } = await supabase
+              .from("profiles")
+              .update({ profile_image_url: publicUrl })
+              .eq("id", userProfile.id);
+
+            if (updateError) throw updateError;
+
+            // Update local state
+            setUserProfile((prev) => ({
+              ...prev,
+              profile_image_url: publicUrl,
+            }));
+
+            resolve({ publicUrl, error: null });
+          } catch (error) {
+            reject({ publicUrl: null, error });
+          }
+        };
+        reader.onerror = () => {
+          reject({ publicUrl: null, error: new Error("Failed to read file") });
+        };
+        reader.readAsDataURL(blob);
       });
-
-      // Upload to Supabase Storage using fetch
-      const { data, error } = await supabase.storage
-        .from("profile-images")
-        .upload(fileName, blobData, {
-          contentType: `image/${ext}`,
-          cacheControl: "3600",
-          upsert: true,
-        });
-
-      if (error) throw error;
-
-      // Get the public URL
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("profile-images").getPublicUrl(fileName);
-
-      // Update profile with new image URL
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({ profile_image_url: publicUrl })
-        .eq("id", userProfile.id);
-
-      if (updateError) throw updateError;
-
-      // Update local state
-      setUserProfile((prev) => ({
-        ...prev,
-        profile_image_url: publicUrl,
-      }));
-
-      return { publicUrl, error: null };
     } catch (error) {
       console.error("Error uploading image:", error.message);
       return { publicUrl: null, error };

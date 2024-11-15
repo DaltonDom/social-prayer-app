@@ -10,7 +10,6 @@ import {
   Switch,
   Animated,
   Alert,
-  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { usePrayers } from "../context/PrayerContext";
@@ -182,56 +181,38 @@ export default function ProfileScreen({ navigation }) {
     </TouchableOpacity>
   );
 
-  const pickImage = async () => {
+  const handleImagePick = async () => {
     try {
       // Request permission
       const { status } =
         await ImagePicker.requestMediaLibraryPermissionsAsync();
-
       if (status !== "granted") {
-        Alert.alert(
-          "Sorry, we need camera roll permissions to change your profile picture!"
-        );
+        alert("Sorry, we need camera roll permissions to make this work!");
         return;
       }
 
-      // Pick the image
+      // Launch image picker
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 1,
+        quality: 0.5,
       });
 
-      if (!result.canceled) {
-        // Show loading indicator
-        setUserInfo((prev) => ({
-          ...prev,
-          profileImage: result.assets[0].uri, // Show local image immediately
-        }));
-
-        // Upload to Supabase
+      if (!result.canceled && result.assets && result.assets.length > 0) {
         const { publicUrl, error } = await uploadProfileImage(
           result.assets[0].uri
         );
-
         if (error) {
-          Alert.alert("Error", "Failed to upload profile picture");
-          return;
+          console.error("Error uploading image:", error);
+          Alert.alert("Error", "Failed to upload image");
+        } else {
+          console.log("Image uploaded successfully:", publicUrl);
         }
-
-        // Update local state with the Supabase URL
-        setUserInfo((prev) => ({
-          ...prev,
-          profileImage: publicUrl,
-        }));
       }
     } catch (error) {
-      Alert.alert(
-        "Error",
-        "An error occurred while updating your profile picture"
-      );
-      console.error(error);
+      console.error("Error picking image:", error);
+      Alert.alert("Error", "Failed to pick image");
     }
   };
 
@@ -256,13 +237,15 @@ export default function ProfileScreen({ navigation }) {
         {/* Profile Header */}
         <View style={[styles.header, { backgroundColor: theme.card }]}>
           <View style={styles.profileImageContainer}>
-            <Image
-              source={{ uri: userInfo.profileImage }}
-              style={styles.profileImage}
-            />
+            <TouchableOpacity onPress={handleImagePick}>
+              <Image
+                source={{ uri: userInfo.profileImage }}
+                style={styles.profileImage}
+              />
+            </TouchableOpacity>
             <TouchableOpacity
               style={styles.editImageButton}
-              onPress={pickImage}
+              onPress={handleImagePick}
             >
               <Ionicons name="camera" size={20} color="white" />
             </TouchableOpacity>
@@ -398,23 +381,6 @@ export default function ProfileScreen({ navigation }) {
           <View style={styles.settingItem}>
             <View style={styles.settingLeft}>
               <Ionicons
-                name="mail-outline"
-                size={24}
-                color={theme.textSecondary}
-              />
-              <Text style={[styles.settingText, { color: theme.text }]}>
-                Email Updates
-              </Text>
-            </View>
-            <Switch
-              value={emailUpdates}
-              onValueChange={setEmailUpdates}
-              trackColor={{ false: "#767577", true: theme.primary }}
-            />
-          </View>
-          <View style={styles.settingItem}>
-            <View style={styles.settingLeft}>
-              <Ionicons
                 name={isDarkMode ? "moon" : "moon-outline"}
                 size={24}
                 color={theme.textSecondary}
@@ -491,9 +457,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   profileImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
   },
   editImageButton: {
     position: "absolute",

@@ -19,11 +19,13 @@ import { usePrayers } from "../context/PrayerContext";
 import { useTheme } from "../context/ThemeContext";
 import GroupDropdown from "../components/GroupDropdown";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useUser } from "../context/UserContext";
 
 export default function PrayerDetailScreen({ route, navigation }) {
   const { theme, isDarkMode } = useTheme();
   const { prayerId } = route.params;
-  const { prayers, addUpdate, userProfile, updatePrayer } = usePrayers();
+  const { prayers, addUpdate, updatePrayer } = usePrayers();
+  const { userProfile } = useUser();
   const [keyboardHeight] = useState(new Animated.Value(0));
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
 
@@ -95,12 +97,14 @@ export default function PrayerDetailScreen({ route, navigation }) {
     },
   ];
 
+  const isOwner = userProfile && prayer.user_id === userProfile.id;
+
   const handleAddComment = () => {
-    if (newComment.trim()) {
+    if (newComment.trim() && userProfile) {
       const comment = {
         id: (comments.length + 1).toString(),
-        userName: userProfile.name,
-        userImage: userProfile.profileImage,
+        userName: `${userProfile.first_name} ${userProfile.last_name}`.trim(),
+        userImage: userProfile.profile_image_url,
         text: newComment,
         date: new Date().toISOString().split("T")[0],
       };
@@ -125,6 +129,8 @@ export default function PrayerDetailScreen({ route, navigation }) {
   };
 
   const handleEditPrayer = () => {
+    if (!isOwner) return;
+
     setEditedPrayer({
       ...prayer,
       allowComments: prayer.allowComments !== false,
@@ -169,7 +175,7 @@ export default function PrayerDetailScreen({ route, navigation }) {
                   {prayer.date}
                 </Text>
               </View>
-              {prayer.userName === userProfile.name && (
+              {isOwner && (
                 <TouchableOpacity
                   style={styles.editButton}
                   onPress={handleEditPrayer}
@@ -181,7 +187,7 @@ export default function PrayerDetailScreen({ route, navigation }) {
           </View>
 
           {/* Edit Mode */}
-          {isEditing && prayer.userName === userProfile.name && (
+          {isEditing && isOwner && (
             <View style={[styles.editSection, { backgroundColor: theme.card }]}>
               <Text style={[styles.editTitle, { color: theme.text }]}>
                 Edit Prayer Settings
@@ -258,7 +264,7 @@ export default function PrayerDetailScreen({ route, navigation }) {
               <Text style={[styles.sectionTitle, { color: theme.text }]}>
                 Updates
               </Text>
-              {prayer.userName === userProfile.name && !showUpdateInput && (
+              {isOwner && !showUpdateInput && (
                 <TouchableOpacity
                   style={[
                     styles.addUpdateButton,

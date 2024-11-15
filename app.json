@@ -29,6 +29,8 @@
         "projectId": "b21eb06d-09e0-4e7f-815f-3da0afb21dc4"
       }
     },
-    "owner": "daltondom"
+    "owner": "daltondom",
+    "newArchEnabled": true,
+    "sdkVersion": "52.0.0"
   }
 }
