@@ -24,14 +24,22 @@ import { useUser } from "../context/UserContext";
 export default function ProfileScreen({ navigation }) {
   const { theme, isDarkMode, toggleTheme } = useTheme();
   const { userProfile, uploadProfileImage } = useUser();
-  const { getUserPrayers, deletePrayer } = usePrayers();
+  const { prayers, getUserPrayers, deletePrayer } = usePrayers();
   const [notifications, setNotifications] = useState(true);
   const [emailUpdates, setEmailUpdates] = useState(true);
   const [editProfileVisible, setEditProfileVisible] = useState(false);
   const [changePasswordVisible, setChangePasswordVisible] = useState(false);
 
   // Filter prayers to only show user's prayers
-  const userPrayers = getUserPrayers();
+  const userPrayers = prayers.filter(
+    (prayer) => prayer.user_id === userProfile?.id
+  );
+
+  useEffect(() => {
+    if (userProfile) {
+      getUserPrayers();
+    }
+  }, [userProfile]);
 
   // Update userInfo to use Supabase data
   const [userInfo, setUserInfo] = useState({
@@ -95,64 +103,65 @@ export default function ProfileScreen({ navigation }) {
         {
           text: "Delete",
           style: "destructive",
-          onPress: () => deletePrayer(prayerId),
+          onPress: async () => {
+            const { error } = await deletePrayer(prayerId);
+            if (error) {
+              Alert.alert("Error", "Failed to delete prayer");
+            }
+          },
         },
       ]
     );
   };
 
   const renderPrayerItem = ({ item }) => (
-    <Animated.View style={[styles.prayerCard, { backgroundColor: theme.card }]}>
-      <TouchableOpacity
-        style={styles.prayerContent}
-        onPress={() =>
-          navigation.navigate("PrayerDetail", { prayerId: item.id })
-        }
-      >
-        <View style={styles.prayerHeader}>
-          <View style={styles.prayerTitleRow}>
-            <View
-              style={[
-                styles.categoryTag,
-                { backgroundColor: `${theme.primary}15` },
-              ]}
-            >
-              <Text style={[styles.categoryText, { color: theme.primary }]}>
-                {item.category}
-              </Text>
-            </View>
-            <Text
-              style={[styles.prayerTitle, { color: theme.text }]}
-              numberOfLines={1}
-            >
-              {item.title}
+    <TouchableOpacity
+      style={[styles.prayerCard, { backgroundColor: theme.card }]}
+      onPress={() => navigation.navigate("PrayerDetail", { prayerId: item.id })}
+    >
+      <View style={styles.prayerHeader}>
+        <View style={styles.prayerTitleRow}>
+          <View
+            style={[
+              styles.categoryTag,
+              { backgroundColor: `${theme.primary}15` },
+            ]}
+          >
+            <Text style={[styles.categoryText, { color: theme.primary }]}>
+              {item.category}
             </Text>
           </View>
-          <TouchableOpacity
-            onPress={() => handleDeletePrayer(item.id)}
-            style={styles.deleteButton}
+          <Text
+            style={[styles.prayerTitle, { color: theme.text }]}
+            numberOfLines={1}
           >
-            <Ionicons name="trash-outline" size={20} color="#FF3B30" />
-          </TouchableOpacity>
+            {item.title}
+          </Text>
         </View>
-
-        <Text
-          numberOfLines={2}
-          style={[styles.prayerDescription, { color: theme.text }]}
+        <TouchableOpacity
+          onPress={() => handleDeletePrayer(item.id)}
+          style={styles.deleteButton}
         >
-          {item.description}
-        </Text>
+          <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+        </TouchableOpacity>
+      </View>
 
-        <View style={[styles.prayerStats, { borderTopColor: theme.border }]}>
-          <Text style={[styles.statsText, { color: theme.textSecondary }]}>
-            {item.comments} Comments
-          </Text>
-          <Text style={[styles.statsText, { color: theme.textSecondary }]}>
-            {item.updates} Updates
-          </Text>
-        </View>
-      </TouchableOpacity>
-    </Animated.View>
+      <Text
+        numberOfLines={2}
+        style={[styles.prayerDescription, { color: theme.text }]}
+      >
+        {item.description}
+      </Text>
+
+      <View style={[styles.prayerStats, { borderTopColor: theme.border }]}>
+        <Text style={[styles.statsText, { color: theme.textSecondary }]}>
+          {item.comments || 0} Comments
+        </Text>
+        <Text style={[styles.statsText, { color: theme.textSecondary }]}>
+          {item.updates || 0} Updates
+        </Text>
+      </View>
+    </TouchableOpacity>
   );
 
   const removeFriend = (friendId) => {
@@ -400,7 +409,7 @@ export default function ProfileScreen({ navigation }) {
         {/* My Prayers Section */}
         <View style={[styles.section, { backgroundColor: theme.card }]}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>
-            My Prayers
+            My Prayers ({userPrayers.length})
           </Text>
           <FlatList
             data={userPrayers}
@@ -548,32 +557,19 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 6,
     elevation: 5,
-    width: "98%",
-    alignSelf: "center",
-  },
-  prayerContent: {
-    padding: 16,
-  },
-  deleteButton: {
-    padding: 4,
   },
   prayerHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 8,
+    padding: 16,
+    paddingBottom: 8,
   },
   prayerTitleRow: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    marginRight: 8,
-  },
-  prayerTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    flex: 1,
   },
   categoryTag: {
     paddingHorizontal: 8,
@@ -584,25 +580,33 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
   },
+  prayerTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    flex: 1,
+  },
   prayerDescription: {
     fontSize: 14,
     lineHeight: 20,
-    marginBottom: 12,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
   },
   prayerStats: {
     flexDirection: "row",
     justifyContent: "space-between",
     borderTopWidth: 1,
-    paddingTop: 12,
+    padding: 12,
   },
   statsText: {
     fontSize: 12,
   },
+  deleteButton: {
+    padding: 4,
+  },
   emptyText: {
     textAlign: "center",
-    color: "#666",
+    padding: 20,
     fontSize: 16,
-    marginTop: 20,
   },
   logoutButton: {
     flexDirection: "row",

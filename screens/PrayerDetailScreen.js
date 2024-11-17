@@ -13,6 +13,7 @@ import {
   Animated,
   Switch,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { usePrayers } from "../context/PrayerContext";
@@ -24,107 +25,57 @@ import { useUser } from "../context/UserContext";
 export default function PrayerDetailScreen({ route, navigation }) {
   const { theme, isDarkMode } = useTheme();
   const { prayerId } = route.params;
-  const { prayers, addUpdate, updatePrayer } = usePrayers();
+  const { prayers, addUpdate, updatePrayer, addComment, getPrayer } =
+    usePrayers();
   const { userProfile } = useUser();
   const [keyboardHeight] = useState(new Animated.Value(0));
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+  const [prayer, setPrayer] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [newComment, setNewComment] = useState("");
+  const [newUpdate, setNewUpdate] = useState("");
+  const [showUpdateInput, setShowUpdateInput] = useState(false);
+  const [editedPrayer, setEditedPrayer] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState(null);
 
   useEffect(() => {
-    const keyboardWillShow = Keyboard.addListener(
-      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
-      (e) => {
-        setKeyboardVisible(true);
-        Animated.timing(keyboardHeight, {
-          toValue: e.endCoordinates.height,
-          duration: 250,
-          useNativeDriver: false,
-        }).start();
-      }
-    );
+    loadPrayer();
+  }, [prayerId]);
 
-    const keyboardWillHide = Keyboard.addListener(
-      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
-      () => {
-        setKeyboardVisible(false);
-        Animated.timing(keyboardHeight, {
-          toValue: 0,
-          duration: 250,
-          useNativeDriver: false,
-        }).start();
-      }
-    );
-
-    return () => {
-      keyboardWillShow.remove();
-      keyboardWillHide.remove();
-    };
-  }, []);
-
-  const prayer = prayers.find((p) => p.id === prayerId) || {
-    userName: "",
-    userImage: "",
-    date: "",
-    title: "",
-    category: "",
-    description: "",
-    updates_list: [],
-    comments_list: [],
+  const loadPrayer = async () => {
+    const { data, error } = await getPrayer(prayerId);
+    if (error) {
+      console.error("Error loading prayer:", error);
+    } else {
+      setPrayer(data);
+    }
+    setLoading(false);
   };
 
-  const [comments, setComments] = useState(prayer.comments_list || []);
-  const [updates, setUpdates] = useState(prayer.updates_list || []);
-  const [newComment, setNewComment] = useState("");
-  const [showUpdateInput, setShowUpdateInput] = useState(false);
-  const [newUpdate, setNewUpdate] = useState("");
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedPrayer, setEditedPrayer] = useState(null);
-  const [selectedGroup, setSelectedGroup] = useState(
-    prayer.groupId ? { id: prayer.groupId, name: prayer.groupName } : null
-  );
-
-  const availableGroups = [
-    {
-      id: "1",
-      name: "Youth Prayer Warriors",
-    },
-    {
-      id: "2",
-      name: "Family & Marriage",
-    },
-    {
-      id: "3",
-      name: "Healing Ministry",
-    },
-  ];
-
-  const isOwner = userProfile && prayer.user_id === userProfile.id;
-
-  const handleAddComment = () => {
-    if (newComment.trim() && userProfile) {
-      const comment = {
-        id: (comments.length + 1).toString(),
-        userName: `${userProfile.first_name} ${userProfile.last_name}`.trim(),
-        userImage: userProfile.profile_image_url,
-        text: newComment,
-        date: new Date().toISOString().split("T")[0],
-      };
-      setComments([comment, ...comments]);
-      setNewComment("");
-      Keyboard.dismiss();
+  const handleAddComment = async () => {
+    if (newComment.trim()) {
+      const { error } = await addComment(prayerId, newComment);
+      if (error) {
+        Alert.alert("Error", "Failed to add comment");
+      } else {
+        setNewComment("");
+        Keyboard.dismiss();
+        loadPrayer();
+      }
     }
   };
 
-  const handleAddUpdate = () => {
+  const handleAddUpdate = async () => {
     if (newUpdate.trim()) {
-      addUpdate(prayerId, newUpdate);
-      const newUpdateObj = {
-        id: (updates.length + 1).toString(),
-        date: new Date().toISOString().split("T")[0],
-        text: newUpdate,
-      };
-      setUpdates([...updates, newUpdateObj]);
-      setNewUpdate("");
-      setShowUpdateInput(false);
+      const { error } = await addUpdate(prayerId, newUpdate);
+      if (error) {
+        Alert.alert("Error", "Failed to add update");
+      } else {
+        setNewUpdate("");
+        setShowUpdateInput(false);
+        loadPrayer();
+      }
     }
   };
 
@@ -145,6 +96,28 @@ export default function PrayerDetailScreen({ route, navigation }) {
     setIsEditing(false);
     Alert.alert("Success", "Prayer settings updated successfully");
   };
+
+  const isOwner = userProfile?.id === prayer?.user_id;
+
+  if (loading) {
+    return (
+      <View
+        style={[styles.loadingContainer, { backgroundColor: theme.background }]}
+      >
+        <ActivityIndicator size="large" color={theme.primary} />
+      </View>
+    );
+  }
+
+  if (!prayer) {
+    return (
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
+        <Text style={[styles.errorText, { color: theme.text }]}>
+          Prayer not found
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -329,8 +302,8 @@ export default function PrayerDetailScreen({ route, navigation }) {
             )}
 
             <View style={styles.updatesContainer}>
-              {updates.length > 0 ? (
-                updates.map((update) => (
+              {prayer.updates_list && prayer.updates_list.length > 0 ? (
+                prayer.updates_list.map((update) => (
                   <View
                     key={update.id}
                     style={[
@@ -347,7 +320,7 @@ export default function PrayerDetailScreen({ route, navigation }) {
                         { color: theme.textSecondary },
                       ]}
                     >
-                      {update.date}
+                      {new Date(update.created_at).toLocaleDateString()}
                     </Text>
                     <Text style={[styles.updateText, { color: theme.text }]}>
                       {update.text}
@@ -358,7 +331,7 @@ export default function PrayerDetailScreen({ route, navigation }) {
                 <Text
                   style={[styles.emptyText, { color: theme.textSecondary }]}
                 >
-                  No new updates
+                  No updates yet
                 </Text>
               )}
             </View>
@@ -369,51 +342,36 @@ export default function PrayerDetailScreen({ route, navigation }) {
             <Text style={[styles.sectionTitle, { color: theme.text }]}>
               Comments
             </Text>
-            {comments.length > 0 ? (
-              comments.map((comment) => (
-                <View
-                  key={comment.id}
-                  style={[styles.commentItem, { backgroundColor: theme.card }]}
-                >
+            {prayer.comments_list && prayer.comments_list.length > 0 ? (
+              prayer.comments_list.map((comment) => (
+                <View key={comment.id} style={styles.commentItem}>
                   <Image
                     source={{ uri: comment.userImage }}
                     style={styles.commentUserImage}
                   />
-                  <View
-                    style={[
-                      styles.commentContent,
-                      { backgroundColor: theme.card },
-                    ]}
-                  >
-                    <View
-                      style={[
-                        styles.commentHeader,
-                        { backgroundColor: theme.card },
-                      ]}
+                  <View style={styles.commentContent}>
+                    <Text
+                      style={[styles.commentUserName, { color: theme.text }]}
                     >
-                      <Text
-                        style={[styles.commentUserName, { color: theme.text }]}
-                      >
-                        {comment.userName}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.commentDate,
-                          { color: theme.textSecondary },
-                        ]}
-                      >
-                        {comment.date}
-                      </Text>
-                    </View>
+                      {comment.userName}
+                    </Text>
                     <Text style={[styles.commentText, { color: theme.text }]}>
                       {comment.text}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.commentDate,
+                        { color: theme.textSecondary },
+                      ]}
+                    >
+                      {new Date(comment.date).toLocaleDateString()}
                     </Text>
                   </View>
                 </View>
               ))
             ) : (
               <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-                No new comments
+                No comments yet
               </Text>
             )}
           </View>
@@ -710,5 +668,16 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 14,
     paddingVertical: 8,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  errorText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginVertical: 16,
   },
 });
