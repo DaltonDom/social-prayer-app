@@ -99,6 +99,7 @@ export default function HomeScreen({ navigation }) {
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.background }]}
+      edges={["top"]}
     >
       <FlatList
         data={prayers}

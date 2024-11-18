@@ -29,6 +29,10 @@ export default function ProfileScreen({ navigation }) {
   const [emailUpdates, setEmailUpdates] = useState(true);
   const [editProfileVisible, setEditProfileVisible] = useState(false);
   const [changePasswordVisible, setChangePasswordVisible] = useState(false);
+  const [friends, setFriends] = useState([]);
+  const [totalFriends, setTotalFriends] = useState(0);
+  const [pendingRequests, setPendingRequests] = useState([]);
+  const [availableUsers, setAvailableUsers] = useState([]);
 
   // Filter prayers to only show user's prayers
   const userPrayers = prayers.filter(
@@ -87,9 +91,6 @@ export default function ProfileScreen({ navigation }) {
 
   // Remove totalPrayers from userInfo state and use computed value instead
   const totalPrayers = userPrayers.length;
-
-  // Remove totalComments and use friends length instead
-  const totalFriends = userInfo.friends.length;
 
   const handleDeletePrayer = (prayerId) => {
     Alert.alert(
@@ -235,9 +236,174 @@ export default function ProfileScreen({ navigation }) {
     }
   };
 
+  const fetchAvailableUsers = async () => {
+    try {
+      console.log("Fetching available users for:", userProfile.id);
+
+      // First get all current friendships (both pending and accepted)
+      const { data: friendships, error: friendshipsError } = await supabase
+        .from("friendships")
+        .select("*")
+        .or(`user_id.eq.${userProfile.id},friend_id.eq.${userProfile.id}`);
+
+      if (friendshipsError) {
+        console.error("Error fetching friendships:", friendshipsError);
+        throw friendshipsError;
+      }
+
+      // Get IDs of users who are already friends or have pending requests
+      const existingConnectionIds = friendships
+        ? friendships.map((friendship) =>
+            friendship.user_id === userProfile.id
+              ? friendship.friend_id
+              : friendship.user_id
+          )
+        : [];
+
+      // Add current user's ID to exclude from results
+      existingConnectionIds.push(userProfile.id);
+
+      console.log("Existing connection IDs:", existingConnectionIds);
+
+      // Fetch all users except current friends and self
+      const { data: users, error: usersError } = await supabase
+        .from("profiles")
+        .select("id, first_name, last_name, profile_image_url");
+
+      if (usersError) {
+        console.error("Error fetching users:", usersError);
+        throw usersError;
+      }
+
+      console.log("All users:", users);
+
+      // Filter out existing connections
+      const availableUsersFiltered = users.filter(
+        (user) => !existingConnectionIds.includes(user.id)
+      );
+
+      console.log("Available users filtered:", availableUsersFiltered);
+
+      setAvailableUsers(
+        availableUsersFiltered.map((user) => ({
+          id: user.id,
+          name: `${user.first_name} ${user.last_name}`.trim(),
+          profileImage:
+            user.profile_image_url || "https://via.placeholder.com/50",
+        }))
+      );
+    } catch (error) {
+      console.error("Error in fetchAvailableUsers:", error);
+    }
+  };
+
+  // Add this useEffect to fetch available users when component mounts
+  useEffect(() => {
+    if (userProfile) {
+      fetchAvailableUsers();
+    }
+  }, [userProfile]);
+
+  const fetchFriends = async () => {
+    try {
+      console.log("Fetching friends for user:", userProfile.id);
+
+      // Fetch accepted friendships where user is either the user or friend
+      const { data: friendships, error } = await supabase
+        .from("friendships")
+        .select(
+          `
+          id,
+          status,
+          friend:profiles!friendships_friend_id_fkey (
+            id,
+            first_name,
+            last_name,
+            profile_image_url
+          ),
+          user:profiles!friendships_user_id_fkey (
+            id,
+            first_name,
+            last_name,
+            profile_image_url
+          )
+        `
+        )
+        .or(`user_id.eq.${userProfile.id},friend_id.eq.${userProfile.id}`)
+        .eq("status", "accepted");
+
+      if (error) {
+        console.error("Error fetching friendships:", error);
+        throw error;
+      }
+
+      console.log("Fetched friendships:", friendships);
+
+      // Transform the data to get friend information
+      const transformedFriends = friendships.map((friendship) => {
+        const friendData =
+          friendship.user_id === userProfile.id
+            ? friendship.friend
+            : friendship.user;
+
+        return {
+          id: friendData.id,
+          name: `${friendData.first_name} ${friendData.last_name}`.trim(),
+          profileImage:
+            friendData.profile_image_url || "https://via.placeholder.com/50",
+          friendshipId: friendship.id,
+          status: friendship.status,
+          isRequester: friendship.friend_id === userProfile.id,
+        };
+      });
+
+      console.log("Transformed friends:", transformedFriends);
+
+      // Separate accepted friends and pending requests
+      const acceptedFriends = transformedFriends.filter(
+        (f) => f.status === "accepted"
+      );
+      const pendingRequests = transformedFriends.filter(
+        (f) => f.status === "pending"
+      );
+
+      console.log("Accepted friends:", acceptedFriends);
+      console.log("Pending requests:", pendingRequests);
+
+      setFriends(acceptedFriends);
+      setPendingRequests(pendingRequests);
+      setTotalFriends(acceptedFriends.length);
+
+      // Also fetch available users to add
+      await fetchAvailableUsers();
+    } catch (error) {
+      console.error("Error fetching friends:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (userProfile) {
+      fetchFriends();
+    }
+  }, [userProfile]);
+
+  const navigateToFriendsList = () => {
+    navigation.navigate("FriendsList", {
+      friends,
+      availableUsers,
+      pendingRequests,
+      onUnfriend: removeFriend,
+      onRefresh: () => {
+        fetchFriends();
+        fetchAvailableUsers();
+      },
+    });
+  };
+
   return (
     <SafeAreaView
-      style={[styles.container, { backgroundColor: theme.background }]}
+      style={{ flex: 1, backgroundColor: theme.background }}
+      edges={["top"]}
     >
       <ScrollView
         style={[styles.container, { backgroundColor: theme.background }]}
@@ -279,12 +445,7 @@ export default function ProfileScreen({ navigation }) {
             />
             <TouchableOpacity
               style={styles.statItem}
-              onPress={() =>
-                navigation.navigate("FriendsList", {
-                  friends: userInfo.friends,
-                  onUnfriend: removeFriend,
-                })
-              }
+              onPress={navigateToFriendsList}
             >
               <Text style={[styles.statNumber, { color: theme.primary }]}>
                 {totalFriends}
@@ -304,12 +465,7 @@ export default function ProfileScreen({ navigation }) {
             </Text>
             <TouchableOpacity
               style={styles.seeAllButton}
-              onPress={() =>
-                navigation.navigate("FriendsList", {
-                  friends: userInfo.friends,
-                  onUnfriend: removeFriend,
-                })
-              }
+              onPress={navigateToFriendsList}
             >
               <Text style={[styles.seeAllText, { color: theme.primary }]}>
                 See All
@@ -317,11 +473,16 @@ export default function ProfileScreen({ navigation }) {
             </TouchableOpacity>
           </View>
           <FlatList
-            data={userInfo.friends.slice(0, 3)} // Show only first 3 friends
+            data={friends.slice(0, 3)} // Show only first 3 friends
             renderItem={renderFriendItem}
             keyExtractor={(item) => item.id}
             horizontal
             showsHorizontalScrollIndicator={false}
+            ListEmptyComponent={
+              <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+                No friends yet
+              </Text>
+            }
           />
         </View>
 
@@ -387,7 +548,7 @@ export default function ProfileScreen({ navigation }) {
               trackColor={{ false: "#767577", true: theme.primary }}
             />
           </View>
-          <View style={styles.settingItem}>
+          <View style={styles.lastSettingItem}>
             <View style={styles.settingLeft}>
               <Ionicons
                 name={isDarkMode ? "moon" : "moon-outline"}
@@ -452,7 +613,6 @@ export default function ProfileScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
   },
   header: {
     backgroundColor: "white",
@@ -535,6 +695,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
   },
+  lastSettingItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 12,
+  },
   settingLeft: {
     flexDirection: "row",
     alignItems: "center",
@@ -614,7 +780,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "white",
     marginTop: 16,
-    marginBottom: 32,
+    marginBottom: 0,
     padding: 16,
   },
   logoutText: {

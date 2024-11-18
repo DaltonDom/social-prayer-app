@@ -13,30 +13,14 @@ export function GroupProvider({ children }) {
   // Fetch all groups
   const fetchGroups = async () => {
     try {
-      // First fetch all groups with creator info
-      const { data: groupsData, error: groupsError } = await supabase
-        .from("groups")
-        .select(
-          `
-          *,
-          creator:profiles!fk_created_by (
-            id,
-            first_name,
-            last_name,
-            profile_image_url
-          )
-        `
-        )
-        .order("created_at", { ascending: false });
+      console.log("Fetching groups for user:", userProfile?.id);
 
-      if (groupsError) throw groupsError;
-
-      // Then fetch group members with their profiles
-      const { data: membersData, error: membersError } = await supabase.from(
-        "group_members"
+      // First fetch all groups
+      const { data: groupsData, error: groupsError } = await supabase.from(
+        "groups"
       ).select(`
           *,
-          member:profiles!fk_user_id (
+          creator:profiles!groups_created_by_fkey (
             id,
             first_name,
             last_name,
@@ -44,53 +28,78 @@ export function GroupProvider({ children }) {
           )
         `);
 
-      if (membersError) throw membersError;
+      if (groupsError) {
+        console.error("Groups fetch error:", groupsError);
+        throw groupsError;
+      }
+
+      console.log("Fetched groups:", groupsData);
+
+      // Then fetch group members
+      const { data: membersData, error: membersError } = await supabase.from(
+        "group_members"
+      ).select(`
+          *,
+          member:profiles!group_members_user_id_fkey (
+            id,
+            first_name,
+            last_name,
+            profile_image_url
+          )
+        `);
+
+      if (membersError) {
+        console.error("Members fetch error:", membersError);
+        throw membersError;
+      }
+
+      console.log("Fetched members:", membersData);
 
       // Transform and combine the data
       const transformedGroups = groupsData.map((group) => {
-        const groupMembers = membersData.filter(
-          (member) => member.group_id === group.id
-        );
-
-        // Transform members into a string array for display
-        const memberNames = groupMembers.map((member) =>
-          `${member.member.first_name} ${member.member.last_name}`.trim()
-        );
-
-        // Keep full member objects in a separate property
-        const memberDetails = groupMembers.map((member) => ({
-          id: member.member.id,
-          name: `${member.member.first_name} ${member.member.last_name}`.trim(),
-          profileImage: member.member.profile_image_url,
-          role: member.role,
-        }));
+        const groupMembers =
+          membersData?.filter((member) => member.group_id === group.id) || [];
 
         return {
-          ...group,
-          creatorName:
-            `${group.creator.first_name} ${group.creator.last_name}`.trim(),
-          creatorImage: group.creator.profile_image_url,
+          id: group.id,
+          name: group.name || "",
+          description: group.description || "",
+          image_url: group.image_url || "https://via.placeholder.com/150",
+          created_at: group.created_at,
+          created_by: group.created_by,
+          creatorName: group.creator
+            ? `${group.creator.first_name} ${group.creator.last_name}`.trim()
+            : "Unknown",
+          creatorImage:
+            group.creator?.profile_image_url ||
+            "https://via.placeholder.com/150",
           isAdmin: group.created_by === userProfile?.id,
-          isMember: memberDetails.some(
+          isMember: groupMembers.some(
             (member) =>
-              member.id === userProfile?.id && member.role === "member"
+              member.user_id === userProfile?.id && member.role === "member"
           ),
-          isPending: memberDetails.some(
+          isPending: groupMembers.some(
             (member) =>
-              member.id === userProfile?.id && member.role === "pending"
+              member.user_id === userProfile?.id && member.role === "pending"
           ),
-          memberCount: memberDetails.length,
-          memberNames, // Array of strings for display
-          memberDetails, // Array of objects for functionality
+          memberCount: groupMembers.length,
+          members: groupMembers.map((member) => ({
+            id: member.member.id,
+            name: `${member.member.first_name} ${member.member.last_name}`.trim(),
+            profileImage: member.member.profile_image_url,
+            role: member.role,
+          })),
         };
       });
+
+      console.log("Transformed groups:", transformedGroups);
 
       setGroups(transformedGroups);
       setMyGroups(
         transformedGroups.filter((group) => group.isMember || group.isAdmin)
       );
     } catch (error) {
-      console.error("Error fetching groups:", error);
+      console.error("Error in fetchGroups:", error);
     } finally {
       setLoading(false);
     }
@@ -229,7 +238,7 @@ export function GroupProvider({ children }) {
         .select(
           `
           *,
-          creator:profiles!fk_created_by (
+          profiles!fk_groups_created_by (
             id,
             first_name,
             last_name,

@@ -12,31 +12,32 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../context/ThemeContext";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useGroups } from '../context/GroupContext';
+import { useGroups } from "../context/GroupContext";
 
 export default function GroupsScreen({ navigation }) {
   const { theme, isDarkMode } = useTheme();
   const { groups } = useGroups();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [filteredGroups, setFilteredGroups] = useState(groups);
 
   useEffect(() => {
     const query = searchQuery.toLowerCase();
-    const filtered = groups.filter(group => 
-      group.name.toLowerCase().includes(query) ||
-      group.description.toLowerCase().includes(query)
+    const filtered = groups.filter(
+      (group) =>
+        group.name.toLowerCase().includes(query) ||
+        group.description.toLowerCase().includes(query)
     );
     setFilteredGroups(filtered);
   }, [searchQuery, groups]);
 
   const handleAddGroup = () => {
-    navigation.navigate('CreateGroup');
+    navigation.navigate("CreateGroup");
   };
 
   const renderGroupCard = ({ item }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={[styles.card, { backgroundColor: theme.card }]}
-      onPress={() => navigation.navigate('GroupDetail', { groupId: item.id })}
+      onPress={() => navigation.navigate("GroupDetail", { groupId: item.id })}
     >
       <View style={styles.cardHeader}>
         <Image source={{ uri: item.logo }} style={styles.groupLogo} />

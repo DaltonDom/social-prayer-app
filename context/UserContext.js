@@ -10,34 +10,41 @@ export function UserProvider({ children }) {
 
   const fetchUserProfile = async (userId) => {
     try {
-      const { data, error } = await supabase
+      const { data: existingProfile, error: fetchError } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", userId)
         .single();
 
-      if (error) {
-        if (error.code === "PGRST116") {
-          // No profile found, create one
+      if (fetchError) {
+        if (fetchError.code === "PGRST116") {
           const { data: newProfile, error: createError } = await supabase
             .from("profiles")
-            .insert([
+            .upsert(
+              [
+                {
+                  id: userId,
+                  first_name: "User",
+                  last_name: "",
+                  profile_image_url: "https://via.placeholder.com/150",
+                  updated_at: new Date().toISOString(),
+                },
+              ],
               {
-                id: userId,
-                first_name: "John", // Default name
-                last_name: "Smith", // Default name
-                profile_image_url: "https://via.placeholder.com/150",
-              },
-            ])
+                onConflict: "id",
+                ignoreDuplicates: false,
+              }
+            )
+            .select()
             .single();
 
           if (createError) throw createError;
           setUserProfile(newProfile);
         } else {
-          throw error;
+          throw fetchError;
         }
       } else {
-        setUserProfile(data);
+        setUserProfile(existingProfile);
       }
     } catch (error) {
       console.error("Error fetching user profile:", error.message);
@@ -104,18 +111,14 @@ export function UserProvider({ children }) {
 
   const uploadProfileImage = async (imageUri) => {
     try {
-      // Get the file extension from the URI
       const ext = imageUri.split(".").pop().toLowerCase();
 
-      // Create a unique file name
       const fileName = `${Date.now()}.${ext}`;
       const filePath = `${userProfile.id}/${fileName}`;
 
-      // Convert image to base64
       const response = await fetch(imageUri);
       const blob = await response.blob();
 
-      // Convert blob to base64
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = async () => {
@@ -130,12 +133,10 @@ export function UserProvider({ children }) {
 
             if (uploadError) throw uploadError;
 
-            // Get the public URL
             const {
               data: { publicUrl },
             } = supabase.storage.from("profile-images").getPublicUrl(filePath);
 
-            // Update profile with new image URL
             const { error: updateError } = await supabase
               .from("profiles")
               .update({ profile_image_url: publicUrl })
@@ -143,7 +144,6 @@ export function UserProvider({ children }) {
 
             if (updateError) throw updateError;
 
-            // Update local state
             setUserProfile((prev) => ({
               ...prev,
               profile_image_url: publicUrl,
