@@ -15,18 +15,21 @@ export function GroupProvider({ children }) {
     try {
       console.log("Fetching groups for user:", userProfile?.id);
 
-      // First fetch all groups
-      const { data: groupsData, error: groupsError } = await supabase.from(
-        "groups"
-      ).select(`
+      // First fetch all groups with creator profiles
+      const { data: groupsData, error: groupsError } = await supabase
+        .from("groups")
+        .select(
+          `
           *,
-          creator:profiles!groups_created_by_fkey (
+          profiles!groups_created_by_fkey (
             id,
             first_name,
             last_name,
             profile_image_url
           )
-        `);
+        `
+        )
+        .order("created_at", { ascending: false });
 
       if (groupsError) {
         console.error("Groups fetch error:", groupsError);
@@ -35,12 +38,12 @@ export function GroupProvider({ children }) {
 
       console.log("Fetched groups:", groupsData);
 
-      // Then fetch group members
+      // Then fetch group members with specific foreign key relationship
       const { data: membersData, error: membersError } = await supabase.from(
         "group_members"
       ).select(`
           *,
-          member:profiles!group_members_user_id_fkey (
+          profiles!group_members_user_id_fkey (
             id,
             first_name,
             last_name,
@@ -53,12 +56,19 @@ export function GroupProvider({ children }) {
         throw membersError;
       }
 
-      console.log("Fetched members:", membersData);
-
       // Transform and combine the data
       const transformedGroups = groupsData.map((group) => {
         const groupMembers =
           membersData?.filter((member) => member.group_id === group.id) || [];
+
+        const membersList = groupMembers.map((member) => ({
+          id: member.profiles.id,
+          name: `${member.profiles.first_name} ${member.profiles.last_name}`.trim(),
+          profileImage:
+            member.profiles.profile_image_url ||
+            "https://via.placeholder.com/150",
+          role: member.role,
+        }));
 
         return {
           id: group.id,
@@ -67,11 +77,11 @@ export function GroupProvider({ children }) {
           image_url: group.image_url || "https://via.placeholder.com/150",
           created_at: group.created_at,
           created_by: group.created_by,
-          creatorName: group.creator
-            ? `${group.creator.first_name} ${group.creator.last_name}`.trim()
+          creatorName: group.profiles
+            ? `${group.profiles.first_name} ${group.profiles.last_name}`.trim()
             : "Unknown",
           creatorImage:
-            group.creator?.profile_image_url ||
+            group.profiles?.profile_image_url ||
             "https://via.placeholder.com/150",
           isAdmin: group.created_by === userProfile?.id,
           isMember: groupMembers.some(
@@ -82,13 +92,9 @@ export function GroupProvider({ children }) {
             (member) =>
               member.user_id === userProfile?.id && member.role === "pending"
           ),
-          memberCount: groupMembers.length,
-          members: groupMembers.map((member) => ({
-            id: member.member.id,
-            name: `${member.member.first_name} ${member.member.last_name}`.trim(),
-            profileImage: member.member.profile_image_url,
-            role: member.role,
-          })),
+          memberCount: membersList.length,
+          membersList: membersList,
+          members: membersList.map((member) => member.name).join(", "),
         };
       });
 

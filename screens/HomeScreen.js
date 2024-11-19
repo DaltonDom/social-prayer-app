@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useCallback } from "react";
 import {
   StyleSheet,
   View,
@@ -7,6 +7,7 @@ import {
   Image,
   TouchableOpacity,
   Platform,
+  RefreshControl,
 } from "react-native";
 import { usePrayers } from "../context/PrayerContext";
 import { useTheme } from "../context/ThemeContext";
@@ -14,8 +15,20 @@ import Ionicons from "react-native-vector-icons/Ionicons";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function HomeScreen({ navigation }) {
-  const { prayers } = usePrayers();
+  const { prayers, fetchPrayers } = usePrayers();
   const { theme } = useTheme();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await fetchPrayers();
+    } catch (error) {
+      console.error("Error refreshing prayers:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [fetchPrayers]);
 
   const renderPrayerCard = ({ item }) => (
     <TouchableOpacity
@@ -107,6 +120,14 @@ export default function HomeScreen({ navigation }) {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.text} // For iOS
+            colors={[theme.primary]} // For Android
+          />
+        }
       />
     </SafeAreaView>
   );

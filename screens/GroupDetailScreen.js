@@ -16,7 +16,12 @@ export default function GroupDetailScreen({ route, navigation }) {
   const { theme } = useTheme();
   const { group } = route.params;
   const { getGroupPrayers } = usePrayers();
-  const groupPrayers = getGroupPrayers(group.id);
+
+  const groupPrayers = group?.id ? getGroupPrayers(group.id) : [];
+
+  console.log("Group:", group);
+  console.log("Group ID:", group?.id);
+  console.log("Group Prayers:", groupPrayers);
 
   const renderPrayerItem = ({ item }) => (
     <TouchableOpacity
@@ -67,7 +72,10 @@ export default function GroupDetailScreen({ route, navigation }) {
     >
       {/* Group Header */}
       <View style={[styles.groupHeader, { backgroundColor: theme.card }]}>
-        <Image source={{ uri: group.logo }} style={styles.groupLogo} />
+        <Image
+          source={{ uri: group.image_url || "https://via.placeholder.com/150" }}
+          style={styles.groupLogo}
+        />
         <Text style={[styles.groupName, { color: theme.text }]}>
           {group.name}
         </Text>
@@ -75,42 +83,10 @@ export default function GroupDetailScreen({ route, navigation }) {
           {group.description}
         </Text>
 
-        {/* Categories Section */}
-        <View style={styles.categoriesContainer}>
-          <Text style={[styles.sectionSubtitle, { color: theme.text }]}>
-            Categories
-          </Text>
-          <View style={styles.categoriesList}>
-            {group.categories.map((category, index) => (
-              <View
-                key={index}
-                style={[
-                  styles.categoryTag,
-                  { backgroundColor: `${theme.primary}15` },
-                ]}
-              >
-                <Text style={[styles.categoryText, { color: theme.primary }]}>
-                  {category}
-                </Text>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* Guidelines Section */}
-        <View style={styles.guidelinesContainer}>
-          <Text style={[styles.sectionSubtitle, { color: theme.text }]}>
-            Guidelines
-          </Text>
-          <Text style={[styles.guidelines, { color: theme.textSecondary }]}>
-            {group.guidelines}
-          </Text>
-        </View>
-
         <View style={styles.groupStats}>
           <View style={styles.statItem}>
             <Text style={[styles.statNumber, { color: theme.primary }]}>
-              {group.members}
+              {group.memberCount || 0}
             </Text>
             <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
               Members
@@ -118,11 +94,36 @@ export default function GroupDetailScreen({ route, navigation }) {
           </View>
           <View style={styles.statItem}>
             <Text style={[styles.statNumber, { color: theme.primary }]}>
-              {groupPrayers.length}
+              {groupPrayers?.length || 0}
             </Text>
             <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
               Prayers
             </Text>
+          </View>
+        </View>
+
+        {/* Members List */}
+        <View style={styles.membersContainer}>
+          <Text style={[styles.sectionSubtitle, { color: theme.text }]}>
+            Members
+          </Text>
+          <View style={styles.membersList}>
+            {group.membersList?.map((member, index) => (
+              <View key={index} style={styles.memberItem}>
+                <Image
+                  source={{ uri: member.profileImage }}
+                  style={styles.memberAvatar}
+                />
+                <Text style={[styles.memberName, { color: theme.text }]}>
+                  {member.name}
+                </Text>
+                {member.role === "admin" && (
+                  <Text style={[styles.adminBadge, { color: theme.primary }]}>
+                    Admin
+                  </Text>
+                )}
+              </View>
+            ))}
           </View>
         </View>
       </View>
@@ -296,5 +297,32 @@ const styles = StyleSheet.create({
   guidelines: {
     fontSize: 14,
     lineHeight: 20,
+  },
+  membersContainer: {
+    width: "100%",
+    marginTop: 16,
+    paddingHorizontal: 20,
+  },
+  membersList: {
+    marginTop: 8,
+  },
+  memberItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  memberAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginRight: 8,
+  },
+  memberName: {
+    fontSize: 14,
+    flex: 1,
+  },
+  adminBadge: {
+    fontSize: 12,
+    fontWeight: "600",
   },
 });

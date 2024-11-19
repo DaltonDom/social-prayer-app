@@ -130,7 +130,21 @@ export function PrayerProvider({ children }) {
   };
 
   const getGroupPrayers = (groupId) => {
-    return prayers.filter((prayer) => prayer.group_id === groupId);
+    if (!groupId) {
+      console.log("No group ID provided to getGroupPrayers");
+      return [];
+    }
+
+    try {
+      const groupPrayers = prayers.filter(
+        (prayer) => prayer.group_id === groupId
+      );
+      console.log(`Found ${groupPrayers.length} prayers for group ${groupId}`);
+      return groupPrayers;
+    } catch (error) {
+      console.error("Error in getGroupPrayers:", error);
+      return [];
+    }
   };
 
   const addUpdate = async (prayerId, updateText) => {
@@ -418,6 +432,44 @@ export function PrayerProvider({ children }) {
     }
   };
 
+  const fetchPrayers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("prayers")
+        .select(
+          `
+          *,
+          profiles!prayers_user_id_fkey (
+            id,
+            first_name,
+            last_name,
+            profile_image_url
+          )
+        `
+        )
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      // Transform the data to match the expected format
+      const transformedData = data.map((prayer) => ({
+        ...prayer,
+        userName:
+          `${prayer.profiles.first_name} ${prayer.profiles.last_name}`.trim(),
+        userImage: prayer.profiles.profile_image_url,
+        date: new Date(prayer.created_at).toISOString().split("T")[0],
+        comments: prayer.comment_count || 0,
+        updates: prayer.updates?.length || 0,
+      }));
+
+      setPrayers(transformedData);
+      return { data: transformedData, error: null };
+    } catch (error) {
+      console.error("Error fetching prayers:", error.message);
+      return { data: null, error };
+    }
+  };
+
   return (
     <PrayerContext.Provider
       value={{
@@ -432,6 +484,7 @@ export function PrayerProvider({ children }) {
         getPrayer,
         addComment,
         getComments,
+        fetchPrayers,
       }}
     >
       {children}

@@ -37,7 +37,18 @@ export default function GroupsScreen({ navigation }) {
   const renderGroupCard = ({ item }) => (
     <TouchableOpacity
       style={[styles.card, { backgroundColor: theme.card }]}
-      onPress={() => navigation.navigate("GroupDetail", { groupId: item.id })}
+      onPress={() =>
+        navigation.navigate("GroupDetail", {
+          group: {
+            id: item.id,
+            name: item.name,
+            description: item.description,
+            image_url: item.image_url,
+            memberCount: item.memberCount,
+            membersList: item.membersList,
+          },
+        })
+      }
     >
       <View style={styles.cardHeader}>
         <Image source={{ uri: item.logo }} style={styles.groupLogo} />

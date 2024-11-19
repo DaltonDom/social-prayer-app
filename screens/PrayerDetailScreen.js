@@ -38,6 +38,7 @@ export default function PrayerDetailScreen({ route, navigation }) {
   const [editedPrayer, setEditedPrayer] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState(null);
+  const [isCommentFocused, setIsCommentFocused] = useState(false);
 
   useEffect(() => {
     loadPrayer();
@@ -121,9 +122,10 @@ export default function PrayerDetailScreen({ route, navigation }) {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={[styles.container, { backgroundColor: theme.background }]}
       keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+      enabled={isCommentFocused}
     >
       <SafeAreaView style={{ flex: 1 }} edges={["left", "right", "bottom"]}>
         <ScrollView
@@ -131,7 +133,7 @@ export default function PrayerDetailScreen({ route, navigation }) {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
-          contentContainerStyle={{ flexGrow: 1 }}
+          contentContainerStyle={{ paddingBottom: 80 }}
         >
           {/* Prayer Header with Edit Button */}
           <View style={[styles.header, { backgroundColor: theme.card }]}>
@@ -377,22 +379,13 @@ export default function PrayerDetailScreen({ route, navigation }) {
           </View>
         </ScrollView>
 
-        {/* Updated Comment Input Container */}
+        {/* Comment Input Container */}
         <View
           style={[
             styles.commentInputContainer,
             {
               backgroundColor: theme.card,
               borderTopColor: theme.border,
-              position: "absolute",
-              bottom: 0,
-              left: 0,
-              right: 0,
-              paddingBottom: isKeyboardVisible
-                ? 15
-                : Platform.OS === "ios"
-                ? 30
-                : 12,
             },
           ]}
         >
@@ -410,6 +403,8 @@ export default function PrayerDetailScreen({ route, navigation }) {
             onChangeText={setNewComment}
             multiline
             keyboardAppearance={isDarkMode ? "dark" : "light"}
+            onFocus={() => setIsCommentFocused(true)}
+            onBlur={() => setIsCommentFocused(false)}
           />
           <TouchableOpacity
             style={[styles.sendButton, { backgroundColor: theme.primary }]}

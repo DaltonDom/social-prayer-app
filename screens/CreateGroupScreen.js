@@ -11,46 +11,103 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../context/ThemeContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { useGroups } from "../context/GroupContext";
+import { supabase } from "../lib/supabase";
+import { useUser } from "../context/UserContext";
+import uuid from "react-native-uuid";
 
 export default function CreateGroupScreen({ navigation }) {
   const { theme } = useTheme();
-  const { addGroup } = useGroups();
+  const { createGroup } = useGroups();
+  const { userProfile } = useUser();
   const [groupName, setGroupName] = useState("");
   const [description, setDescription] = useState("");
   const [isPrivate, setIsPrivate] = useState(false);
   const [category, setCategory] = useState("");
   const [guidelines, setGuidelines] = useState("");
   const [groupImage, setGroupImage] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const pickImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    try {
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-    if (status !== "granted") {
-      Alert.alert(
-        "Sorry, we need camera roll permissions to change the group image!"
-      );
-      return;
-    }
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission needed",
+          "Please grant permission to access your photos"
+        );
+        return;
+      }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaType.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 1,
-    });
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: "images",
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
 
-    if (!result.canceled) {
-      setGroupImage(result.assets[0].uri);
+      console.log("Image picker result:", result);
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setGroupImage(result.assets[0].uri);
+        console.log("Selected image URI:", result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error("Error picking image:", error);
+      Alert.alert("Error", "Failed to pick image");
     }
   };
 
-  const handleCreateGroup = () => {
+  const uploadImage = async (uri) => {
+    try {
+      const fetchResponse = await fetch(uri);
+      const arrayBuffer = await fetchResponse.arrayBuffer();
+      const blob = new Blob([arrayBuffer], { type: "image/jpeg" });
+
+      const fileName = `${Date.now()}.jpg`;
+
+      console.log("Starting upload with:", {
+        fileName,
+        blobSize: blob.size,
+        blobType: blob.type,
+      });
+
+      const { data, error: uploadError } = await supabase.storage
+        .from("group-images")
+        .upload(`groups/${fileName}`, blob, {
+          contentType: "image/jpeg",
+          duplex: "half",
+          cacheControl: "3600",
+        });
+
+      if (uploadError) {
+        console.error("Upload error:", uploadError);
+        throw uploadError;
+      }
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage
+        .from("group-images")
+        .getPublicUrl(`groups/${fileName}`);
+
+      console.log("Upload successful, URL:", publicUrl);
+      return publicUrl;
+    } catch (error) {
+      console.error("Error in uploadImage:", error);
+      throw error;
+    }
+  };
+
+  const handleCreateGroup = async () => {
     if (!groupName.trim()) {
       Alert.alert("Error", "Please enter a group name");
       return;
@@ -61,28 +118,57 @@ export default function CreateGroupScreen({ navigation }) {
       return;
     }
 
-    const newGroup = {
-      id: Date.now().toString(),
-      name: groupName,
-      logo: groupImage || "https://via.placeholder.com/50",
-      members: 1,
-      description: description,
-      lastActive: "Just now",
-      prayerCount: 0,
-      category: category,
-      guidelines: guidelines,
-      isPrivate: isPrivate,
-    };
+    setIsLoading(true);
 
-    // Add the new group using the context
-    addGroup(newGroup);
+    try {
+      let imageUrl = "https://via.placeholder.com/150";
 
-    Alert.alert("Success", "Group created successfully", [
-      {
-        text: "OK",
-        onPress: () => navigation.goBack(),
-      },
-    ]);
+      if (groupImage) {
+        try {
+          console.log("Starting image upload process...");
+          imageUrl = await uploadImage(groupImage);
+          console.log("Image upload completed:", imageUrl);
+        } catch (uploadError) {
+          console.error("Image upload failed:", uploadError);
+          Alert.alert(
+            "Warning",
+            "Failed to upload image, proceeding with default image"
+          );
+        }
+      }
+
+      const newGroup = {
+        name: groupName.trim(),
+        description: description.trim(),
+        image_url: imageUrl,
+        is_private: isPrivate,
+        category: category.trim(),
+        guidelines: guidelines.trim(),
+      };
+
+      console.log("Creating group with data:", newGroup);
+
+      const { error } = await createGroup(newGroup);
+
+      if (error) {
+        throw error;
+      }
+
+      Alert.alert("Success", "Group created successfully", [
+        {
+          text: "OK",
+          onPress: () => navigation.goBack(),
+        },
+      ]);
+    } catch (error) {
+      console.error("Error creating group:", error);
+      Alert.alert(
+        "Error",
+        "Failed to create group: " + (error.message || "Unknown error")
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -222,10 +308,19 @@ export default function CreateGroupScreen({ navigation }) {
 
         <View style={[styles.footer, { backgroundColor: theme.card }]}>
           <TouchableOpacity
-            style={[styles.createButton, { backgroundColor: theme.primary }]}
+            style={[
+              styles.createButton,
+              { backgroundColor: theme.primary },
+              isLoading && styles.disabledButton,
+            ]}
             onPress={handleCreateGroup}
+            disabled={isLoading}
           >
-            <Text style={styles.createButtonText}>Create Group</Text>
+            {isLoading ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text style={styles.createButtonText}>Create Group</Text>
+            )}
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -321,5 +416,8 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
     fontWeight: "600",
+  },
+  disabledButton: {
+    opacity: 0.7,
   },
 });
