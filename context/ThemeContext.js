@@ -11,6 +11,7 @@ export const themes = {
     primary: "#6B4EFF",
     border: "#eee",
     searchBg: "#f0f0f0",
+    error: "#FF3B30",
   },
   dark: {
     background: "#121212",
@@ -20,6 +21,7 @@ export const themes = {
     primary: "#8B6FFF",
     border: "#2C2C2C",
     searchBg: "#2C2C2C",
+    error: "#FF453A",
   },
 };
 

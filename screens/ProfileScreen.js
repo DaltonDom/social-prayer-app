@@ -10,6 +10,7 @@ import {
   Switch,
   Animated,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { usePrayers } from "../context/PrayerContext";
@@ -20,6 +21,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { supabase } from "../lib/supabase";
 import { useUser } from "../context/UserContext";
+import { friendshipService } from "../services/friendshipService";
 
 export default function ProfileScreen({ navigation }) {
   const { theme, isDarkMode, toggleTheme } = useTheme();
@@ -33,6 +35,7 @@ export default function ProfileScreen({ navigation }) {
   const [totalFriends, setTotalFriends] = useState(0);
   const [pendingRequests, setPendingRequests] = useState([]);
   const [availableUsers, setAvailableUsers] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Filter prayers to only show user's prayers
   const userPrayers = prayers.filter(
@@ -400,6 +403,68 @@ export default function ProfileScreen({ navigation }) {
     });
   };
 
+  const fetchFriendsData = async () => {
+    setIsLoading(true);
+    try {
+      const [friendsData, pendingData, potentialFriends] = await Promise.all([
+        friendshipService.getFriends(),
+        friendshipService.getPendingRequests(),
+        friendshipService.getPotentialFriends()
+      ]);
+      
+      setFriends(friendsData);
+      setTotalFriends(friendsData.length);
+      setPendingRequests(pendingData);
+      setAvailableUsers(potentialFriends);
+    } catch (error) {
+      console.error('Error fetching friends:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (userProfile) {
+      fetchFriendsData();
+    }
+  }, [userProfile]);
+
+  const handleAcceptRequest = async (friendshipId) => {
+    try {
+      await friendshipService.acceptFriendRequest(friendshipId);
+      fetchFriendsData();
+    } catch (error) {
+      console.error('Error accepting friend request:', error);
+    }
+  };
+
+  const handleRejectRequest = async (friendshipId) => {
+    try {
+      await friendshipService.rejectFriendRequest(friendshipId);
+      fetchFriendsData();
+    } catch (error) {
+      console.error('Error rejecting friend request:', error);
+    }
+  };
+
+  const handleSendRequest = async (userId) => {
+    try {
+      await friendshipService.sendFriendRequest(userId);
+      fetchFriendsData();
+    } catch (error) {
+      console.error('Error sending friend request:', error);
+    }
+  };
+
+  const handleRemoveFriend = async (friendId) => {
+    try {
+      await friendshipService.removeFriend(friendId);
+      fetchFriendsData();
+    } catch (error) {
+      console.error('Error removing friend:', error);
+    }
+  };
+
   return (
     <SafeAreaView
       style={{ flex: 1, backgroundColor: theme.background }}
@@ -461,29 +526,84 @@ export default function ProfileScreen({ navigation }) {
         <View style={[styles.section, { backgroundColor: theme.card }]}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              Friends
+              Friends ({totalFriends})
             </Text>
             <TouchableOpacity
               style={styles.seeAllButton}
-              onPress={navigateToFriendsList}
+              onPress={() => navigation.navigate('FriendsList')}
             >
               <Text style={[styles.seeAllText, { color: theme.primary }]}>
                 See All
               </Text>
             </TouchableOpacity>
           </View>
-          <FlatList
-            data={friends.slice(0, 3)} // Show only first 3 friends
-            renderItem={renderFriendItem}
-            keyExtractor={(item) => item.id}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            ListEmptyComponent={
-              <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-                No friends yet
-              </Text>
-            }
-          />
+
+          {isLoading ? (
+            <ActivityIndicator size="small" color={theme.primary} />
+          ) : (
+            <>
+              {/* Friends Preview */}
+              <FlatList
+                data={friends.slice(0, 3)} // Show only first 3 friends
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <TouchableOpacity 
+                    style={styles.friendCard}
+                    onPress={() => navigation.navigate('FriendProfile', { friendId: item.id })}
+                  >
+                    <Image
+                      source={{ uri: item.profile_image_url || "https://via.placeholder.com/50" }}
+                      style={styles.friendImage}
+                    />
+                    <Text style={[styles.friendName, { color: theme.text }]}>
+                      {item.first_name} {item.last_name}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                ListEmptyComponent={
+                  <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+                    No friends yet
+                  </Text>
+                }
+              />
+
+              {/* Pending Requests Preview (if any) */}
+              {pendingRequests.length > 0 && (
+                <View style={styles.requestsPreview}>
+                  <Text style={[styles.subsectionTitle, { color: theme.text }]}>
+                    Friend Requests ({pendingRequests.length})
+                  </Text>
+                  <FlatList
+                    data={pendingRequests.slice(0, 2)} // Show only first 2 requests
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    keyExtractor={(item) => item.id}
+                    renderItem={({ item }) => (
+                      <View style={styles.friendRequestCard}>
+                        <Image
+                          source={{ uri: item.profile_image_url || "https://via.placeholder.com/50" }}
+                          style={styles.friendImage}
+                        />
+                        <Text style={[styles.friendName, { color: theme.text }]} numberOfLines={1}>
+                          {item.first_name} {item.last_name}
+                        </Text>
+                        <View style={styles.requestButtons}>
+                          <TouchableOpacity
+                            style={[styles.acceptButton, { backgroundColor: theme.primary }]}
+                            onPress={() => handleAcceptRequest(item.friendshipId)}
+                          >
+                            <Text style={styles.buttonText}>Accept</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    )}
+                  />
+                </View>
+              )}
+            </>
+          )}
         </View>
 
         {/* Settings Section */}
@@ -548,7 +668,9 @@ export default function ProfileScreen({ navigation }) {
               trackColor={{ false: "#767577", true: theme.primary }}
             />
           </View>
-          <View style={styles.lastSettingItem}>
+          <View
+            style={[styles.lastSettingItem]}
+          >
             <View style={styles.settingLeft}>
               <Ionicons
                 name={isDarkMode ? "moon" : "moon-outline"}
@@ -682,6 +804,12 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 4,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "bold",
@@ -789,18 +917,12 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginLeft: 8,
   },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
   seeAllButton: {
-    padding: 4,
+    padding: 8,
   },
   seeAllText: {
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: '600',
   },
   friendItem: {
     padding: 12,
@@ -819,5 +941,78 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "500",
     textAlign: "center",
+  },
+  subsection: {
+    paddingVertical: 16,
+  },
+  subsectionTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  friendCard: {
+    padding: 12,
+    borderRadius: 12,
+    alignItems: "center",
+    marginRight: 12,
+    width: 100,
+  },
+  requestButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+  },
+  acceptButton: {
+    backgroundColor: "#6B4EFF",
+    padding: 8,
+    borderRadius: 8,
+    width: "45%",
+  },
+  rejectButton: {
+    backgroundColor: "#FF3B30",
+    padding: 8,
+    borderRadius: 8,
+    width: "45%",
+  },
+  buttonText: {
+    fontSize: 14,
+    color: "white",
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  removeFriendButton: {
+    backgroundColor: "#FF3B30",
+    padding: 4,
+    borderRadius: 8,
+    width: "100%",
+    marginTop: 8,
+  },
+  removeFriendText: {
+    fontSize: 14,
+    color: "white",
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  addFriendButton: {
+    backgroundColor: "#6B4EFF",
+    padding: 4,
+    borderRadius: 8,
+    width: "100%",
+    marginTop: 8,
+  },
+  addFriendText: {
+    fontSize: 14,
+    color: "white",
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  friendRequestCard: {
+    width: 100,
+    alignItems: 'center',
+    marginRight: 16,
+    padding: 8,
+  },
+  requestsPreview: {
+    marginTop: 16,
   },
 });

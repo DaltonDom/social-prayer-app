@@ -60,22 +60,25 @@ export default function HomeScreen({ navigation }) {
           />
         </View>
         <Text style={[styles.title, { color: theme.text }]}>{item.title}</Text>
-      </View>
-      <View style={styles.tagsContainer}>
         {item.groupName && (
           <View
             style={[
               styles.tag,
               styles.groupTag,
-              { backgroundColor: `${theme.primary}15` },
+              { 
+                backgroundColor: '#F2EEFF',
+                borderColor: '#6B4EFF',
+              },
             ]}
           >
-            <Ionicons name="people" size={14} color={theme.primary} />
-            <Text style={[styles.tagText, { color: theme.primary }]}>
+            <Text style={[styles.tagText, { color: '#6B4EFF' }]}>
               {item.groupName}
             </Text>
           </View>
         )}
+      </View>
+      <View style={styles.tagsContainer}>
+        {/* Group tag moved to title container */}
       </View>
       <Text style={[styles.description, { color: theme.text }]}>
         {item.description}
@@ -124,7 +127,7 @@ export default function HomeScreen({ navigation }) {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={theme.text} // For iOS
+            tintColor={theme.primary} // For iOS
             colors={[theme.primary]} // For Android
           />
         }
@@ -229,10 +232,14 @@ const styles = StyleSheet.create({
   groupTag: {
     borderStyle: "dashed",
     borderWidth: 1,
-    borderColor: "#6B4EFF30",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    minWidth: 60,
+    alignItems: 'center',
   },
   tagText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "600",
   },
 });

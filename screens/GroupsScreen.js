@@ -13,12 +13,19 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../context/ThemeContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useGroups } from "../context/GroupContext";
+import { useFocusEffect } from "@react-navigation/native";
 
 export default function GroupsScreen({ navigation }) {
   const { theme, isDarkMode } = useTheme();
-  const { groups } = useGroups();
+  const { groups, refreshGroups } = useGroups();
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredGroups, setFilteredGroups] = useState(groups);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      refreshGroups(true);  // Skip refresh if we already have data
+    }, [refreshGroups])
+  );
 
   useEffect(() => {
     const query = searchQuery.toLowerCase();
@@ -34,61 +41,69 @@ export default function GroupsScreen({ navigation }) {
     navigation.navigate("CreateGroup");
   };
 
-  const renderGroupCard = ({ item }) => (
-    <TouchableOpacity
-      style={[styles.card, { backgroundColor: theme.card }]}
-      onPress={() =>
-        navigation.navigate("GroupDetail", {
-          group: {
+  const renderGroupCard = ({ item }) => {
+    return (
+      <TouchableOpacity
+        style={[styles.card, { backgroundColor: theme.card }]}
+        onPress={() => {
+          const groupData = {
             id: item.id,
             name: item.name,
             description: item.description,
             image_url: item.image_url,
             memberCount: item.memberCount,
             membersList: item.membersList,
-          },
-        })
-      }
-    >
-      <View style={styles.cardHeader}>
-        <Image source={{ uri: item.logo }} style={styles.groupLogo} />
-        <View style={styles.headerText}>
-          <Text style={[styles.groupName, { color: theme.text }]}>
-            {item.name}
-          </Text>
-          <Text style={[styles.memberCount, { color: theme.textSecondary }]}>
-            {item.members} members
-          </Text>
-        </View>
-      </View>
-      <Text style={[styles.description, { color: theme.text }]}>
-        {item.description}
-      </Text>
-      <View style={[styles.cardFooter, { borderTopColor: theme.border }]}>
-        <View style={styles.footerItem}>
-          <Ionicons name="time-outline" size={16} color={theme.textSecondary} />
-          <Text style={[styles.footerText, { color: theme.textSecondary }]}>
-            {item.lastActive}
-          </Text>
-        </View>
-        <View style={styles.footerItem}>
-          <Ionicons
-            name="heart-outline"
-            size={16}
-            color={theme.textSecondary}
+            isAdmin: item.isAdmin,
+            created_by: item.created_by,
+          };
+          navigation.navigate("GroupDetail", {
+            group: groupData
+          });
+        }}
+      >
+        <View style={styles.cardHeader}>
+          <Image 
+            source={{ uri: item.image_url || "https://via.placeholder.com/150" }} 
+            style={styles.groupLogo} 
           />
-          <Text style={[styles.footerText, { color: theme.textSecondary }]}>
-            {item.prayerCount} prayers
-          </Text>
+          <View style={styles.headerText}>
+            <Text style={[styles.groupName, { color: theme.text }]}>
+              {item.name}
+            </Text>
+            <Text style={[styles.memberCount, { color: theme.textSecondary }]}>
+              {item.memberCount || 0} members
+            </Text>
+          </View>
         </View>
-      </View>
-    </TouchableOpacity>
-  );
+        <Text style={[styles.description, { color: theme.text }]}>
+          {item.description}
+        </Text>
+        <View style={[styles.cardFooter, { borderTopColor: theme.border }]}>
+          <View style={styles.footerItem}>
+            <Ionicons name="time-outline" size={16} color={theme.textSecondary} />
+            <Text style={[styles.footerText, { color: theme.textSecondary }]}>
+              {item.lastActive}
+            </Text>
+          </View>
+          <View style={styles.footerItem}>
+            <Ionicons
+              name="heart-outline"
+              size={16}
+              color={theme.textSecondary}
+            />
+            <Text style={[styles.footerText, { color: theme.textSecondary }]}>
+              {item.prayerCount} prayers
+            </Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.background }]}
-      edges={["right", "left", "bottom"]}
+      edges={["right", "left"]}
     >
       <View
         style={[

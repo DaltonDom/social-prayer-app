@@ -19,17 +19,19 @@ export function PrayerProvider({ children }) {
     try {
       const { data, error } = await supabase
         .from("prayers")
-        .select(
-          `
+        .select(`
           *,
           profiles!prayers_user_id_fkey (
             id,
             first_name,
             last_name,
             profile_image_url
+          ),
+          groups!prayers_group_id_fkey (
+            id,
+            name
           )
-        `
-        )
+        `)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -43,6 +45,7 @@ export function PrayerProvider({ children }) {
         date: new Date(prayer.created_at).toISOString().split("T")[0],
         comments: prayer.comment_count || 0,
         updates: prayer.updates?.length || 0,
+        groupName: prayer.groups?.name || null,
       }));
 
       setPrayers(transformedData);
@@ -184,6 +187,10 @@ export function PrayerProvider({ children }) {
             first_name,
             last_name,
             profile_image_url
+          ),
+          groups!prayers_group_id_fkey (
+            id,
+            name
           )
         `
         )
@@ -201,6 +208,7 @@ export function PrayerProvider({ children }) {
         comments: data.comment_count || 0,
         updates: data.updates?.length || 0,
         updates_list: data.updates || [],
+        groupName: data.groups?.name || null,
       };
 
       // Update local state
@@ -229,6 +237,7 @@ export function PrayerProvider({ children }) {
         is_answered: false,
         prayer_count: 0,
         comment_count: 0,
+        group_id: newPrayer.groupId || null,
       };
 
       const { data, error } = await supabase
@@ -242,6 +251,10 @@ export function PrayerProvider({ children }) {
             first_name,
             last_name,
             profile_image_url
+          ),
+          groups!prayers_group_id_fkey (
+            id,
+            name
           )
         `
         )
@@ -259,6 +272,7 @@ export function PrayerProvider({ children }) {
         comments: 0,
         updates: 0,
         updates_list: [],
+        groupName: data.groups?.name || null,
       };
 
       // Update local state
@@ -283,6 +297,10 @@ export function PrayerProvider({ children }) {
               first_name,
               last_name,
               profile_image_url
+            ),
+            groups!prayers_group_id_fkey (
+              id,
+              name
             )
           `
           )
@@ -305,6 +323,7 @@ export function PrayerProvider({ children }) {
         updates: prayerResult.data.updates?.length || 0,
         updates_list: prayerResult.data.updates || [],
         comments_list: commentsResult.data || [],
+        groupName: prayerResult.data.groups?.name || null,
       };
 
       return { data: transformedData, error: null };
@@ -338,7 +357,7 @@ export function PrayerProvider({ children }) {
         .select(
           `
           *,
-          profiles!prayer_comments_user_id_fkey (
+          profiles (
             id,
             first_name,
             last_name,
@@ -402,7 +421,7 @@ export function PrayerProvider({ children }) {
         .select(
           `
           *,
-          profiles!prayer_comments_user_id_fkey (
+          profiles (
             id,
             first_name,
             last_name,
@@ -444,6 +463,10 @@ export function PrayerProvider({ children }) {
             first_name,
             last_name,
             profile_image_url
+          ),
+          groups!prayers_group_id_fkey (
+            id,
+            name
           )
         `
         )
@@ -460,6 +483,7 @@ export function PrayerProvider({ children }) {
         date: new Date(prayer.created_at).toISOString().split("T")[0],
         comments: prayer.comment_count || 0,
         updates: prayer.updates?.length || 0,
+        groupName: prayer.groups?.name || null,
       }));
 
       setPrayers(transformedData);

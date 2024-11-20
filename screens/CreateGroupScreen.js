@@ -21,6 +21,7 @@ import { useGroups } from "../context/GroupContext";
 import { supabase } from "../lib/supabase";
 import { useUser } from "../context/UserContext";
 import uuid from "react-native-uuid";
+import { decode } from 'base64-arraybuffer';
 
 export default function CreateGroupScreen({ navigation }) {
   const { theme } = useTheme();
@@ -68,39 +69,41 @@ export default function CreateGroupScreen({ navigation }) {
 
   const uploadImage = async (uri) => {
     try {
-      const fetchResponse = await fetch(uri);
-      const arrayBuffer = await fetchResponse.arrayBuffer();
-      const blob = new Blob([arrayBuffer], { type: "image/jpeg" });
+      // First convert URI to base64
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = async () => {
+          try {
+            const base64Str = reader.result.split(',')[1];
+            const fileName = `${uuid.v4()}.jpg`;
+            const filePath = `groups/${fileName}`;
 
-      const fileName = `${Date.now()}.jpg`;
+            // Convert base64 to ArrayBuffer using base64-arraybuffer
+            const arrayBuffer = decode(base64Str);
 
-      console.log("Starting upload with:", {
-        fileName,
-        blobSize: blob.size,
-        blobType: blob.type,
+            const { data, error: uploadError } = await supabase.storage
+              .from('group-images')
+              .upload(filePath, arrayBuffer, {
+                contentType: 'image/jpeg'
+              });
+
+            if (uploadError) throw uploadError;
+
+            const { data: { publicUrl } } = supabase.storage
+              .from('group-images')
+              .getPublicUrl(filePath);
+
+            resolve(publicUrl);
+          } catch (error) {
+            reject(error);
+          }
+        };
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsDataURL(blob);
       });
-
-      const { data, error: uploadError } = await supabase.storage
-        .from("group-images")
-        .upload(`groups/${fileName}`, blob, {
-          contentType: "image/jpeg",
-          duplex: "half",
-          cacheControl: "3600",
-        });
-
-      if (uploadError) {
-        console.error("Upload error:", uploadError);
-        throw uploadError;
-      }
-
-      const {
-        data: { publicUrl },
-      } = supabase.storage
-        .from("group-images")
-        .getPublicUrl(`groups/${fileName}`);
-
-      console.log("Upload successful, URL:", publicUrl);
-      return publicUrl;
     } catch (error) {
       console.error("Error in uploadImage:", error);
       throw error;
@@ -113,59 +116,34 @@ export default function CreateGroupScreen({ navigation }) {
       return;
     }
 
-    if (!description.trim()) {
-      Alert.alert("Error", "Please enter a group description");
-      return;
-    }
-
-    setIsLoading(true);
-
     try {
-      let imageUrl = "https://via.placeholder.com/150";
+      setIsLoading(true);
+      let imageUrl = null;
 
       if (groupImage) {
         try {
-          console.log("Starting image upload process...");
           imageUrl = await uploadImage(groupImage);
-          console.log("Image upload completed:", imageUrl);
         } catch (uploadError) {
           console.error("Image upload failed:", uploadError);
-          Alert.alert(
-            "Warning",
-            "Failed to upload image, proceeding with default image"
-          );
+          Alert.alert("Warning", "Failed to upload image. Please try again.");
+          setIsLoading(false);
+          return;
         }
       }
 
-      const newGroup = {
+      const { error } = await createGroup({
         name: groupName.trim(),
         description: description.trim(),
-        image_url: imageUrl,
-        is_private: isPrivate,
+        imageUrl, 
+        isPrivate,
         category: category.trim(),
         guidelines: guidelines.trim(),
-      };
+      });
 
-      console.log("Creating group with data:", newGroup);
-
-      const { error } = await createGroup(newGroup);
-
-      if (error) {
-        throw error;
-      }
-
-      Alert.alert("Success", "Group created successfully", [
-        {
-          text: "OK",
-          onPress: () => navigation.goBack(),
-        },
-      ]);
+      if (error) throw error;
+      navigation.goBack();
     } catch (error) {
-      console.error("Error creating group:", error);
-      Alert.alert(
-        "Error",
-        "Failed to create group: " + (error.message || "Unknown error")
-      );
+      Alert.alert("Error", "Failed to create group");
     } finally {
       setIsLoading(false);
     }

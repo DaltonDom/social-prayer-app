@@ -11,11 +11,13 @@ export function GroupProvider({ children }) {
   const { userProfile } = useUser();
 
   // Fetch all groups
-  const fetchGroups = async () => {
+  const fetchGroups = async (skipIfHasData = false) => {
     try {
-      console.log("Fetching groups for user:", userProfile?.id);
+      // If skipIfHasData is true and we already have groups, don't fetch
+      if (skipIfHasData && groups.length > 0) {
+        return;
+      }
 
-      // First fetch all groups with creator profiles
       const { data: groupsData, error: groupsError } = await supabase
         .from("groups")
         .select(
@@ -36,9 +38,6 @@ export function GroupProvider({ children }) {
         throw groupsError;
       }
 
-      console.log("Fetched groups:", groupsData);
-
-      // Then fetch group members with specific foreign key relationship
       const { data: membersData, error: membersError } = await supabase.from(
         "group_members"
       ).select(`
@@ -56,7 +55,6 @@ export function GroupProvider({ children }) {
         throw membersError;
       }
 
-      // Transform and combine the data
       const transformedGroups = groupsData.map((group) => {
         const groupMembers =
           membersData?.filter((member) => member.group_id === group.id) || [];
@@ -98,8 +96,6 @@ export function GroupProvider({ children }) {
         };
       });
 
-      console.log("Transformed groups:", transformedGroups);
-
       setGroups(transformedGroups);
       setMyGroups(
         transformedGroups.filter((group) => group.isMember || group.isAdmin)
@@ -112,9 +108,8 @@ export function GroupProvider({ children }) {
   };
 
   // Create a new group
-  const createGroup = async ({ name, description, imageUrl }) => {
+  const createGroup = async ({ name, description, imageUrl, isPrivate, category, guidelines }) => {
     try {
-      // Create the group
       const { data: groupData, error: groupError } = await supabase
         .from("groups")
         .insert([
@@ -123,6 +118,9 @@ export function GroupProvider({ children }) {
             description,
             created_by: userProfile.id,
             image_url: imageUrl || "https://via.placeholder.com/150",
+            is_private: isPrivate,
+            category,
+            guidelines,
           },
         ])
         .select(
@@ -140,7 +138,6 @@ export function GroupProvider({ children }) {
 
       if (groupError) throw groupError;
 
-      // Add creator as admin member
       const { error: memberError } = await supabase
         .from("group_members")
         .insert([
@@ -153,7 +150,6 @@ export function GroupProvider({ children }) {
 
       if (memberError) throw memberError;
 
-      // Refresh groups to get updated list
       await fetchGroups();
 
       return { data: groupData, error: null };
@@ -227,55 +223,41 @@ export function GroupProvider({ children }) {
     }
   };
 
-  // Add this new function
-  const addGroup = async ({ name, description, imageUrl }) => {
+  // Delete a group
+  const deleteGroup = async (groupId) => {
     try {
-      // Create the group
-      const { data: groupData, error: groupError } = await supabase
-        .from("groups")
-        .insert([
-          {
-            name,
-            description,
-            created_by: userProfile.id,
-            image_url: imageUrl || "https://via.placeholder.com/150",
-          },
-        ])
-        .select(
-          `
-          *,
-          profiles!fk_groups_created_by (
-            id,
-            first_name,
-            last_name,
-            profile_image_url
-          )
-        `
-        )
-        .single();
+      // First, delete all prayers in the group
+      const { error: prayersError } = await supabase
+        .from('prayers')
+        .delete()
+        .eq('group_id', groupId);
+
+      if (prayersError) throw prayersError;
+
+      // Then, delete all group members
+      const { error: membersError } = await supabase
+        .from('group_members')
+        .delete()
+        .eq('group_id', groupId);
+
+      if (membersError) throw membersError;
+
+      // Finally, delete the group itself
+      const { error: groupError } = await supabase
+        .from('groups')
+        .delete()
+        .eq('id', groupId);
 
       if (groupError) throw groupError;
 
-      // Add creator as admin member
-      const { error: memberError } = await supabase
-        .from("group_members")
-        .insert([
-          {
-            group_id: groupData.id,
-            user_id: userProfile.id,
-            role: "admin",
-          },
-        ]);
+      // Update local state
+      setGroups(prev => prev.filter(g => g.id !== groupId));
+      setMyGroups(prev => prev.filter(g => g.id !== groupId));
 
-      if (memberError) throw memberError;
-
-      // Refresh groups to get updated list
-      await fetchGroups();
-
-      return { data: groupData, error: null };
+      return { error: null };
     } catch (error) {
-      console.error("Error adding group:", error.message);
-      return { data: null, error };
+      console.error("Error deleting group:", error);
+      return { error };
     }
   };
 
@@ -296,7 +278,7 @@ export function GroupProvider({ children }) {
         handleJoinRequest,
         leaveGroup,
         refreshGroups: fetchGroups,
-        addGroup,
+        deleteGroup,
       }}
     >
       {children}

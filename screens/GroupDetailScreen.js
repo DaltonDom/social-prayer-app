@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
@@ -6,18 +6,54 @@ import {
   Image,
   FlatList,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import { useTheme } from "../context/ThemeContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { usePrayers } from "../context/PrayerContext";
+import { useGroups } from "../context/GroupContext";
 import { Ionicons } from "@expo/vector-icons";
 
 export default function GroupDetailScreen({ route, navigation }) {
   const { theme } = useTheme();
   const { group } = route.params;
   const { getGroupPrayers } = usePrayers();
+  const { deleteGroup } = useGroups();
+
+  useEffect(() => {
+    console.log("=== Group Detail Screen ===");
+    console.log("Group:", JSON.stringify(group, null, 2));
+    console.log("Is admin?", group.isAdmin);
+    console.log("========================");
+  }, [group]);
 
   const groupPrayers = group?.id ? getGroupPrayers(group.id) : [];
+
+  const handleDeleteGroup = () => {
+    Alert.alert(
+      "Delete Group",
+      "Are you sure you want to delete this group?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            const { error } = await deleteGroup(group.id);
+            if (error) {
+              Alert.alert("Error", "Could not delete group");
+              return;
+            }
+            // Force navigation back to the groups tab
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'MainTabs', params: { screen: 'Groups' } }],
+            });
+          },
+        },
+      ]
+    );
+  };
 
   console.log("Group:", group);
   console.log("Group ID:", group?.id);
@@ -69,6 +105,7 @@ export default function GroupDetailScreen({ route, navigation }) {
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.background }]}
+      edges={["right", "left"]}
     >
       {/* Group Header */}
       <View style={[styles.groupHeader, { backgroundColor: theme.card }]}>
@@ -82,6 +119,19 @@ export default function GroupDetailScreen({ route, navigation }) {
         <Text style={[styles.groupDescription, { color: theme.textSecondary }]}>
           {group.description}
         </Text>
+
+        {/* Add Delete Button for Admin */}
+        {group.isAdmin && (
+          <TouchableOpacity
+            style={[
+              styles.deleteButton,
+              { backgroundColor: `${theme.error}15` },
+            ]}
+            onPress={handleDeleteGroup}
+          >
+            <Ionicons name="trash-outline" size={24} color={theme.error} />
+          </TouchableOpacity>
+        )}
 
         <View style={styles.groupStats}>
           <View style={styles.statItem}>
@@ -324,5 +374,15 @@ const styles = StyleSheet.create({
   adminBadge: {
     fontSize: 12,
     fontWeight: "600",
+  },
+  deleteButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
