@@ -65,13 +65,13 @@ export default function HomeScreen({ navigation }) {
             style={[
               styles.tag,
               styles.groupTag,
-              { 
-                backgroundColor: '#F2EEFF',
-                borderColor: '#6B4EFF',
+              {
+                backgroundColor: "#F2EEFF",
+                borderColor: "#6B4EFF",
               },
             ]}
           >
-            <Text style={[styles.tagText, { color: '#6B4EFF' }]}>
+            <Text style={[styles.tagText, { color: "#6B4EFF" }]}>
               {item.groupName}
             </Text>
           </View>
@@ -117,6 +117,35 @@ export default function HomeScreen({ navigation }) {
       style={[styles.container, { backgroundColor: theme.background }]}
       edges={["top"]}
     >
+      <View
+        style={[
+          styles.header,
+          {
+            backgroundColor: theme.background,
+            borderBottomColor: theme.border,
+          },
+        ]}
+      >
+        <Text style={[styles.headerTitle, { color: theme.text }]}>
+          Tefillah
+        </Text>
+        <TouchableOpacity
+          style={[
+            styles.notificationButton,
+            {
+              backgroundColor: `${theme.primary}10`,
+              borderRadius: 20,
+            },
+          ]}
+          onPress={() => {
+            console.log("Navigating to Notifications");
+            navigation.navigate("Notifications");
+          }}
+        >
+          <Ionicons name="notifications-outline" size={24} color={theme.text} />
+        </TouchableOpacity>
+      </View>
+
       <FlatList
         data={prayers}
         renderItem={renderPrayerCard}
@@ -127,8 +156,8 @@ export default function HomeScreen({ navigation }) {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={theme.primary} // For iOS
-            colors={[theme.primary]} // For Android
+            tintColor={theme.primary}
+            colors={[theme.primary]}
           />
         }
       />
@@ -139,7 +168,26 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    fontFamily: Platform.OS === "ios" ? "Helvetica Neue" : "sans-serif-medium",
+  },
+  notificationButton: {
+    padding: 8,
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
   },
   list: {
     padding: 16,
@@ -236,7 +284,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 12,
     minWidth: 60,
-    alignItems: 'center',
+    alignItems: "center",
   },
   tagText: {
     fontSize: 12,

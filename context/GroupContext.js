@@ -226,37 +226,57 @@ export function GroupProvider({ children }) {
   // Delete a group
   const deleteGroup = async (groupId) => {
     try {
-      // First, delete all prayers in the group
-      const { error: prayersError } = await supabase
-        .from('prayers')
-        .delete()
-        .eq('group_id', groupId);
+      console.log("Starting group deletion process for groupId:", groupId);
 
-      if (prayersError) throw prayersError;
-
-      // Then, delete all group members
-      const { error: membersError } = await supabase
-        .from('group_members')
-        .delete()
-        .eq('group_id', groupId);
-
-      if (membersError) throw membersError;
-
-      // Finally, delete the group itself
-      const { error: groupError } = await supabase
+      // First verify the group exists
+      const { data: group, error: groupCheckError } = await supabase
         .from('groups')
-        .delete()
-        .eq('id', groupId);
+        .select('*')
+        .eq('id', groupId)
+        .single();
 
-      if (groupError) throw groupError;
+      if (groupCheckError) {
+        console.error("Error checking group:", groupCheckError);
+        throw groupCheckError;
+      }
+
+      if (!group) {
+        console.error("Group not found:", groupId);
+        throw new Error("Group not found");
+      }
+
+      // Start a transaction by using RPC (Remote Procedure Call)
+      const { data, error: rpcError } = await supabase.rpc('delete_group', {
+        group_id: groupId
+      });
+
+      if (rpcError) {
+        console.error("Error in delete_group RPC:", rpcError);
+        throw rpcError;
+      }
+
+      console.log("Group and related data deleted successfully");
 
       // Update local state
-      setGroups(prev => prev.filter(g => g.id !== groupId));
-      setMyGroups(prev => prev.filter(g => g.id !== groupId));
+      setGroups(prev => {
+        const filtered = prev.filter(g => g.id !== groupId);
+        console.log("Updated groups count:", filtered.length);
+        return filtered;
+      });
+      
+      setMyGroups(prev => {
+        const filtered = prev.filter(g => g.id !== groupId);
+        console.log("Updated myGroups count:", filtered.length);
+        return filtered;
+      });
+
+      // Force a refresh of groups
+      console.log("Forcing groups refresh");
+      await fetchGroups(false);
 
       return { error: null };
     } catch (error) {
-      console.error("Error deleting group:", error);
+      console.error("Error in deleteGroup:", error);
       return { error };
     }
   };

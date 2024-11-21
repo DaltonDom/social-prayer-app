@@ -29,26 +29,36 @@ export default function GroupDetailScreen({ route, navigation }) {
 
   const groupPrayers = group?.id ? getGroupPrayers(group.id) : [];
 
-  const handleDeleteGroup = () => {
+  const handleDeleteGroup = async () => {
     Alert.alert(
       "Delete Group",
-      "Are you sure you want to delete this group?",
+      "Are you sure you want to delete this group? This action cannot be undone.",
       [
         { text: "Cancel", style: "cancel" },
         {
           text: "Delete",
           style: "destructive",
           onPress: async () => {
-            const { error } = await deleteGroup(group.id);
-            if (error) {
-              Alert.alert("Error", "Could not delete group");
-              return;
+            try {
+              console.log("Starting group deletion for:", group.id);
+              const { error } = await deleteGroup(group.id);
+              
+              if (error) {
+                console.error("Failed to delete group:", error);
+                Alert.alert("Error", "Could not delete group. Please try again.");
+                return;
+              }
+
+              console.log("Group deleted successfully, navigating back");
+              // Force navigation back to the groups tab
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'MainTabs', params: { screen: 'Groups' } }],
+              });
+            } catch (error) {
+              console.error("Error in handleDeleteGroup:", error);
+              Alert.alert("Error", "An unexpected error occurred. Please try again.");
             }
-            // Force navigation back to the groups tab
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'MainTabs', params: { screen: 'Groups' } }],
-            });
           },
         },
       ]

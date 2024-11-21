@@ -23,7 +23,7 @@ export default function GroupsScreen({ navigation }) {
 
   useFocusEffect(
     React.useCallback(() => {
-      refreshGroups(true);  // Skip refresh if we already have data
+      refreshGroups(true); // Skip refresh if we already have data
     }, [refreshGroups])
   );
 
@@ -57,14 +57,16 @@ export default function GroupsScreen({ navigation }) {
             created_by: item.created_by,
           };
           navigation.navigate("GroupDetail", {
-            group: groupData
+            group: groupData,
           });
         }}
       >
         <View style={styles.cardHeader}>
-          <Image 
-            source={{ uri: item.image_url || "https://via.placeholder.com/150" }} 
-            style={styles.groupLogo} 
+          <Image
+            source={{
+              uri: item.image_url || "https://via.placeholder.com/150",
+            }}
+            style={styles.groupLogo}
           />
           <View style={styles.headerText}>
             <Text style={[styles.groupName, { color: theme.text }]}>
@@ -80,7 +82,11 @@ export default function GroupsScreen({ navigation }) {
         </Text>
         <View style={[styles.cardFooter, { borderTopColor: theme.border }]}>
           <View style={styles.footerItem}>
-            <Ionicons name="time-outline" size={16} color={theme.textSecondary} />
+            <Ionicons
+              name="time-outline"
+              size={16}
+              color={theme.textSecondary}
+            />
             <Text style={[styles.footerText, { color: theme.textSecondary }]}>
               {item.lastActive}
             </Text>

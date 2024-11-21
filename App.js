@@ -14,6 +14,7 @@ import AddJournalScreen from "./screens/AddJournalScreen";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import GroupDetailScreen from "./screens/GroupDetailScreen";
 import CreateGroupScreen from "./screens/CreateGroupScreen";
+import NotificationsScreen from "./screens/NotificationsScreen";
 import { GroupProvider } from "./context/GroupContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { UserProvider } from "./context/UserContext";
@@ -150,6 +151,19 @@ function Navigation() {
             options={{
               title: "Group Details",
               headerBackTitle: "Back",
+            }}
+          />
+          <Stack.Screen
+            name="Notifications"
+            component={NotificationsScreen}
+            options={{
+              headerShown: false,
+              presentation: "modal",
+              animationEnabled: true,
+              gestureEnabled: true,
+              gestureDirection: "horizontal",
+              cardStyle: { backgroundColor: "transparent" },
+              cardOverlayEnabled: true,
             }}
           />
         </Stack.Navigator>
