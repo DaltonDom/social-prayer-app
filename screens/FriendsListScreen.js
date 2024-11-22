@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,11 +8,11 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   TextInput,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTheme } from '../context/ThemeContext';
-import { friendshipService } from '../services/friendshipService';
-import { Ionicons } from '@expo/vector-icons';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useTheme } from "../context/ThemeContext";
+import { friendshipService } from "../services/friendshipService";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function FriendsListScreen({ navigation }) {
   const { theme } = useTheme();
@@ -20,22 +20,20 @@ export default function FriendsListScreen({ navigation }) {
   const [pendingRequests, setPendingRequests] = useState([]);
   const [availableUsers, setAvailableUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
 
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [friendsData, pendingData, potentialFriends] = await Promise.all([
-        friendshipService.getFriends(),
-        friendshipService.getPendingRequests(),
-        friendshipService.getPotentialFriends()
-      ]);
-      
-      setFriends(friendsData);
-      setPendingRequests(pendingData);
-      setAvailableUsers(potentialFriends);
+      const data = await friendshipService.getFriendshipStatuses();
+
+      console.log("Raw data from service:", data); // Debug log
+
+      setFriends(data.friends || []);
+      setPendingRequests(data.pendingReceived || []);
+      setAvailableUsers(data.availableUsers || []);
     } catch (error) {
-      console.error('Error fetching friends data:', error);
+      console.error("Error fetching friends:", error);
     } finally {
       setIsLoading(false);
     }
@@ -50,7 +48,7 @@ export default function FriendsListScreen({ navigation }) {
       await friendshipService.acceptFriendRequest(friendshipId);
       fetchData();
     } catch (error) {
-      console.error('Error accepting friend request:', error);
+      console.error("Error accepting friend request:", error);
     }
   };
 
@@ -59,7 +57,7 @@ export default function FriendsListScreen({ navigation }) {
       await friendshipService.rejectFriendRequest(friendshipId);
       fetchData();
     } catch (error) {
-      console.error('Error rejecting friend request:', error);
+      console.error("Error rejecting friend request:", error);
     }
   };
 
@@ -68,7 +66,7 @@ export default function FriendsListScreen({ navigation }) {
       await friendshipService.removeFriend(friendId);
       fetchData();
     } catch (error) {
-      console.error('Error removing friend:', error);
+      console.error("Error removing friend:", error);
     }
   };
 
@@ -77,23 +75,26 @@ export default function FriendsListScreen({ navigation }) {
       await friendshipService.sendFriendRequest(userId);
       fetchData();
     } catch (error) {
-      console.error('Error sending friend request:', error);
+      console.error("Error sending friend request:", error);
     }
   };
 
   const filterData = (data) => {
     if (!searchQuery) return data;
     const query = searchQuery.toLowerCase();
-    return data.filter(item => 
-      item.first_name?.toLowerCase().includes(query) ||
-      item.last_name?.toLowerCase().includes(query)
+    return data.filter(
+      (item) =>
+        item.first_name?.toLowerCase().includes(query) ||
+        item.last_name?.toLowerCase().includes(query)
     );
   };
 
   const renderFriend = ({ item }) => (
     <View style={[styles.card, { backgroundColor: theme.card }]}>
       <Image
-        source={{ uri: item.profile_image_url || 'https://via.placeholder.com/50' }}
+        source={{
+          uri: item.profile_image_url || "https://via.placeholder.com/50",
+        }}
         style={styles.profileImage}
       />
       <View style={styles.cardContent}>
@@ -113,7 +114,9 @@ export default function FriendsListScreen({ navigation }) {
   const renderPendingRequest = ({ item }) => (
     <View style={[styles.card, { backgroundColor: theme.card }]}>
       <Image
-        source={{ uri: item.profile_image_url || 'https://via.placeholder.com/50' }}
+        source={{
+          uri: item.profile_image_url || "https://via.placeholder.com/50",
+        }}
         style={styles.profileImage}
       />
       <View style={styles.cardContent}>
@@ -141,7 +144,9 @@ export default function FriendsListScreen({ navigation }) {
   const renderPotentialFriend = ({ item }) => (
     <View style={[styles.card, { backgroundColor: theme.card }]}>
       <Image
-        source={{ uri: item.profile_image_url || 'https://via.placeholder.com/50' }}
+        source={{
+          uri: item.profile_image_url || "https://via.placeholder.com/50",
+        }}
         style={styles.profileImage}
       />
       <View style={styles.cardContent}>
@@ -160,16 +165,26 @@ export default function FriendsListScreen({ navigation }) {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <SafeAreaView
+        style={[styles.container, { backgroundColor: theme.background }]}
+      >
         <ActivityIndicator size="large" color={theme.primary} />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.background }]}
+      edges={["left", "right"]}
+    >
       <View style={[styles.searchContainer, { backgroundColor: theme.card }]}>
-        <Ionicons name="search" size={20} color={theme.textSecondary} style={styles.searchIcon} />
+        <Ionicons
+          name="search"
+          size={20}
+          color={theme.textSecondary}
+          style={styles.searchIcon}
+        />
         <TextInput
           style={[styles.searchInput, { color: theme.text }]}
           placeholder="Search friends..."
@@ -178,12 +193,24 @@ export default function FriendsListScreen({ navigation }) {
           onChangeText={setSearchQuery}
         />
       </View>
-      
+
       <FlatList
         data={[
-          { title: 'Friend Requests', data: filterData(pendingRequests), renderItem: renderPendingRequest },
-          { title: 'Friends', data: filterData(friends), renderItem: renderFriend },
-          { title: 'People You May Know', data: filterData(availableUsers), renderItem: renderPotentialFriend }
+          {
+            title: "Friend Requests",
+            data: filterData(pendingRequests),
+            renderItem: renderPendingRequest,
+          },
+          {
+            title: "Friends",
+            data: filterData(friends),
+            renderItem: renderFriend,
+          },
+          {
+            title: "People You May Know",
+            data: filterData(availableUsers),
+            renderItem: renderPotentialFriend,
+          },
         ]}
         renderItem={({ item: section }) => (
           <>
@@ -213,8 +240,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     margin: 16,
     paddingHorizontal: 16,
     borderRadius: 12,
@@ -226,23 +253,23 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
-    height: '100%',
+    height: "100%",
   },
   section: {
     padding: 16,
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 16,
   },
   card: {
-    flexDirection: 'row',
+    flexDirection: "row",
     padding: 12,
     borderRadius: 12,
     marginBottom: 12,
-    alignItems: 'center',
-    shadowColor: '#000',
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -262,10 +289,10 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   actionButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
   },
   acceptButton: {
     paddingHorizontal: 12,
@@ -290,8 +317,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   buttonText: {
-    color: 'white',
+    color: "white",
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });
