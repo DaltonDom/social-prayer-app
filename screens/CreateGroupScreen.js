@@ -21,7 +21,7 @@ import { useGroups } from "../context/GroupContext";
 import { supabase } from "../lib/supabase";
 import { useUser } from "../context/UserContext";
 import uuid from "react-native-uuid";
-import { decode } from 'base64-arraybuffer';
+import { decode } from "base64-arraybuffer";
 
 export default function CreateGroupScreen({ navigation }) {
   const { theme } = useTheme();
@@ -72,12 +72,12 @@ export default function CreateGroupScreen({ navigation }) {
       // First convert URI to base64
       const response = await fetch(uri);
       const blob = await response.blob();
-      
+
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = async () => {
           try {
-            const base64Str = reader.result.split(',')[1];
+            const base64Str = reader.result.split(",")[1];
             const fileName = `${uuid.v4()}.jpg`;
             const filePath = `groups/${fileName}`;
 
@@ -85,23 +85,23 @@ export default function CreateGroupScreen({ navigation }) {
             const arrayBuffer = decode(base64Str);
 
             const { data, error: uploadError } = await supabase.storage
-              .from('group-images')
+              .from("group-images")
               .upload(filePath, arrayBuffer, {
-                contentType: 'image/jpeg'
+                contentType: "image/jpeg",
               });
 
             if (uploadError) throw uploadError;
 
-            const { data: { publicUrl } } = supabase.storage
-              .from('group-images')
-              .getPublicUrl(filePath);
+            const {
+              data: { publicUrl },
+            } = supabase.storage.from("group-images").getPublicUrl(filePath);
 
             resolve(publicUrl);
           } catch (error) {
             reject(error);
           }
         };
-        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.onerror = () => reject(new Error("Failed to read file"));
         reader.readAsDataURL(blob);
       });
     } catch (error) {
@@ -134,7 +134,7 @@ export default function CreateGroupScreen({ navigation }) {
       const { error } = await createGroup({
         name: groupName.trim(),
         description: description.trim(),
-        imageUrl, 
+        imageUrl,
         isPrivate,
         category: category.trim(),
         guidelines: guidelines.trim(),
@@ -156,6 +156,7 @@ export default function CreateGroupScreen({ navigation }) {
     >
       <SafeAreaView
         style={[styles.container, { backgroundColor: theme.background }]}
+        edges={["left", "right"]}
       >
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -264,23 +265,6 @@ export default function CreateGroupScreen({ navigation }) {
               multiline
               numberOfLines={4}
             />
-
-            <View style={styles.privacyContainer}>
-              <Text style={[styles.label, { color: theme.text }]}>
-                Private Group
-              </Text>
-              <Switch
-                value={isPrivate}
-                onValueChange={setIsPrivate}
-                trackColor={{ false: "#767577", true: theme.primary }}
-              />
-            </View>
-
-            <Text style={[styles.privacyNote, { color: theme.textSecondary }]}>
-              {isPrivate
-                ? "Only approved members can see and join this group"
-                : "Anyone can see and request to join this group"}
-            </Text>
           </View>
         </ScrollView>
 
