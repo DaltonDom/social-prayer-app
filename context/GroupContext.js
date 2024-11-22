@@ -13,11 +13,18 @@ export function GroupProvider({ children }) {
   // Fetch all groups
   const fetchGroups = async (skipIfHasData = false) => {
     try {
-      // If skipIfHasData is true and we already have groups, don't fetch
+      console.log("Starting fetchGroups...", {
+        skipIfHasData,
+        currentGroupsLength: groups.length,
+      });
+
       if (skipIfHasData && groups.length > 0) {
+        console.log("Skipping fetch due to existing data");
         return;
       }
 
+      // First query: Get groups
+      console.log("Fetching groups data...");
       const { data: groupsData, error: groupsError } = await supabase
         .from("groups")
         .select(
@@ -38,11 +45,13 @@ export function GroupProvider({ children }) {
         throw groupsError;
       }
 
+      // Second query: Get members with correct foreign key reference
+      console.log("Fetching members data...");
       const { data: membersData, error: membersError } = await supabase.from(
         "group_members"
       ).select(`
           *,
-          profiles!group_members_user_id_fkey (
+          user:user_id (
             id,
             first_name,
             last_name,
@@ -55,16 +64,16 @@ export function GroupProvider({ children }) {
         throw membersError;
       }
 
+      console.log("Transforming groups data...");
       const transformedGroups = groupsData.map((group) => {
         const groupMembers =
           membersData?.filter((member) => member.group_id === group.id) || [];
 
         const membersList = groupMembers.map((member) => ({
-          id: member.profiles.id,
-          name: `${member.profiles.first_name} ${member.profiles.last_name}`.trim(),
+          id: member.user.id,
+          name: `${member.user.first_name} ${member.user.last_name}`.trim(),
           profileImage:
-            member.profiles.profile_image_url ||
-            "https://via.placeholder.com/150",
+            member.user.profile_image_url || "https://via.placeholder.com/150",
           role: member.role,
         }));
 
@@ -102,13 +111,26 @@ export function GroupProvider({ children }) {
       );
     } catch (error) {
       console.error("Error in fetchGroups:", error);
+      console.error("Error details:", {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+      });
     } finally {
       setLoading(false);
     }
   };
 
   // Create a new group
-  const createGroup = async ({ name, description, imageUrl, isPrivate, category, guidelines }) => {
+  const createGroup = async ({
+    name,
+    description,
+    imageUrl,
+    isPrivate,
+    category,
+    guidelines,
+  }) => {
     try {
       const { data: groupData, error: groupError } = await supabase
         .from("groups")
@@ -226,57 +248,88 @@ export function GroupProvider({ children }) {
   // Delete a group
   const deleteGroup = async (groupId) => {
     try {
-      console.log("Starting group deletion process for groupId:", groupId);
+      console.log("Starting delete operation for group:", groupId);
 
-      // First verify the group exists
-      const { data: group, error: groupCheckError } = await supabase
-        .from('groups')
-        .select('*')
-        .eq('id', groupId)
-        .single();
+      // First verify the user has permission to delete this group
+      const group = groups.find((g) => g.id === groupId);
+      console.log("Group to delete:", group);
+      console.log("Current user:", userProfile?.id);
 
-      if (groupCheckError) {
-        console.error("Error checking group:", groupCheckError);
-        throw groupCheckError;
+      if (!group || group.created_by !== userProfile?.id) {
+        console.error("Permission denied: User is not the group creator");
+        return {
+          error: new Error(
+            "Permission denied: You can only delete groups you created"
+          ),
+        };
       }
 
-      if (!group) {
-        console.error("Group not found:", groupId);
-        throw new Error("Group not found");
+      // Test query to check permissions
+      console.log("Testing group access...");
+      try {
+        const { data: testData, error: testError } = await supabase
+          .from("groups")
+          .select("*")
+          .eq("id", groupId)
+          .single();
+
+        console.log("Test query response:", { testData, testError });
+
+        if (testError) {
+          console.error("Permission test failed:", testError);
+          return { error: testError };
+        }
+
+        if (!testData) {
+          console.error("Group not found in test query");
+          return { error: new Error("Group not found") };
+        }
+
+        // If we get here, we have permission to access the group
+        console.log("Permission test passed, proceeding with deletion");
+
+        // Delete the group
+        console.log("Attempting to delete group record...");
+        const { data: groupData, error: groupError } = await supabase
+          .from("groups")
+          .delete()
+          .match({
+            id: groupId,
+            created_by: userProfile.id,
+          })
+          .select();
+
+        if (groupError) {
+          console.error("Error deleting group:", groupError);
+          return { error: groupError };
+        }
+
+        console.log("Delete response:", { groupData, groupError });
+
+        // Update local state
+        setGroups((prev) => prev.filter((g) => g.id !== groupId));
+        setMyGroups((prev) => prev.filter((g) => g.id !== groupId));
+
+        console.log("Local state updated");
+        return { error: null };
+      } catch (innerError) {
+        console.error("Error during test query:", innerError);
+        console.error("Error details:", {
+          message: innerError.message,
+          code: innerError.code,
+          details: innerError.details,
+          hint: innerError.hint,
+        });
+        return { error: innerError };
       }
-
-      // Start a transaction by using RPC (Remote Procedure Call)
-      const { data, error: rpcError } = await supabase.rpc('delete_group', {
-        group_id: groupId
-      });
-
-      if (rpcError) {
-        console.error("Error in delete_group RPC:", rpcError);
-        throw rpcError;
-      }
-
-      console.log("Group and related data deleted successfully");
-
-      // Update local state
-      setGroups(prev => {
-        const filtered = prev.filter(g => g.id !== groupId);
-        console.log("Updated groups count:", filtered.length);
-        return filtered;
-      });
-      
-      setMyGroups(prev => {
-        const filtered = prev.filter(g => g.id !== groupId);
-        console.log("Updated myGroups count:", filtered.length);
-        return filtered;
-      });
-
-      // Force a refresh of groups
-      console.log("Forcing groups refresh");
-      await fetchGroups(false);
-
-      return { error: null };
     } catch (error) {
       console.error("Error in deleteGroup:", error);
+      console.error("Error details:", {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+      });
       return { error };
     }
   };
