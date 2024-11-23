@@ -307,88 +307,90 @@ export default function ProfileScreen({ navigation }) {
     }
   }, [userProfile]);
 
-  const fetchFriends = async () => {
-    try {
-      console.log("Fetching friends for user:", userProfile.id);
-
-      // Fetch accepted friendships where user is either the user or friend
-      const { data: friendships, error } = await supabase
-        .from("friendships")
-        .select(
-          `
-          id,
-          status,
-          friend:profiles!friendships_friend_id_fkey (
-            id,
-            first_name,
-            last_name,
-            profile_image_url
-          ),
-          user:profiles!friendships_user_id_fkey (
-            id,
-            first_name,
-            last_name,
-            profile_image_url
-          )
-        `
-        )
-        .or(`user_id.eq.${userProfile.id},friend_id.eq.${userProfile.id}`)
-        .eq("status", "accepted");
-
-      if (error) {
-        console.error("Error fetching friendships:", error);
-        throw error;
-      }
-
-      console.log("Fetched friendships:", friendships);
-
-      // Transform the data to get friend information
-      const transformedFriends = friendships.map((friendship) => {
-        const friendData =
-          friendship.user_id === userProfile.id
-            ? friendship.friend
-            : friendship.user;
-
-        return {
-          id: friendData.id,
-          name: `${friendData.first_name} ${friendData.last_name}`.trim(),
-          profileImage:
-            friendData.profile_image_url || "https://via.placeholder.com/50",
-          friendshipId: friendship.id,
-          status: friendship.status,
-          isRequester: friendship.friend_id === userProfile.id,
-        };
-      });
-
-      console.log("Transformed friends:", transformedFriends);
-
-      // Separate accepted friends and pending requests
-      const acceptedFriends = transformedFriends.filter(
-        (f) => f.status === "accepted"
-      );
-      const pendingRequests = transformedFriends.filter(
-        (f) => f.status === "pending"
-      );
-
-      console.log("Accepted friends:", acceptedFriends);
-      console.log("Pending requests:", pendingRequests);
-
-      setFriends(acceptedFriends);
-      setPendingRequests(pendingRequests);
-      setTotalFriends(acceptedFriends.length);
-
-      // Also fetch available users to add
-      await fetchAvailableUsers();
-    } catch (error) {
-      console.error("Error fetching friends:", error);
-    }
-  };
-
   useEffect(() => {
-    if (userProfile) {
-      fetchFriends();
-    }
-  }, [userProfile]);
+    let isMounted = true; // Add mounted check
+
+    const fetchFriendsData = async () => {
+      if (!userProfile?.id) return;
+
+      try {
+        setIsLoading(true);
+        console.log("Fetching friends for user:", userProfile.id);
+
+        const { data: friendships, error } = await supabase
+          .from("friendships")
+          .select(
+            `
+            id,
+            status,
+            user_id,
+            friend_id,
+            friend:profiles!friendships_friend_id_fkey (
+              id,
+              first_name,
+              last_name,
+              profile_image_url
+            ),
+            user:profiles!friendships_user_id_fkey (
+              id,
+              first_name,
+              last_name,
+              profile_image_url
+            )
+          `
+          )
+          .eq("status", "pending")
+          .or(`user_id.eq.${userProfile.id},friend_id.eq.${userProfile.id}`);
+
+        if (error) throw error;
+
+        if (!isMounted) return; // Check if component is still mounted
+
+        if (!friendships) {
+          setFriends([]);
+          setTotalFriends(0);
+          return;
+        }
+
+        const transformedFriends = friendships.map((friendship) => {
+          const friendInfo =
+            friendship.user_id === userProfile.id
+              ? friendship.friend
+              : friendship.user;
+
+          return {
+            id: friendInfo.id,
+            first_name: friendInfo.first_name,
+            last_name: friendInfo.last_name,
+            profile_image_url: friendInfo.profile_image_url,
+            friendshipId: friendship.id,
+          };
+        });
+
+        if (!isMounted) return; // Check again before setting state
+
+        setFriends(transformedFriends);
+        setTotalFriends(transformedFriends.length);
+      } catch (error) {
+        console.error("Error fetching friends:", error);
+        if (isMounted) {
+          setFriends([]);
+          setTotalFriends(0);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchFriendsData();
+
+    // Cleanup function
+    return () => {
+      isMounted = false;
+    };
+  }, [userProfile?.id]); // Only depend on userProfile.id
 
   const navigateToFriendsList = () => {
     navigation.navigate("FriendsList", {
@@ -397,35 +399,11 @@ export default function ProfileScreen({ navigation }) {
       pendingRequests,
       onUnfriend: removeFriend,
       onRefresh: () => {
-        fetchFriends();
+        fetchFriendsData();
         fetchAvailableUsers();
       },
     });
   };
-
-  const fetchFriendsData = async () => {
-    setIsLoading(true);
-    try {
-      const [friendsData, pendingData, potentialFriends] = await Promise.all([
-        friendshipService.getFriendshipStatuses(),
-      ]);
-
-      setFriends(friendsData);
-      setTotalFriends(friendsData.length);
-      setPendingRequests(pendingData);
-      setAvailableUsers(potentialFriends);
-    } catch (error) {
-      console.error("Error fetching friends:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (userProfile) {
-      fetchFriendsData();
-    }
-  }, [userProfile]);
 
   const handleAcceptRequest = async (friendshipId) => {
     try {
@@ -462,6 +440,61 @@ export default function ProfileScreen({ navigation }) {
       console.error("Error removing friend:", error);
     }
   };
+
+  const renderFriendsSection = () => (
+    <View style={[styles.section, { backgroundColor: theme.card }]}>
+      <View style={styles.sectionHeader}>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>
+          Friends
+        </Text>
+        <TouchableOpacity
+          style={styles.seeAllButton}
+          onPress={() => navigation.navigate("FriendsList")}
+        >
+          <Text style={[styles.seeAllText, { color: theme.primary }]}>
+            See All
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {isLoading ? (
+        <ActivityIndicator size="small" color={theme.primary} />
+      ) : (
+        <FlatList
+          data={friends}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.friendCard}
+              onPress={() =>
+                navigation.navigate("FriendProfile", {
+                  friendId: item.id,
+                })
+              }
+            >
+              <Image
+                source={{
+                  uri:
+                    item.profile_image_url || "https://via.placeholder.com/50",
+                }}
+                style={styles.friendImage}
+              />
+              <Text style={[styles.friendName, { color: theme.text }]}>
+                {`${item.first_name} ${item.last_name}`}
+              </Text>
+            </TouchableOpacity>
+          )}
+          ListEmptyComponent={
+            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+              {isLoading ? "Loading..." : "No friends yet"}
+            </Text>
+          }
+        />
+      )}
+    </View>
+  );
 
   return (
     <SafeAreaView
@@ -520,111 +553,7 @@ export default function ProfileScreen({ navigation }) {
           </View>
         </View>
 
-        {/* Friends Section */}
-        <View style={[styles.section, { backgroundColor: theme.card }]}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              Friends ({totalFriends})
-            </Text>
-            <TouchableOpacity
-              style={styles.seeAllButton}
-              onPress={() => navigation.navigate("FriendsList")}
-            >
-              <Text style={[styles.seeAllText, { color: theme.primary }]}>
-                See All
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {isLoading ? (
-            <ActivityIndicator size="small" color={theme.primary} />
-          ) : (
-            <>
-              {/* Friends Preview */}
-              <FlatList
-                data={Array.isArray(friends) ? friends.slice(0, 3) : []}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={styles.friendCard}
-                    onPress={() =>
-                      navigation.navigate("FriendProfile", {
-                        friendId: item.id,
-                      })
-                    }
-                  >
-                    <Image
-                      source={{
-                        uri:
-                          item.profile_image_url ||
-                          "https://via.placeholder.com/50",
-                      }}
-                      style={styles.friendImage}
-                    />
-                    <Text style={[styles.friendName, { color: theme.text }]}>
-                      {item.first_name} {item.last_name}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-                ListEmptyComponent={
-                  <Text
-                    style={[styles.emptyText, { color: theme.textSecondary }]}
-                  >
-                    No friends yet
-                  </Text>
-                }
-              />
-
-              {/* Pending Requests Preview (if any) */}
-              {(pendingRequests || []).length > 0 && (
-                <View style={styles.requestsPreview}>
-                  <Text style={[styles.subsectionTitle, { color: theme.text }]}>
-                    Friend Requests ({(pendingRequests || []).length})
-                  </Text>
-                  <FlatList
-                    data={pendingRequests.slice(0, 2)} // Show only first 2 requests
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    keyExtractor={(item) => item.id}
-                    renderItem={({ item }) => (
-                      <View style={styles.friendRequestCard}>
-                        <Image
-                          source={{
-                            uri:
-                              item.profile_image_url ||
-                              "https://via.placeholder.com/50",
-                          }}
-                          style={styles.friendImage}
-                        />
-                        <Text
-                          style={[styles.friendName, { color: theme.text }]}
-                          numberOfLines={1}
-                        >
-                          {item.first_name} {item.last_name}
-                        </Text>
-                        <View style={styles.requestButtons}>
-                          <TouchableOpacity
-                            style={[
-                              styles.acceptButton,
-                              { backgroundColor: theme.primary },
-                            ]}
-                            onPress={() =>
-                              handleAcceptRequest(item.friendshipId)
-                            }
-                          >
-                            <Text style={styles.buttonText}>Accept</Text>
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    )}
-                  />
-                </View>
-              )}
-            </>
-          )}
-        </View>
+        {renderFriendsSection()}
 
         {/* Settings Section */}
         <View style={[styles.section, { backgroundColor: theme.card }]}>
