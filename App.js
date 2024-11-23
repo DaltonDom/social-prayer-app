@@ -130,7 +130,7 @@ function Navigation() {
           <Stack.Screen
             name="FriendsList"
             component={FriendsListScreen}
-            options={{ title: "Friends" }}
+            options={{ title: "Friends", headerBackTitle: "Back" }}
           />
           <Stack.Screen
             name="FriendDetail"

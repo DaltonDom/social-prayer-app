@@ -8,9 +8,9 @@ export const friendshipService = {
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      console.log("Current user:", user.id); // Debug log
+      console.log("Current user ID:", user.id);
 
-      // Get all friendships for current user
+      // Step 1: Get ALL friendships (both pending and accepted)
       const { data: friendships, error: friendshipsError } = await supabase
         .from("friendships")
         .select(
@@ -19,7 +19,13 @@ export const friendshipService = {
           status,
           user_id,
           friend_id,
-          profiles!friendships_friend_id_fkey (
+          friend:profiles!friendships_friend_id_fkey (
+            id,
+            first_name,
+            last_name,
+            profile_image_url
+          ),
+          user:profiles!friendships_user_id_fkey (
             id,
             first_name,
             last_name,
@@ -31,62 +37,66 @@ export const friendshipService = {
 
       if (friendshipsError) throw friendshipsError;
 
-      console.log("Fetched friendships:", friendships); // Debug log
+      console.log("All friendships:", JSON.stringify(friendships, null, 2));
 
-      // Process friendships
+      // Step 2: Initialize arrays
       const friends = [];
       const pendingReceived = [];
+      const pendingSent = [];
       const connectedUserIds = new Set([user.id]);
 
+      // Step 3: Process each friendship
       friendships?.forEach((friendship) => {
-        const otherUserId =
-          friendship.user_id === user.id
-            ? friendship.friend_id
-            : friendship.user_id;
-        const profile = friendship.profiles;
+        const isSender = friendship.user_id === user.id;
+        const otherUser = isSender ? friendship.friend : friendship.user;
 
-        connectedUserIds.add(otherUserId);
+        // Add to connected users regardless of status
+        connectedUserIds.add(otherUser.id);
 
         if (friendship.status === "accepted") {
-          friends.push(profile);
-        } else if (
-          friendship.status === "pending" &&
-          friendship.friend_id === user.id
-        ) {
-          pendingReceived.push({
-            ...profile,
-            friendshipId: friendship.id,
-          });
+          friends.push(otherUser);
+        } else if (friendship.status === "pending") {
+          if (isSender) {
+            pendingSent.push({
+              ...otherUser,
+              friendshipId: friendship.id,
+            });
+          } else {
+            pendingReceived.push({
+              ...otherUser,
+              friendshipId: friendship.id,
+            });
+          }
         }
       });
 
-      // Get available users - FIXED QUERY
-      let availableUsers = [];
-      if (connectedUserIds.size > 0) {
-        const { data: potentialFriends, error: availableError } = await supabase
-          .from("profiles")
-          .select("id, first_name, last_name, profile_image_url")
-          .not("id", "eq", user.id); // First exclude current user
+      // Step 4: Get available users
+      const { data: allUsers, error: usersError } = await supabase
+        .from("profiles")
+        .select("id, first_name, last_name, profile_image_url");
 
-        if (availableError) throw availableError;
+      if (usersError) throw usersError;
 
-        // Filter out connected users in JavaScript instead of SQL
-        availableUsers =
-          potentialFriends?.filter(
-            (profile) => !connectedUserIds.has(profile.id)
-          ) || [];
-      }
+      console.log("Connected User IDs:", Array.from(connectedUserIds));
 
-      console.log("Processed data:", {
-        friends,
-        pendingReceived,
-        availableUsers,
-      }); // Debug log
+      // Step 5: Filter available users
+      const availableUsers = allUsers.filter(
+        (profile) => !connectedUserIds.has(profile.id)
+      );
+
+      // Step 6: Log results for debugging
+      console.log("Processed Results:", {
+        friendsCount: friends.length,
+        pendingReceivedCount: pendingReceived.length,
+        pendingSentCount: pendingSent.length,
+        availableUsersCount: availableUsers.length,
+      });
 
       return {
         friends,
         pendingReceived,
-        availableUsers: availableUsers || [],
+        pendingSent,
+        availableUsers,
       };
     } catch (error) {
       console.error("Error in getFriendshipStatuses:", error);

@@ -18,6 +18,7 @@ export default function FriendsListScreen({ navigation }) {
   const { theme } = useTheme();
   const [friends, setFriends] = useState([]);
   const [pendingRequests, setPendingRequests] = useState([]);
+  const [pendingSent, setPendingSent] = useState([]);
   const [availableUsers, setAvailableUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -31,6 +32,7 @@ export default function FriendsListScreen({ navigation }) {
 
       setFriends(data.friends || []);
       setPendingRequests(data.pendingReceived || []);
+      setPendingSent(data.pendingSent || []);
       setAvailableUsers(data.availableUsers || []);
     } catch (error) {
       console.error("Error fetching friends:", error);
@@ -163,6 +165,25 @@ export default function FriendsListScreen({ navigation }) {
     </View>
   );
 
+  const renderPendingSent = ({ item }) => (
+    <View style={[styles.card, { backgroundColor: theme.card }]}>
+      <Image
+        source={{
+          uri: item.profile_image_url || "https://via.placeholder.com/50",
+        }}
+        style={styles.profileImage}
+      />
+      <View style={styles.cardContent}>
+        <Text style={[styles.name, { color: theme.text }]}>
+          {item.first_name} {item.last_name}
+        </Text>
+        <Text style={[styles.pendingText, { color: theme.textSecondary }]}>
+          Request Sent
+        </Text>
+      </View>
+    </View>
+  );
+
   if (isLoading) {
     return (
       <SafeAreaView
@@ -200,6 +221,11 @@ export default function FriendsListScreen({ navigation }) {
             title: "Friend Requests",
             data: pendingRequests || [],
             renderItem: renderPendingRequest,
+          },
+          {
+            title: "Sent Requests",
+            data: pendingSent || [],
+            renderItem: renderPendingSent,
           },
           {
             title: "Friends",
@@ -320,5 +346,9 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 14,
     fontWeight: "600",
+  },
+  pendingText: {
+    fontSize: 12,
+    fontWeight: "400",
   },
 });
