@@ -198,17 +198,17 @@ export default function FriendsListScreen({ navigation }) {
         data={[
           {
             title: "Friend Requests",
-            data: filterData(pendingRequests),
+            data: pendingRequests || [],
             renderItem: renderPendingRequest,
           },
           {
             title: "Friends",
-            data: filterData(friends),
+            data: friends || [],
             renderItem: renderFriend,
           },
           {
             title: "People You May Know",
-            data: filterData(availableUsers),
+            data: availableUsers || [],
             renderItem: renderPotentialFriend,
           },
         ]}

@@ -127,7 +127,6 @@ export function GroupProvider({ children }) {
     name,
     description,
     imageUrl,
-    isPrivate,
     category,
     guidelines,
   }) => {
@@ -140,7 +139,6 @@ export function GroupProvider({ children }) {
             description,
             created_by: userProfile.id,
             image_url: imageUrl || "https://via.placeholder.com/150",
-            is_private: isPrivate,
             category,
             guidelines,
           },
