@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,19 +7,50 @@ import {
   FlatList,
   TextInput,
   Platform,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { useTheme } from "../context/ThemeContext";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Calendar } from "react-native-calendars";
-import { useJournals } from "../context/JournalContext";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { supabase } from "../lib/supabase";
 
 export default function JournalScreen({ navigation }) {
   const { theme, isDarkMode } = useTheme();
-  const { journals } = useJournals();
+  const [journals, setJournals] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("list");
   const [selectedDate, setSelectedDate] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    fetchJournals();
+
+    const unsubscribe = navigation.addListener("focus", () => {
+      fetchJournals();
+    });
+
+    return unsubscribe;
+  }, [navigation]);
+
+  const fetchJournals = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("journals")
+        .select("*")
+        .order("date", { ascending: false });
+
+      if (error) throw error;
+      setJournals(data || []);
+    } catch (error) {
+      console.error("Error:", error);
+      Alert.alert("Error", "Failed to load journal entries");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const renderJournalItem = ({ item }) => (
     <TouchableOpacity
@@ -74,7 +105,7 @@ export default function JournalScreen({ navigation }) {
   };
 
   const getFilteredJournals = () => {
-    if (!searchQuery.trim()) return [];
+    if (!searchQuery.trim()) return journals;
 
     return journals.filter(
       (journal) =>
@@ -135,16 +166,22 @@ export default function JournalScreen({ navigation }) {
             <Ionicons name="add" size={24} color="white" />
             <Text style={styles.addButtonText}>New Entry</Text>
           </TouchableOpacity>
-          <FlatList
-            data={journals}
-            renderItem={renderJournalItem}
-            keyExtractor={(item) => item.id}
-            ListEmptyComponent={
-              <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-                No journal entries yet
-              </Text>
-            }
-          />
+          {loading ? (
+            <ActivityIndicator size="large" color={theme.primary} />
+          ) : (
+            <FlatList
+              data={journals}
+              renderItem={renderJournalItem}
+              keyExtractor={(item) => item.id}
+              ListEmptyComponent={
+                <Text
+                  style={[styles.emptyText, { color: theme.textSecondary }]}
+                >
+                  No journal entries yet
+                </Text>
+              }
+            />
+          )}
         </View>
       )}
 

@@ -21,6 +21,7 @@ import { useTheme } from "../context/ThemeContext";
 import GroupDropdown from "../components/GroupDropdown";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useUser } from "../context/UserContext";
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function PrayerDetailScreen({ route, navigation }) {
   const { theme, isDarkMode } = useTheme();
@@ -39,6 +40,15 @@ export default function PrayerDetailScreen({ route, navigation }) {
   const [isEditing, setIsEditing] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [isCommentFocused, setIsCommentFocused] = useState(false);
+
+  const categories = [
+    "Health",
+    "Family",
+    "Work",
+    "Spiritual Growth",
+    "Relationships",
+    "Other",
+  ];
 
   useEffect(() => {
     loadPrayer();
@@ -80,25 +90,49 @@ export default function PrayerDetailScreen({ route, navigation }) {
     }
   };
 
-  const handleEditPrayer = () => {
-    if (!isOwner) return;
-
+  const handleEdit = () => {
     setEditedPrayer({
-      ...prayer,
-      allowComments: prayer.allowComments !== false,
-      groupId: selectedGroup?.id,
-      groupName: selectedGroup?.name,
+      title: prayer.title,
+      description: prayer.description,
+      category: prayer.category,
     });
     setIsEditing(true);
   };
 
-  const handleSaveEdits = () => {
-    updatePrayer(prayer.id, editedPrayer);
-    setIsEditing(false);
-    Alert.alert("Success", "Prayer settings updated successfully");
+  const handleSaveEdit = async () => {
+    if (!editedPrayer.title.trim() || !editedPrayer.description.trim()) {
+      Alert.alert("Error", "Title and description are required");
+      return;
+    }
+
+    const { error } = await updatePrayer(prayer.id, editedPrayer);
+
+    if (error) {
+      Alert.alert("Error", "Failed to update prayer");
+    } else {
+      setIsEditing(false);
+      loadPrayer(); // Refresh the prayer data
+    }
   };
 
   const isOwner = userProfile?.id === prayer?.user_id;
+
+  const getCategoryIcon = (category) => {
+    switch (category) {
+      case "Health":
+        return "fitness";
+      case "Family":
+        return "home";
+      case "Work":
+        return "briefcase";
+      case "Spiritual Growth":
+        return "leaf";
+      case "Relationships":
+        return "heart";
+      default:
+        return "bookmark";
+    }
+  };
 
   if (loading) {
     return (
@@ -123,136 +157,187 @@ export default function PrayerDetailScreen({ route, navigation }) {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={[styles.container, { backgroundColor: theme.background }]}
+      style={[styles.container]}
       keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
-      enabled={isCommentFocused}
+      enabled={true}
     >
       <SafeAreaView style={{ flex: 1 }} edges={["left", "right", "bottom"]}>
         <ScrollView
-          style={[styles.scrollView, { backgroundColor: theme.background }]}
-          showsVerticalScrollIndicator={false}
+          style={styles.scrollView}
+          contentContainerStyle={{ paddingBottom: 120 }}
           keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          contentContainerStyle={{ paddingBottom: 80 }}
         >
-          {/* Prayer Header with Edit Button */}
-          <View style={[styles.header, { backgroundColor: theme.card }]}>
-            <View style={styles.headerContent}>
-              <Image
-                source={{ uri: prayer.userImage }}
-                style={styles.profileImage}
-              />
-              <View style={styles.headerText}>
-                <Text style={[styles.userName, { color: theme.text }]}>
-                  {prayer.userName}
-                </Text>
-                <Text style={[styles.date, { color: theme.textSecondary }]}>
-                  {prayer.date}
-                </Text>
+          {/* Prayer Card */}
+          <View style={[styles.prayerCard, styles.cardShadow]}>
+            <View style={styles.cardHeader}>
+              <View style={styles.headerLeft}>
+                <Image
+                  source={{ uri: prayer?.userImage }}
+                  style={styles.profileImage}
+                />
+                <View style={styles.headerText}>
+                  <Text style={styles.userName}>{prayer?.userName}</Text>
+                  <Text style={styles.date}>{prayer?.date}</Text>
+                </View>
               </View>
               {isOwner && (
                 <TouchableOpacity
+                  onPress={isEditing ? handleSaveEdit : handleEdit}
                   style={styles.editButton}
-                  onPress={handleEditPrayer}
                 >
-                  <Ionicons name="pencil" size={20} color={theme.primary} />
+                  <Ionicons
+                    name={isEditing ? "checkmark" : "pencil"}
+                    size={20}
+                    color={theme.primary}
+                  />
                 </TouchableOpacity>
+              )}
+            </View>
+
+            <View style={styles.cardContent}>
+              {isEditing ? (
+                <View style={styles.editContainer}>
+                  <TextInput
+                    style={[styles.editInput, { backgroundColor: theme.card }]}
+                    value={editedPrayer.title}
+                    onChangeText={(text) =>
+                      setEditedPrayer({ ...editedPrayer, title: text })
+                    }
+                    placeholder="Prayer title"
+                    placeholderTextColor={theme.textSecondary}
+                  />
+                  <TextInput
+                    style={[
+                      styles.editInput,
+                      styles.editDescription,
+                      { backgroundColor: theme.card },
+                    ]}
+                    value={editedPrayer.description}
+                    onChangeText={(text) =>
+                      setEditedPrayer({ ...editedPrayer, description: text })
+                    }
+                    placeholder="Prayer description"
+                    placeholderTextColor={theme.textSecondary}
+                    multiline
+                    numberOfLines={4}
+                  />
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    style={styles.categoryContainer}
+                  >
+                    {categories.map((category) => (
+                      <TouchableOpacity
+                        key={category}
+                        style={[styles.categoryButton]}
+                        onPress={() =>
+                          setEditedPrayer({
+                            ...editedPrayer,
+                            category: category,
+                          })
+                        }
+                      >
+                        <LinearGradient
+                          colors={
+                            editedPrayer.category === category
+                              ? theme.dark
+                                ? ["#581C87", "#1E3A8A"]
+                                : ["#E9D5FF", "#BFDBFE"]
+                              : ["transparent", "transparent"]
+                          }
+                          style={styles.categoryGradient}
+                        >
+                          <View style={styles.categoryContent}>
+                            <Ionicons
+                              name={getCategoryIcon(category)}
+                              size={14}
+                              color={
+                                editedPrayer.category === category
+                                  ? theme.dark
+                                    ? "#E9D5FF"
+                                    : "#6B21A8"
+                                  : theme.textSecondary
+                              }
+                            />
+                            <Text
+                              style={[
+                                styles.categoryText,
+                                {
+                                  color:
+                                    editedPrayer.category === category
+                                      ? theme.dark
+                                        ? "#E9D5FF"
+                                        : "#6B21A8"
+                                      : theme.textSecondary,
+                                },
+                              ]}
+                            >
+                              {category}
+                            </Text>
+                          </View>
+                        </LinearGradient>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              ) : (
+                <>
+                  <View style={styles.titleRow}>
+                    <Text style={styles.title}>{prayer.title}</Text>
+                    <LinearGradient
+                      colors={
+                        theme.dark
+                          ? ["#581C87", "#1E3A8A"]
+                          : ["#E9D5FF", "#BFDBFE"]
+                      }
+                      style={styles.categoryTag}
+                    >
+                      <Ionicons
+                        name={getCategoryIcon(prayer.category)}
+                        size={14}
+                        color={theme.dark ? "#E9D5FF" : "#6B21A8"}
+                        style={styles.categoryIcon}
+                      />
+                      <Text style={styles.categoryText}>{prayer.category}</Text>
+                    </LinearGradient>
+                  </View>
+                  <Text style={styles.description}>{prayer.description}</Text>
+                </>
               )}
             </View>
           </View>
 
-          {/* Edit Mode */}
-          {isEditing && isOwner && (
-            <View style={[styles.editSection, { backgroundColor: theme.card }]}>
-              <Text style={[styles.editTitle, { color: theme.text }]}>
-                Edit Prayer Settings
-              </Text>
-
-              <Text style={[styles.label, { color: theme.text }]}>Group</Text>
-              <GroupDropdown
-                groups={availableGroups}
-                selectedGroup={selectedGroup}
-                onSelect={setSelectedGroup}
-              />
-
-              <View style={styles.toggleOption}>
-                <Text style={[styles.toggleLabel, { color: theme.text }]}>
-                  Allow Comments
-                </Text>
-                <Switch
-                  value={editedPrayer.allowComments}
-                  onValueChange={(value) =>
-                    setEditedPrayer({ ...editedPrayer, allowComments: value })
-                  }
-                  trackColor={{ false: "#767577", true: theme.primary }}
-                />
-              </View>
-
-              <View style={styles.editButtons}>
-                <TouchableOpacity
-                  style={[
-                    styles.cancelButton,
-                    { backgroundColor: theme.searchBg },
-                  ]}
-                  onPress={() => setIsEditing(false)}
-                >
-                  <Text style={{ color: theme.textSecondary }}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.saveButton,
-                    { backgroundColor: theme.primary },
-                  ]}
-                  onPress={handleSaveEdits}
-                >
-                  <Text style={{ color: "white", fontWeight: "600" }}>
-                    Save Changes
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-
-          {/* Prayer Content */}
-          <View style={[styles.prayerContent, { backgroundColor: theme.card }]}>
-            <Text style={[styles.title, { color: theme.text }]}>
-              {prayer.title}
-            </Text>
-            <View
-              style={[
-                styles.categoryContainer,
-                { backgroundColor: `${theme.primary}20` },
-              ]}
-            >
-              <Text style={[styles.category, { color: theme.primary }]}>
-                {prayer.category}
-              </Text>
-            </View>
-            <Text style={[styles.description, { color: theme.text }]}>
-              {prayer.description}
-            </Text>
-          </View>
-
           {/* Updates Section */}
-          <View style={[styles.section, { backgroundColor: theme.card }]}>
+          <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: theme.text }]}>
-                Updates
-              </Text>
-              {isOwner && !showUpdateInput && (
+              <Text style={styles.sectionTitle}>Updates</Text>
+              {isOwner && (
                 <TouchableOpacity
-                  style={[
-                    styles.addUpdateButton,
-                    { backgroundColor: `${theme.primary}15` },
-                  ]}
-                  onPress={() => setShowUpdateInput(true)}
+                  style={styles.addUpdateButton}
+                  onPress={() => setShowUpdateInput(!showUpdateInput)}
                 >
-                  <Ionicons name="add-circle" size={20} color={theme.primary} />
-                  <Text
-                    style={[styles.addUpdateText, { color: theme.primary }]}
+                  <LinearGradient
+                    colors={
+                      theme.dark
+                        ? ["#581C87", "#1E3A8A"]
+                        : ["#E9D5FF", "#BFDBFE"]
+                    }
+                    style={styles.addUpdateGradient}
                   >
-                    Add Update
-                  </Text>
+                    <Ionicons
+                      name="add"
+                      size={20}
+                      color={theme.dark ? "#E9D5FF" : "#6B21A8"}
+                    />
+                    <Text
+                      style={[
+                        styles.addUpdateText,
+                        { color: theme.dark ? "#E9D5FF" : "#6B21A8" },
+                      ]}
+                    >
+                      Add Update
+                    </Text>
+                  </LinearGradient>
                 </TouchableOpacity>
               )}
             </View>
@@ -260,157 +345,101 @@ export default function PrayerDetailScreen({ route, navigation }) {
             {showUpdateInput && (
               <View style={styles.updateInputContainer}>
                 <TextInput
-                  style={[
-                    styles.updateInput,
-                    {
-                      backgroundColor: theme.searchBg,
-                      color: theme.text,
-                      borderColor: theme.border,
-                    },
-                  ]}
-                  placeholder="Share an update about your prayer request..."
+                  style={[styles.updateInput, { backgroundColor: theme.card }]}
+                  placeholder="Share an update..."
                   placeholderTextColor={theme.textSecondary}
                   value={newUpdate}
                   onChangeText={setNewUpdate}
                   multiline
-                  numberOfLines={4}
                 />
-                <View style={styles.updateButtons}>
-                  <TouchableOpacity
-                    style={[
-                      styles.cancelButton,
-                      { backgroundColor: theme.searchBg },
-                    ]}
-                    onPress={() => {
-                      setShowUpdateInput(false);
-                      setNewUpdate("");
-                    }}
-                  >
-                    <Text style={{ color: theme.textSecondary }}>Cancel</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.postButton,
-                      { backgroundColor: theme.primary },
-                    ]}
-                    onPress={handleAddUpdate}
-                  >
-                    <Text style={{ color: "white", fontWeight: "600" }}>
-                      Post Update
-                    </Text>
-                  </TouchableOpacity>
-                </View>
+                <TouchableOpacity
+                  style={[
+                    styles.updateButton,
+                    { backgroundColor: theme.primary },
+                  ]}
+                  onPress={handleAddUpdate}
+                >
+                  <Text style={styles.updateButtonText}>Post Update</Text>
+                </TouchableOpacity>
               </View>
             )}
 
-            <View style={styles.updatesContainer}>
-              {prayer.updates_list && prayer.updates_list.length > 0 ? (
-                prayer.updates_list.map((update) => (
-                  <View
-                    key={update.id}
-                    style={[
-                      styles.updateItem,
-                      {
-                        backgroundColor: theme.searchBg,
-                        borderLeftColor: theme.primary,
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.updateDate,
-                        { color: theme.textSecondary },
-                      ]}
-                    >
-                      {new Date(update.created_at).toLocaleDateString()}
-                    </Text>
-                    <Text style={[styles.updateText, { color: theme.text }]}>
-                      {update.text}
-                    </Text>
-                  </View>
-                ))
-              ) : (
-                <Text
-                  style={[styles.emptyText, { color: theme.textSecondary }]}
+            {prayer.updates_list && prayer.updates_list.length > 0 ? (
+              prayer.updates_list.map((update) => (
+                <View
+                  key={update.id}
+                  style={[styles.updateCard, styles.cardShadow]}
                 >
-                  No updates yet
-                </Text>
-              )}
-            </View>
+                  <Text style={styles.updateDate}>
+                    {new Date(update.created_at).toLocaleDateString()}
+                  </Text>
+                  <Text style={styles.updateText}>{update.text}</Text>
+                </View>
+              ))
+            ) : (
+              <View style={[styles.emptyCard, styles.cardShadow]}>
+                <Ionicons name="refresh" size={24} style={styles.emptyIcon} />
+                <Text style={styles.emptyText}>No updates yet</Text>
+              </View>
+            )}
           </View>
 
           {/* Comments Section */}
-          <View style={[styles.section, { backgroundColor: theme.card }]}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              Comments
-            </Text>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Comments</Text>
             {prayer.comments_list && prayer.comments_list.length > 0 ? (
               prayer.comments_list.map((comment) => (
-                <View key={comment.id} style={styles.commentItem}>
-                  <Image
-                    source={{ uri: comment.userImage }}
-                    style={styles.commentUserImage}
-                  />
-                  <View style={styles.commentContent}>
-                    <Text
-                      style={[styles.commentUserName, { color: theme.text }]}
-                    >
-                      {comment.userName}
-                    </Text>
-                    <Text style={[styles.commentText, { color: theme.text }]}>
-                      {comment.text}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.commentDate,
-                        { color: theme.textSecondary },
-                      ]}
-                    >
-                      {new Date(comment.date).toLocaleDateString()}
-                    </Text>
+                <View key={comment.id} style={styles.commentCard}>
+                  <View style={styles.commentHeader}>
+                    <Image
+                      source={{ uri: comment.userImage }}
+                      style={styles.commentUserImage}
+                    />
+                    <View style={styles.commentContent}>
+                      <View style={styles.commentMeta}>
+                        <Text style={styles.commentUserName}>
+                          {comment.userName}
+                        </Text>
+                        <Text style={styles.commentDate}>
+                          {new Date(comment.date).toLocaleDateString()}
+                        </Text>
+                      </View>
+                      <Text style={styles.commentText}>{comment.text}</Text>
+                    </View>
                   </View>
                 </View>
               ))
             ) : (
-              <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-                No comments yet
-              </Text>
+              <View style={styles.emptyCard}>
+                <Text style={styles.emptyText}>No comments yet</Text>
+              </View>
             )}
           </View>
         </ScrollView>
 
-        {/* Comment Input Container */}
+        {/* Comment Input */}
         <View
           style={[
             styles.commentInputContainer,
             {
-              backgroundColor: theme.card,
-              borderTopColor: theme.border,
+              paddingBottom: Platform.OS === "ios" ? 34 : 16,
             },
           ]}
         >
           <TextInput
-            style={[
-              styles.commentInput,
-              {
-                backgroundColor: theme.searchBg,
-                color: theme.text,
-              },
-            ]}
+            style={styles.commentInput}
             placeholder="Add a comment..."
-            placeholderTextColor={theme.textSecondary}
             value={newComment}
             onChangeText={setNewComment}
-            multiline
-            keyboardAppearance={isDarkMode ? "dark" : "light"}
+            multiline={false}
             onFocus={() => setIsCommentFocused(true)}
             onBlur={() => setIsCommentFocused(false)}
           />
           <TouchableOpacity
-            style={[styles.sendButton, { backgroundColor: theme.primary }]}
+            style={styles.sendButton}
             onPress={handleAddComment}
           >
-            <Ionicons name="send" size={24} color={theme.card} />
+            <Ionicons name="send" size={16} color="white" />
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -421,134 +450,134 @@ export default function PrayerDetailScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#f8f9ff",
   },
   scrollView: {
     flex: 1,
   },
-  header: {
-    flexDirection: "row",
-    padding: 16,
+  prayerCard: {
+    margin: 16,
+    borderRadius: 12,
     backgroundColor: "white",
-    alignItems: "center",
-    marginTop: 0,
-    paddingTop: 10,
-    borderTopWidth: 0,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  headerContent: {
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 16,
+  },
+  headerLeft: {
     flexDirection: "row",
     alignItems: "center",
     flex: 1,
   },
   profileImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginRight: 12,
-  },
-  headerText: {
-    flex: 1,
-  },
-  userName: {
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  date: {
-    fontSize: 14,
-    color: "#666",
-  },
-  prayerContent: {
-    backgroundColor: "white",
-    padding: 16,
-    marginTop: 0,
-    borderTopWidth: 0,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 8,
-  },
-  categoryContainer: {
-    backgroundColor: "#6B4EFF20",
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 16,
-    alignSelf: "flex-start",
-    marginBottom: 12,
-  },
-  category: {
-    color: "#6B4EFF",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  description: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: "#333",
-  },
-  section: {
-    backgroundColor: "white",
-    padding: 16,
-    marginTop: 12,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 12,
-  },
-  addUpdateButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    gap: 4,
-  },
-  addUpdateText: {
-    fontWeight: "600",
-    fontSize: 14,
-  },
-  updateItem: {
-    padding: 12,
-    borderRadius: 8,
-    borderLeftWidth: 4,
-  },
-  updateDate: {
-    fontSize: 12,
-    marginBottom: 4,
-  },
-  updateText: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  commentItem: {
-    flexDirection: "row",
-    marginBottom: 16,
-  },
-  commentUserImage: {
     width: 40,
     height: 40,
     borderRadius: 20,
     marginRight: 12,
+    borderWidth: 2,
+    borderColor: "#6B4EFF",
   },
-  commentContent: {
-    flex: 1,
-    backgroundColor: "#f8f8f8",
-    padding: 12,
+  headerText: {
+    marginLeft: 12,
+  },
+  userName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1a1a1a",
+  },
+  date: {
+    fontSize: 14,
+    color: "#666",
+    marginTop: 2,
+  },
+  cardContent: {
+    padding: 16,
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#1a1a1a",
+  },
+  categoryBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f3f0ff",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  categoryIcon: {
+    marginRight: 4,
+    color: "#6b46c1",
+  },
+  categoryText: {
+    color: "#6b46c1",
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  section: {
+    padding: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    marginBottom: 12,
+    color: "#1a1a1a",
+  },
+  emptyCard: {
+    padding: 24,
+    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.7)",
+    borderRadius: 12,
+  },
+  emptyIcon: {
+    color: "#666",
+    marginBottom: 8,
+  },
+  emptyText: {
+    color: "#666",
+    fontSize: 14,
+  },
+  commentCard: {
+    padding: 16,
+    marginBottom: 8,
+    backgroundColor: "rgba(255, 255, 255, 0.7)",
     borderRadius: 12,
   },
   commentHeader: {
+    flexDirection: "row",
+  },
+  commentUserImage: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+  },
+  commentContent: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  commentMeta: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 4,
   },
   commentUserName: {
-    fontWeight: "600",
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#1a1a1a",
   },
   commentDate: {
     fontSize: 12,
@@ -556,123 +585,172 @@ const styles = StyleSheet.create({
   },
   commentText: {
     fontSize: 14,
-    lineHeight: 20,
+    color: "#1a1a1a",
   },
   commentInputContainer: {
-    flexDirection: "row",
-    padding: 12,
-    backgroundColor: "white",
-    borderTopWidth: 1,
-    borderTopColor: "#eee",
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    paddingBottom: Platform.OS === "ios" ? 30 : 12,
+    flexDirection: "row",
+    padding: 16,
+    backgroundColor: "white",
+    borderTopWidth: 1,
+    borderTopColor: "#eee",
+    alignItems: "center",
+    paddingBottom: Platform.OS === "ios" ? 34 : 16,
   },
   commentInput: {
     flex: 1,
-    backgroundColor: "#f0f0f0",
-    borderRadius: 20,
+    backgroundColor: "white",
+    borderRadius: 24,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 8,
     marginRight: 8,
-    maxHeight: 100,
-    textAlignVertical: "center",
-    minHeight: 40,
+    fontSize: 14,
+    maxHeight: 80,
   },
   sendButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#6B4EFF",
+    backgroundColor: "#6b46c1",
     justifyContent: "center",
     alignItems: "center",
   },
-  updateInputContainer: {
-    marginBottom: 16,
-    backgroundColor: "transparent",
+  cardShadow: {
+    backgroundColor: "white",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  updateInput: {
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
-    minHeight: 100,
-    borderWidth: 1,
-    fontSize: 16,
-  },
-  updateButtons: {
+  categoryTag: {
     flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: 8,
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
   },
-  cancelButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+  categoryIcon: {
+    marginRight: 4,
   },
-  postButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  updatesContainer: {
-    marginTop: 12,
-    gap: 12,
+  categoryText: {
+    fontSize: 12,
+    fontWeight: "600",
   },
   editButton: {
     padding: 8,
-    marginLeft: "auto",
+    borderRadius: 20,
   },
-  editSection: {
-    padding: 16,
-    marginTop: 1,
-  },
-  editTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 8,
-    marginTop: 16,
-  },
-  toggleOption: {
+  sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 16,
-    marginBottom: 24,
+    marginBottom: 12,
   },
-  toggleLabel: {
-    fontSize: 16,
+  addUpdateButton: {
+    borderRadius: 20,
+    overflow: "hidden",
   },
-  editButtons: {
+  addUpdateGradient: {
     flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: 8,
-  },
-  saveButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  emptyText: {
-    textAlign: "center",
-    fontSize: 14,
-    paddingVertical: 8,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
     alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
   },
-  errorText: {
-    fontSize: 18,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginVertical: 16,
+  addUpdateText: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginLeft: 4,
+  },
+  updateInputContainer: {
+    marginBottom: 16,
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  updateInput: {
+    padding: 12,
+    borderRadius: 12,
+    fontSize: 14,
+    minHeight: 80,
+    textAlignVertical: "top",
+  },
+  updateButton: {
+    padding: 12,
+    borderRadius: 12,
+    alignItems: "center",
+    marginTop: 8,
+  },
+  updateButtonText: {
+    color: "white",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  updateCard: {
+    backgroundColor: "white",
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  updateDate: {
+    fontSize: 12,
+    color: "#666",
+    marginBottom: 4,
+  },
+  updateText: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  editContainer: {
+    gap: 16,
+  },
+  editInput: {
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    backgroundColor: "white",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  editDescription: {
+    minHeight: 120,
+    textAlignVertical: "top",
+    paddingTop: 16,
+  },
+  categoryContainer: {
+    flexDirection: "row",
+    marginVertical: 8,
+  },
+  categoryButton: {
+    marginRight: 8,
+    borderRadius: 16,
+    overflow: "hidden",
+  },
+  categoryGradient: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  categoryContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  categoryText: {
+    fontSize: 12,
+    fontWeight: "600",
+    marginLeft: 4,
   },
 });

@@ -23,6 +23,7 @@ export default function AddPrayerScreen({ navigation }) {
     description: "",
     category: "",
     allowComments: true,
+    is_answered: false,
   });
 
   const categories = [
@@ -65,6 +66,7 @@ export default function AddPrayerScreen({ navigation }) {
       ...prayerData,
       groupId: selectedGroup?.id,
       groupName: selectedGroup?.name,
+      is_answered: false,
     });
 
     Alert.alert("Success", "Prayer request added successfully", [
@@ -77,6 +79,7 @@ export default function AddPrayerScreen({ navigation }) {
             description: "",
             category: "",
             allowComments: true,
+            is_answered: false,
           });
           setSelectedGroup(null);
         },

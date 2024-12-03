@@ -13,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useJournals } from "../context/JournalContext";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { supabase } from "../lib/supabase";
 
 const categories = [
   "Prayer",
@@ -31,7 +32,7 @@ export default function JournalDetailScreen({ route, navigation }) {
   const [editedJournal, setEditedJournal] = useState(journal);
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!editedJournal.title.trim()) {
       Alert.alert("Error", "Please enter a title");
       return;
@@ -47,9 +48,34 @@ export default function JournalDetailScreen({ route, navigation }) {
       return;
     }
 
-    updateJournal(editedJournal);
-    setIsEditing(false);
-    Alert.alert("Success", "Journal entry updated successfully");
+    try {
+      // Get the current user
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      // Update the journal entry in Supabase
+      const { error } = await supabase
+        .from("journals")
+        .update({
+          title: editedJournal.title,
+          content: editedJournal.content,
+          category: editedJournal.category,
+          date: editedJournal.date,
+          user_id: user.id,
+        })
+        .eq("id", editedJournal.id);
+
+      if (error) throw error;
+
+      setIsEditing(false);
+      Alert.alert("Success", "Journal entry updated successfully");
+      navigation.goBack(); // Optional: go back to refresh the list
+    } catch (error) {
+      console.error("Error updating journal:", error);
+      Alert.alert("Error", "Failed to update journal entry");
+    }
   };
 
   const handleDateChange = (event, selectedDate) => {

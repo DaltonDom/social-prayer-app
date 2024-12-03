@@ -19,7 +19,8 @@ export function PrayerProvider({ children }) {
     try {
       const { data, error } = await supabase
         .from("prayers")
-        .select(`
+        .select(
+          `
           *,
           profiles!prayers_user_id_fkey (
             id,
@@ -31,7 +32,8 @@ export function PrayerProvider({ children }) {
             id,
             name
           )
-        `)
+        `
+        )
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -65,7 +67,6 @@ export function PrayerProvider({ children }) {
         user_id: userProfile.id,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        is_answered: false,
         prayer_count: 0,
       };
 
@@ -234,7 +235,6 @@ export function PrayerProvider({ children }) {
         user_id: userProfile.id,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        is_answered: false,
         prayer_count: 0,
         comment_count: 0,
         group_id: newPrayer.groupId || null,
@@ -260,7 +260,10 @@ export function PrayerProvider({ children }) {
         )
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase error:", error);
+        throw error;
+      }
 
       // Transform the data to match the expected format
       const transformedData = {

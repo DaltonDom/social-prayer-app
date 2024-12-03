@@ -12,6 +12,7 @@ import { useTheme } from "../context/ThemeContext";
 import { useJournals } from "../context/JournalContext";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Platform } from "react-native";
+import { supabase } from "../lib/supabase";
 
 const categories = [
   "Prayer",
@@ -40,7 +41,7 @@ export default function AddJournalScreen({ navigation }) {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!journalData.title.trim()) {
       Alert.alert("Error", "Please enter a title");
       return;
@@ -56,20 +57,36 @@ export default function AddJournalScreen({ navigation }) {
       return;
     }
 
-    const date = new Date(journalData.date);
-    const formattedDate = date.toLocaleDateString("en-CA");
+    try {
+      // Get the current user's ID
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-    addJournal({
-      ...journalData,
-      date: formattedDate,
-    });
+      if (!user) throw new Error("Not authenticated");
 
-    Alert.alert("Success", "Journal entry added successfully", [
-      {
-        text: "OK",
-        onPress: () => navigation.goBack(),
-      },
-    ]);
+      const date = new Date(journalData.date);
+      const formattedDate = date.toLocaleDateString("en-CA");
+
+      const { data, error } = await supabase.from("journals").insert({
+        title: journalData.title,
+        content: journalData.content,
+        category: journalData.category,
+        date: formattedDate,
+        user_id: user.id,
+      });
+
+      if (error) throw error;
+
+      Alert.alert("Success", "Journal entry added successfully", [
+        {
+          text: "OK",
+          onPress: () => navigation.goBack(),
+        },
+      ]);
+    } catch (error) {
+      Alert.alert("Error", error.message);
+    }
   };
 
   return (

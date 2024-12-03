@@ -8,11 +8,15 @@ import {
   TouchableOpacity,
   Platform,
   RefreshControl,
+  TextInput,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from "react-native";
 import { usePrayers } from "../context/PrayerContext";
 import { useTheme } from "../context/ThemeContext";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function HomeScreen({ navigation }) {
   const { prayers, fetchPrayers } = usePrayers();
@@ -32,65 +36,83 @@ export default function HomeScreen({ navigation }) {
 
   const renderPrayerCard = ({ item }) => (
     <TouchableOpacity
-      style={[styles.card, { backgroundColor: theme.card }]}
+      style={styles.card}
       onPress={() => navigation.navigate("PrayerDetail", { prayerId: item.id })}
     >
-      <View style={styles.cardHeader}>
-        <Image source={{ uri: item.userImage }} style={styles.profileImage} />
-        <View style={styles.headerText}>
-          <Text style={[styles.userName, { color: theme.text }]}>
-            {item.userName}
-          </Text>
-          <Text style={[styles.date, { color: theme.textSecondary }]}>
-            {item.date}
-          </Text>
+      <LinearGradient
+        colors={[theme.card, "#F8F7FF"]}
+        style={styles.cardGradient}
+      >
+        <View style={styles.cardHeader}>
+          <View style={styles.cardHeaderLeft}>
+            <Image
+              source={{ uri: item.userImage }}
+              style={[styles.profileImage, styles.profileImageRing]}
+            />
+            <View style={styles.headerText}>
+              <Text style={[styles.userName, { color: theme.text }]}>
+                {item.userName}
+              </Text>
+              <Text style={[styles.date, { color: theme.textSecondary }]}>
+                {item.date}
+              </Text>
+            </View>
+          </View>
+          <LinearGradient
+            colors={
+              theme.dark
+                ? ["#581C87", "#1E3A8A"] // dark mode: purple-900 to blue-900
+                : ["#E9D5FF", "#BFDBFE"] // light mode: purple-200 to blue-200
+            }
+            style={styles.categoryTag}
+          >
+            <Ionicons
+              name={getCategoryIcon(item.category)}
+              size={14}
+              color={theme.dark ? "#E9D5FF" : "#6B21A8"} // dark: purple-200, light: purple-800
+              style={styles.categoryIcon}
+            />
+            <Text
+              style={[
+                styles.categoryText,
+                {
+                  color: theme.dark ? "#E9D5FF" : "#6B21A8", // dark: purple-200, light: purple-800
+                },
+              ]}
+            >
+              {item.category}
+            </Text>
+          </LinearGradient>
         </View>
-      </View>
-      <View style={styles.titleContainer}>
+
+        <Text style={[styles.description, { color: theme.text }]}>
+          {item.description}
+        </Text>
+
         <View
           style={[
-            styles.categoryTag,
-            { backgroundColor: `${theme.primary}10` },
+            styles.cardFooter,
+            { backgroundColor: `${theme.background}50` },
           ]}
         >
-          <Ionicons
-            name={getCategoryIcon(item.category)}
-            size={16}
-            color={theme.primary}
-          />
-        </View>
-        <Text style={[styles.title, { color: theme.text }]}>{item.title}</Text>
-        {item.groupName && (
-          <View
-            style={[
-              styles.tag,
-              styles.groupTag,
-              {
-                backgroundColor: "#F2EEFF",
-                borderColor: "#6B4EFF",
-              },
-            ]}
-          >
-            <Text style={[styles.tagText, { color: "#6B4EFF" }]}>
-              {item.groupName}
+          <TouchableOpacity style={styles.footerButton}>
+            <Ionicons
+              name="chatbubble-outline"
+              size={16}
+              color={theme.primary}
+            />
+            <Text style={[styles.footerText, { color: theme.primary }]}>
+              {item.comments} Comments
             </Text>
-          </View>
-        )}
-      </View>
-      <View style={styles.tagsContainer}>
-        {/* Group tag moved to title container */}
-      </View>
-      <Text style={[styles.description, { color: theme.text }]}>
-        {item.description}
-      </Text>
-      <View style={[styles.cardFooter, { borderTopColor: theme.border }]}>
-        <Text style={[styles.footerText, { color: theme.textSecondary }]}>
-          {item.comments} Comments
-        </Text>
-        <Text style={[styles.footerText, { color: theme.textSecondary }]}>
-          {item.updates} Updates
-        </Text>
-      </View>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.footerButton}>
+            <Ionicons name="refresh-outline" size={16} color={theme.primary} />
+            <Text style={[styles.footerText, { color: theme.primary }]}>
+              {item.updates} Updates
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </LinearGradient>
     </TouchableOpacity>
   );
 
@@ -113,55 +135,74 @@ export default function HomeScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: theme.background }]}
-      edges={["top"]}
-    >
-      <View
-        style={[
-          styles.header,
-          {
-            backgroundColor: theme.background,
-            borderBottomColor: theme.border,
-          },
-        ]}
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <SafeAreaView
+        style={[styles.container, { backgroundColor: theme.background }]}
+        edges={["top"]}
       >
-        <Text style={[styles.headerTitle, { color: theme.text }]}>
-          Tefillah
-        </Text>
-        <TouchableOpacity
-          style={[
-            styles.notificationButton,
-            {
-              backgroundColor: `${theme.primary}10`,
-              borderRadius: 20,
-            },
-          ]}
-          onPress={() => {
-            console.log("Navigating to Notifications");
-            navigation.navigate("Notifications");
-          }}
-        >
-          <Ionicons name="notifications-outline" size={24} color={theme.text} />
-        </TouchableOpacity>
-      </View>
+        <View style={styles.header}>
+          <Text style={[styles.headerTitle, { color: theme.primary }]}>
+            Tefillah
+          </Text>
+          <View style={styles.headerButtons}>
+            <TouchableOpacity
+              style={[
+                styles.iconButton,
+                { backgroundColor: `${theme.primary}10` },
+              ]}
+              onPress={() => navigation.navigate("Notifications")}
+            >
+              <Ionicons
+                name="notifications-outline"
+                size={20}
+                color={theme.text}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.iconButton,
+                { backgroundColor: `${theme.primary}10` },
+              ]}
+            >
+              <Ionicons name="filter-outline" size={20} color={theme.text} />
+            </TouchableOpacity>
+          </View>
+        </View>
 
-      <FlatList
-        data={prayers}
-        renderItem={renderPrayerCard}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={theme.primary}
-            colors={[theme.primary]}
+        <View style={styles.searchContainer}>
+          <Ionicons
+            name="search-outline"
+            size={20}
+            color={theme.textSecondary}
+            style={styles.searchIcon}
           />
-        }
-      />
-    </SafeAreaView>
+          <TextInput
+            style={[
+              styles.searchInput,
+              { backgroundColor: `${theme.card}50`, color: theme.text },
+            ]}
+            placeholder="Search posts..."
+            placeholderTextColor={theme.textSecondary}
+          />
+        </View>
+
+        <FlatList
+          data={prayers}
+          renderItem={renderPrayerCard}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={theme.primary}
+              colors={[theme.primary]}
+            />
+          }
+        />
+      </SafeAreaView>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -174,42 +215,60 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
+    paddingVertical: 12,
+    backgroundColor: "transparent",
   },
   headerTitle: {
     fontSize: 24,
-    fontWeight: "bold",
-    fontFamily: Platform.OS === "ios" ? "Helvetica Neue" : "sans-serif-medium",
+    fontWeight: "700",
   },
-  notificationButton: {
+  headerButtons: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  iconButton: {
     padding: 8,
-    width: 40,
-    height: 40,
-    justifyContent: "center",
-    alignItems: "center",
+    borderRadius: 20,
   },
-  list: {
-    padding: 16,
+  searchContainer: {
+    paddingHorizontal: 16,
+    marginBottom: 16,
+    position: "relative",
+  },
+  searchIcon: {
+    position: "absolute",
+    left: 24,
+    top: 10,
+    zIndex: 1,
+  },
+  searchInput: {
+    height: 40,
+    borderRadius: 20,
+    paddingLeft: 40,
+    paddingRight: 16,
   },
   card: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 16,
     marginBottom: 16,
+    borderRadius: 16,
+    overflow: "hidden",
+    elevation: 4,
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+  },
+  cardGradient: {
+    padding: 16,
   },
   cardHeader: {
     flexDirection: "row",
-    alignItems: "center",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
     marginBottom: 12,
+  },
+  cardHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   profileImage: {
     width: 40,
@@ -217,16 +276,24 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginRight: 12,
   },
-  headerText: {
-    flex: 1,
+  profileImageRing: {
+    borderWidth: 2,
+    borderColor: "#6B4EFF",
   },
-  userName: {
-    fontSize: 16,
-    fontWeight: "bold",
+  categoryTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
   },
-  date: {
+  categoryIcon: {
+    marginRight: 4,
+  },
+  categoryText: {
     fontSize: 12,
-    color: "#666",
+    fontWeight: "600",
+    color: "#6B21A8", // purple-800
   },
   description: {
     fontSize: 14,
@@ -236,58 +303,18 @@ const styles = StyleSheet.create({
   cardFooter: {
     flexDirection: "row",
     justifyContent: "space-between",
-    borderTopWidth: 1,
-    borderTopColor: "#eee",
-    paddingTop: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  footerButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
   footerText: {
     fontSize: 12,
-    color: "#666",
-  },
-  titleContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 4,
-    gap: 8,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-    flex: 1,
-  },
-  categoryTag: {
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 6,
-    borderRadius: 12,
-    aspectRatio: 1,
-  },
-  tagsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginBottom: 12,
-  },
-  tag: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    gap: 4,
-  },
-  groupTag: {
-    borderStyle: "dashed",
-    borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    minWidth: 60,
-    alignItems: "center",
-  },
-  tagText: {
-    fontSize: 12,
-    fontWeight: "600",
+    fontWeight: "500",
   },
 });
