@@ -120,12 +120,48 @@ export const friendshipService = {
   },
 
   acceptFriendRequest: async (friendshipId) => {
-    const { error } = await supabase
-      .from("friendships")
-      .update({ status: "accepted" })
-      .eq("id", friendshipId);
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
 
-    if (error) throw error;
+      console.log("Attempting to accept friendship with ID:", friendshipId);
+
+      // First, verify the friendship exists
+      const { data: existingFriendship, error: checkError } = await supabase
+        .from("friendships")
+        .select("*")
+        .or(
+          `and(user_id.eq.${user.id},friend_id.eq.${friendshipId}),and(user_id.eq.${friendshipId},friend_id.eq.${user.id})`
+        )
+        .single();
+
+      if (checkError) {
+        console.error("Error finding friendship:", checkError);
+        throw checkError;
+      }
+
+      console.log("Found existing friendship:", existingFriendship);
+
+      // Then update it
+      const { data, error } = await supabase
+        .from("friendships")
+        .update({ status: "accepted" })
+        .or(
+          `and(user_id.eq.${user.id},friend_id.eq.${friendshipId}),and(user_id.eq.${friendshipId},friend_id.eq.${user.id})`
+        )
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log("Updated friendship data:", data);
+      return data;
+    } catch (error) {
+      console.error("Error in acceptFriendRequest:", error);
+      throw error;
+    }
   },
 
   rejectFriendRequest: async (friendshipId) => {

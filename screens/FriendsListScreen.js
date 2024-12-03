@@ -47,8 +47,12 @@ export default function FriendsListScreen({ navigation }) {
 
   const handleAcceptRequest = async (friendshipId) => {
     try {
+      console.log("Accepting friendship with ID:", friendshipId); // Add debug log
       await friendshipService.acceptFriendRequest(friendshipId);
-      fetchData();
+      // Add a small delay before refreshing to ensure the backend has processed the update
+      setTimeout(() => {
+        fetchData();
+      }, 500);
     } catch (error) {
       console.error("Error accepting friend request:", error);
     }
@@ -129,13 +133,18 @@ export default function FriendsListScreen({ navigation }) {
       <View style={styles.actionButtons}>
         <TouchableOpacity
           style={[styles.acceptButton, { backgroundColor: theme.primary }]}
-          onPress={() => handleAcceptRequest(item.friendshipId)}
+          onPress={
+            () => {
+              console.log("Friend request data:", item); // Debug log to see the full item object
+              handleAcceptRequest(item.id);
+            } // Try using item.id instead of friendship_id
+          }
         >
           <Text style={styles.buttonText}>Accept</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.rejectButton, { backgroundColor: theme.danger }]}
-          onPress={() => handleRejectRequest(item.friendshipId)}
+          style={[styles.rejectButton, { backgroundColor: "#FF3B30" }]}
+          onPress={() => handleRejectRequest(item.id)} // Update this as well
         >
           <Text style={styles.buttonText}>Reject</Text>
         </TouchableOpacity>
@@ -319,18 +328,18 @@ const styles = StyleSheet.create({
   },
   actionButtons: {
     flexDirection: "row",
+    gap: 8,
+    marginLeft: "auto",
   },
   acceptButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
-    marginLeft: 8,
   },
   rejectButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
-    marginLeft: 8,
   },
   removeButton: {
     paddingHorizontal: 12,
