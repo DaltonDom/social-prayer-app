@@ -11,17 +11,21 @@ import {
   TextInput,
   Keyboard,
   TouchableWithoutFeedback,
+  ScrollView,
 } from "react-native";
 import { usePrayers } from "../context/PrayerContext";
 import { useTheme } from "../context/ThemeContext";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
+import Modal from "react-native-modal";
 
 export default function HomeScreen({ navigation }) {
   const { prayers, fetchPrayers } = usePrayers();
   const { theme } = useTheme();
   const [refreshing, setRefreshing] = useState(false);
+  const [isNotificationModalVisible, setNotificationModalVisible] =
+    useState(false);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -147,24 +151,16 @@ export default function HomeScreen({ navigation }) {
           <View style={styles.headerButtons}>
             <TouchableOpacity
               style={[
-                styles.iconButton,
+                styles.notificationButton,
                 { backgroundColor: `${theme.primary}10` },
               ]}
-              onPress={() => navigation.navigate("Notifications")}
+              onPress={() => setNotificationModalVisible(true)}
             >
               <Ionicons
                 name="notifications-outline"
-                size={20}
-                color={theme.text}
+                size={24}
+                color={theme.primary}
               />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.iconButton,
-                { backgroundColor: `${theme.primary}10` },
-              ]}
-            >
-              <Ionicons name="filter-outline" size={20} color={theme.text} />
             </TouchableOpacity>
           </View>
         </View>
@@ -201,6 +197,62 @@ export default function HomeScreen({ navigation }) {
             />
           }
         />
+
+        <Modal
+          isVisible={isNotificationModalVisible}
+          onBackdropPress={() => setNotificationModalVisible(false)}
+          backdropOpacity={0.5}
+          style={styles.modal}
+          animationIn="slideInUp"
+          animationOut="slideOutDown"
+        >
+          <View
+            style={[styles.notificationModal, { backgroundColor: theme.card }]}
+          >
+            <View style={styles.notificationHeader}>
+              <Text style={[styles.notificationTitle, { color: theme.text }]}>
+                Notifications
+              </Text>
+              <TouchableOpacity
+                onPress={() => setNotificationModalVisible(false)}
+                style={styles.closeButton}
+              >
+                <Ionicons name="close" size={24} color={theme.text} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Example notification items */}
+            <ScrollView style={styles.notificationList}>
+              <View style={styles.notificationItem}>
+                <View style={styles.notificationIcon}>
+                  <Ionicons name="person" size={20} color={theme.primary} />
+                </View>
+                <View style={styles.notificationContent}>
+                  <Text
+                    style={[styles.notificationText, { color: theme.text }]}
+                  >
+                    John Doe commented on your prayer
+                  </Text>
+                  <Text style={styles.notificationTime}>2 hours ago</Text>
+                </View>
+              </View>
+
+              <View style={styles.notificationItem}>
+                <View style={styles.notificationIcon}>
+                  <Ionicons name="heart" size={20} color={theme.primary} />
+                </View>
+                <View style={styles.notificationContent}>
+                  <Text
+                    style={[styles.notificationText, { color: theme.text }]}
+                  >
+                    Sarah Smith prayed for you
+                  </Text>
+                  <Text style={styles.notificationTime}>5 hours ago</Text>
+                </View>
+              </View>
+            </ScrollView>
+          </View>
+        </Modal>
       </SafeAreaView>
     </TouchableWithoutFeedback>
   );
@@ -224,11 +276,15 @@ const styles = StyleSheet.create({
   },
   headerButtons: {
     flexDirection: "row",
-    gap: 8,
+    alignItems: "center",
   },
-  iconButton: {
+  notificationButton: {
     padding: 8,
     borderRadius: 20,
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
   },
   searchContainer: {
     paddingHorizontal: 16,
@@ -316,5 +372,61 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 12,
     fontWeight: "500",
+  },
+  modal: {
+    margin: 0,
+    justifyContent: "flex-end",
+  },
+  notificationModal: {
+    backgroundColor: "white",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: "80%",
+    paddingBottom: Platform.OS === "ios" ? 34 : 16,
+  },
+  notificationHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0",
+  },
+  notificationTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  closeButton: {
+    padding: 4,
+  },
+  notificationList: {
+    padding: 16,
+  },
+  notificationItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0",
+  },
+  notificationIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#F3F4F6",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  notificationContent: {
+    flex: 1,
+  },
+  notificationText: {
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  notificationTime: {
+    fontSize: 12,
+    color: "#6B7280",
   },
 });

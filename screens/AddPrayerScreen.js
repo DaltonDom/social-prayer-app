@@ -22,8 +22,6 @@ export default function AddPrayerScreen({ navigation }) {
     title: "",
     description: "",
     category: "",
-    allowComments: true,
-    is_answered: false,
   });
 
   const categories = [
@@ -66,7 +64,6 @@ export default function AddPrayerScreen({ navigation }) {
       ...prayerData,
       groupId: selectedGroup?.id,
       groupName: selectedGroup?.name,
-      is_answered: false,
     });
 
     Alert.alert("Success", "Prayer request added successfully", [
@@ -78,8 +75,6 @@ export default function AddPrayerScreen({ navigation }) {
             title: "",
             description: "",
             category: "",
-            allowComments: true,
-            is_answered: false,
           });
           setSelectedGroup(null);
         },
@@ -193,44 +188,6 @@ export default function AddPrayerScreen({ navigation }) {
             keyboardAppearance={isDarkMode ? "dark" : "light"}
           />
 
-          {/* Allow Comments Toggle */}
-          <View style={styles.toggleContainer}>
-            <View style={styles.toggleOption}>
-              <Text style={[styles.toggleLabel, { color: theme.text }]}>
-                Allow Comments
-              </Text>
-              <TouchableOpacity
-                style={[
-                  styles.toggle,
-                  {
-                    backgroundColor: prayerData.allowComments
-                      ? theme.primary
-                      : theme.card,
-                    borderColor: theme.border,
-                  },
-                ]}
-                onPress={() =>
-                  setPrayerData({
-                    ...prayerData,
-                    allowComments: !prayerData.allowComments,
-                  })
-                }
-              >
-                <Ionicons
-                  name={
-                    prayerData.allowComments
-                      ? "chatbubble"
-                      : "chatbubble-outline"
-                  }
-                  size={20}
-                  color={
-                    prayerData.allowComments ? "white" : theme.textSecondary
-                  }
-                />
-              </TouchableOpacity>
-            </View>
-          </View>
-
           <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
             <Text style={styles.submitButtonText}>Share Prayer Request</Text>
           </TouchableOpacity>
@@ -294,31 +251,6 @@ const styles = StyleSheet.create({
   },
   categoryTextActive: {
     color: "white",
-  },
-  toggleContainer: {
-    marginVertical: 16,
-  },
-  toggleOption: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginVertical: 8,
-  },
-  toggleLabel: {
-    fontSize: 16,
-    color: "#333",
-  },
-  toggle: {
-    backgroundColor: "#f0f0f0",
-    padding: 8,
-    borderRadius: 20,
-    width: 40,
-    height: 40,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  toggleActive: {
-    backgroundColor: "#6B4EFF",
   },
   submitButton: {
     backgroundColor: "#6B4EFF",

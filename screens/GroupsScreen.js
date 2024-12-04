@@ -14,6 +14,7 @@ import { useTheme } from "../context/ThemeContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useGroups } from "../context/GroupContext";
 import { useFocusEffect } from "@react-navigation/native";
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function GroupsScreen({ navigation }) {
   const { theme, isDarkMode } = useTheme();
@@ -68,7 +69,7 @@ export default function GroupsScreen({ navigation }) {
             }}
             style={styles.groupLogo}
           />
-          <View style={styles.headerText}>
+          <View style={styles.headerInfo}>
             <Text style={[styles.groupName, { color: theme.text }]}>
               {item.name}
             </Text>
@@ -76,30 +77,29 @@ export default function GroupsScreen({ navigation }) {
               {item.memberCount || 0} members
             </Text>
           </View>
-        </View>
-        <Text style={[styles.description, { color: theme.text }]}>
-          {item.description}
-        </Text>
-        <View style={[styles.cardFooter, { borderTopColor: theme.border }]}>
-          <View style={styles.footerItem}>
-            <Ionicons
-              name="time-outline"
-              size={16}
-              color={theme.textSecondary}
-            />
-            <Text style={[styles.footerText, { color: theme.textSecondary }]}>
-              {item.lastActive}
-            </Text>
-          </View>
-          <View style={styles.footerItem}>
-            <Ionicons
-              name="heart-outline"
-              size={16}
-              color={theme.textSecondary}
-            />
-            <Text style={[styles.footerText, { color: theme.textSecondary }]}>
-              {item.prayerCount} prayers
-            </Text>
+          <View style={styles.statsContainer}>
+            <View style={styles.statItem}>
+              <LinearGradient
+                colors={
+                  theme.dark ? ["#581C87", "#1E3A8A"] : ["#E9D5FF", "#BFDBFE"]
+                }
+                style={styles.statBadge}
+              >
+                <Ionicons
+                  name="add"
+                  size={16}
+                  color={theme.dark ? "#E9D5FF" : "#6B21A8"}
+                />
+                <Text
+                  style={[
+                    styles.statText,
+                    { color: theme.dark ? "#E9D5FF" : "#6B21A8" },
+                  ]}
+                >
+                  Join
+                </Text>
+              </LinearGradient>
+            </View>
           </View>
         </View>
       </TouchableOpacity>
@@ -212,7 +212,6 @@ const styles = StyleSheet.create({
   cardHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
   },
   groupLogo: {
     width: 50,
@@ -220,23 +219,23 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     marginRight: 12,
   },
-  headerText: {
+  headerInfo: {
     flex: 1,
+    justifyContent: "center",
   },
   groupName: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontWeight: "600",
     marginBottom: 4,
   },
   memberCount: {
     fontSize: 14,
-    color: "#666",
   },
   description: {
     fontSize: 14,
-    color: "#333",
     lineHeight: 20,
-    marginBottom: 12,
+    marginBottom: 16,
+    color: "#666",
   },
   cardFooter: {
     flexDirection: "row",
@@ -253,5 +252,26 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#666",
     marginLeft: 4,
+  },
+  statsContainer: {
+    flexDirection: "column",
+    justifyContent: "center",
+    gap: 4,
+  },
+  statItem: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  statBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 6,
+  },
+  statText: {
+    fontSize: 14,
+    fontWeight: "500",
   },
 });
