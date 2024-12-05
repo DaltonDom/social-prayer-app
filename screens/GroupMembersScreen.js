@@ -12,24 +12,45 @@ import { useTheme } from "../context/ThemeContext";
 import { useGroups } from "../context/GroupContext";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "../lib/supabase";
+import { useFriendships } from "../context/FriendshipContext";
 
 export default function GroupMembersScreen({ route, navigation }) {
   const { theme } = useTheme();
   const { groupId, groupName } = route.params;
   const [members, setMembers] = React.useState([]);
+  const [currentUserId, setCurrentUserId] = React.useState(null);
+  const { friendships, pendingFriendships } = useFriendships();
 
   React.useEffect(() => {
+    getCurrentUser();
     fetchGroupMembers();
   }, [groupId]);
 
+  const getCurrentUser = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    setCurrentUserId(user?.id);
+  };
+
   const fetchGroupMembers = async () => {
     try {
+      console.log("Fetching members for group:", groupId);
+
+      // First, let's check if the group exists
+      const { data: groupData, error: groupError } = await supabase
+        .from("groups")
+        .select("*")
+        .eq("id", groupId)
+        .single();
+
+      console.log("Group data:", groupData);
+
       const { data, error } = await supabase
         .from("group_members")
         .select(
           `
-          user_id,
-          role,
+          *,
           profiles:user_id (
             id,
             first_name,
@@ -40,7 +61,17 @@ export default function GroupMembersScreen({ route, navigation }) {
         )
         .eq("group_id", groupId);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase error:", error);
+        throw error;
+      }
+
+      console.log("Raw data from supabase:", data);
+
+      if (!data || data.length === 0) {
+        console.log("No members found in database for this group");
+        return;
+      }
 
       const formattedMembers = data.map((member) => ({
         id: member.profiles.id,
@@ -51,31 +82,108 @@ export default function GroupMembersScreen({ route, navigation }) {
         isAdmin: member.role === "admin",
       }));
 
-      setMembers(formattedMembers);
+      console.log("Formatted members:", formattedMembers);
+      console.log("Current user ID:", currentUserId);
+
+      const sortedMembers = formattedMembers.sort((a, b) => {
+        if (a.id === currentUserId) return -1;
+        if (b.id === currentUserId) return 1;
+
+        if (a.isAdmin && !b.isAdmin) return -1;
+        if (!a.isAdmin && b.isAdmin) return 1;
+
+        return 0;
+      });
+
+      console.log("Sorted members:", sortedMembers);
+      setMembers(sortedMembers);
     } catch (error) {
-      console.error("Error fetching group members:", error);
+      console.error("Error fetching group members:", error.message);
     }
   };
 
-  const renderMember = ({ item }) => (
-    <TouchableOpacity
-      style={[styles.memberCard, { backgroundColor: theme.card }]}
-      onPress={() => navigation.navigate("FriendDetail", { friendId: item.id })}
-    >
-      <Image source={{ uri: item.image_url }} style={styles.memberImage} />
-      <View style={styles.memberInfo}>
-        <Text style={[styles.memberName, { color: theme.text }]}>
-          {item.name}
-        </Text>
-        {item.isAdmin && (
-          <Text style={[styles.adminBadge, { color: theme.primary }]}>
-            Admin
+  const renderMember = ({ item }) => {
+    const isCurrentUser = item.id === currentUserId;
+    const isFriend = friendships.some(
+      (friendship) =>
+        friendship.friend_id === item.id || friendship.user_id === item.id
+    );
+    const isPending = pendingFriendships.some(
+      (request) =>
+        request.receiver_id === item.id || request.sender_id === item.id
+    );
+
+    const MemberContent = () => (
+      <View style={[styles.memberCard, { backgroundColor: theme.card }]}>
+        <Image source={{ uri: item.image_url }} style={styles.memberImage} />
+        <View style={styles.memberInfo}>
+          <Text style={[styles.memberName, { color: theme.text }]}>
+            {item.name}
           </Text>
+          {item.isAdmin && (
+            <Text style={[styles.adminBadge, { color: theme.primary }]}>
+              Admin
+            </Text>
+          )}
+        </View>
+
+        {!isCurrentUser && (
+          <View style={styles.actionContainer}>
+            {isFriend ? (
+              <Ionicons name="checkmark-circle" size={24} color="green" />
+            ) : isPending ? (
+              <Ionicons name="time" size={24} color={theme.textSecondary} />
+            ) : (
+              <TouchableOpacity
+                onPress={() => handleSendFriendRequest(item.id)}
+                style={styles.addButton}
+              >
+                <Ionicons name="person-add" size={24} color={theme.primary} />
+              </TouchableOpacity>
+            )}
+          </View>
         )}
       </View>
-      <Ionicons name="chevron-forward" size={24} color={theme.textSecondary} />
-    </TouchableOpacity>
-  );
+    );
+
+    if (isCurrentUser) {
+      return <MemberContent />;
+    }
+
+    return (
+      <TouchableOpacity
+        onPress={() =>
+          navigation.navigate("FriendDetail", { friendId: item.id })
+        }
+      >
+        <MemberContent />
+      </TouchableOpacity>
+    );
+  };
+
+  const handleSendFriendRequest = async (receiverId) => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      const { data, error } = await supabase.from("friend_requests").insert([
+        {
+          sender_id: user.id,
+          receiver_id: receiverId,
+        },
+      ]);
+
+      if (error) {
+        console.error("Supabase error:", error);
+        throw error;
+      }
+
+      console.log("Friend request sent successfully");
+    } catch (error) {
+      console.error("Error sending friend request:", error.message);
+    }
+  };
 
   return (
     <SafeAreaView

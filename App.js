@@ -20,6 +20,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { UserProvider } from "./context/UserContext";
 import AuthScreen from "./screens/AuthScreen";
 import { View, ActivityIndicator } from "react-native";
+import { FriendshipProvider } from "./context/FriendshipContext";
 
 // Screen imports
 import HomeScreen from "./screens/HomeScreen";
@@ -203,7 +204,9 @@ export default function App() {
             <PrayerProvider>
               <JournalProvider>
                 <GroupProvider>
-                  <Navigation />
+                  <FriendshipProvider>
+                    <Navigation />
+                  </FriendshipProvider>
                 </GroupProvider>
               </JournalProvider>
             </PrayerProvider>
