@@ -260,40 +260,30 @@ export default function GroupDetailScreen({ route, navigation }) {
           )}
 
           {group.isAdmin && (
-            <View style={styles.editControls}>
-              {isEditing ? (
-                <>
-                  <TouchableOpacity
-                    style={[
-                      styles.editButton,
-                      { backgroundColor: theme.primary },
-                    ]}
-                    onPress={handleSaveChanges}
-                  >
-                    <Text style={styles.editButtonText}>Save</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.editButton,
-                      { backgroundColor: theme.error },
-                    ]}
-                    onPress={() => setIsEditing(false)}
-                  >
-                    <Text style={styles.editButtonText}>Cancel</Text>
-                  </TouchableOpacity>
-                </>
-              ) : (
-                <TouchableOpacity
-                  style={[
-                    styles.editButton,
-                    { backgroundColor: theme.primary },
-                  ]}
-                  onPress={() => setIsEditing(true)}
-                >
-                  <Text style={styles.editButtonText}>Edit Group</Text>
-                </TouchableOpacity>
-              )}
-            </View>
+            <>
+              <TouchableOpacity
+                style={[
+                  styles.editButton,
+                  { backgroundColor: `${theme.primary}15` },
+                ]}
+                onPress={() => setIsEditing(!isEditing)}
+              >
+                <Ionicons
+                  name={isEditing ? "checkmark" : "pencil"}
+                  size={20}
+                  color={theme.primary}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.deleteButton,
+                  { backgroundColor: `${theme.error}15` },
+                ]}
+                onPress={handleDeleteGroup}
+              >
+                <Ionicons name="trash-outline" size={24} color={theme.error} />
+              </TouchableOpacity>
+            </>
           )}
 
           <View style={styles.stats}>
@@ -317,18 +307,6 @@ export default function GroupDetailScreen({ route, navigation }) {
               </Text>
             </View>
           </View>
-
-          {group.isAdmin && (
-            <TouchableOpacity
-              style={[
-                styles.deleteButton,
-                { backgroundColor: `${theme.error}15` },
-              ]}
-              onPress={handleDeleteGroup}
-            >
-              <Ionicons name="trash-outline" size={24} color={theme.error} />
-            </TouchableOpacity>
-          )}
         </View>
 
         {group.isAdmin && (
@@ -767,19 +745,15 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 4,
   },
-  editControls: {
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 12,
-  },
   editButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    position: "absolute",
+    top: 12,
+    left: 12,
+    width: 40,
+    height: 40,
     borderRadius: 20,
-  },
-  editButtonText: {
-    color: "white",
-    fontWeight: "600",
+    justifyContent: "center",
+    alignItems: "center",
   },
   editInput: {
     fontSize: 16,

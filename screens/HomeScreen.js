@@ -62,31 +62,53 @@ export default function HomeScreen({ navigation }) {
               </Text>
             </View>
           </View>
-          <LinearGradient
-            colors={
-              theme.dark
-                ? ["#581C87", "#1E3A8A"] // dark mode: purple-900 to blue-900
-                : ["#E9D5FF", "#BFDBFE"] // light mode: purple-200 to blue-200
-            }
-            style={styles.categoryTag}
-          >
-            <Ionicons
-              name={getCategoryIcon(item.category)}
-              size={14}
-              color={theme.dark ? "#E9D5FF" : "#6B21A8"} // dark: purple-200, light: purple-800
-              style={styles.categoryIcon}
-            />
-            <Text
-              style={[
-                styles.categoryText,
-                {
-                  color: theme.dark ? "#E9D5FF" : "#6B21A8", // dark: purple-200, light: purple-800
-                },
-              ]}
+          <View style={styles.tagsContainer}>
+            <LinearGradient
+              colors={
+                theme.dark ? ["#581C87", "#1E3A8A"] : ["#E9D5FF", "#BFDBFE"]
+              }
+              style={styles.categoryTag}
             >
-              {item.category}
-            </Text>
-          </LinearGradient>
+              <Ionicons
+                name={getCategoryIcon(item.category)}
+                size={14}
+                color={theme.dark ? "#E9D5FF" : "#6B21A8"}
+                style={styles.categoryIcon}
+              />
+              <Text
+                style={[
+                  styles.categoryText,
+                  { color: theme.dark ? "#E9D5FF" : "#6B21A8" },
+                ]}
+              >
+                {item.category}
+              </Text>
+            </LinearGradient>
+
+            {item.groups && (
+              <LinearGradient
+                colors={
+                  theme.dark ? ["#065F46", "#064E3B"] : ["#D1FAE5", "#A7F3D0"]
+                }
+                style={styles.groupTag}
+              >
+                <Ionicons
+                  name="people"
+                  size={14}
+                  color={theme.dark ? "#D1FAE5" : "#065F46"}
+                  style={styles.categoryIcon}
+                />
+                <Text
+                  style={[
+                    styles.categoryText,
+                    { color: theme.dark ? "#D1FAE5" : "#065F46" },
+                  ]}
+                >
+                  {item.groups.name}
+                </Text>
+              </LinearGradient>
+            )}
+          </View>
         </View>
 
         <Text style={[styles.description, { color: theme.text }]}>
@@ -325,6 +347,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
+    alignSelf: "flex-start",
   },
   categoryIcon: {
     marginRight: 4,
@@ -411,5 +434,18 @@ const styles = StyleSheet.create({
   notificationTime: {
     fontSize: 12,
     color: "#6B7280",
+  },
+  tagsContainer: {
+    flexDirection: "column",
+    gap: 8,
+    alignItems: "flex-end",
+    maxWidth: "60%",
+  },
+  groupTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
   },
 });
