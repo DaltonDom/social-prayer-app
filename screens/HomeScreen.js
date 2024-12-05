@@ -165,23 +165,6 @@ export default function HomeScreen({ navigation }) {
           </View>
         </View>
 
-        <View style={styles.searchContainer}>
-          <Ionicons
-            name="search-outline"
-            size={20}
-            color={theme.textSecondary}
-            style={styles.searchIcon}
-          />
-          <TextInput
-            style={[
-              styles.searchInput,
-              { backgroundColor: `${theme.card}50`, color: theme.text },
-            ]}
-            placeholder="Search posts..."
-            placeholderTextColor={theme.textSecondary}
-          />
-        </View>
-
         <FlatList
           data={prayers}
           renderItem={renderPrayerCard}

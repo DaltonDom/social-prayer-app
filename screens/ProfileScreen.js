@@ -308,7 +308,7 @@ export default function ProfileScreen({ navigation }) {
   }, [userProfile]);
 
   useEffect(() => {
-    let isMounted = true; // Add mounted check
+    let isMounted = true;
 
     const fetchFriendsData = async () => {
       if (!userProfile?.id) return;
@@ -339,12 +339,12 @@ export default function ProfileScreen({ navigation }) {
             )
           `
           )
-          .eq("status", "pending")
-          .or(`user_id.eq.${userProfile.id},friend_id.eq.${userProfile.id}`);
+          .or(`user_id.eq.${userProfile.id},friend_id.eq.${userProfile.id}`)
+          .in("status", ["accepted", "pending"]);
 
         if (error) throw error;
 
-        if (!isMounted) return; // Check if component is still mounted
+        if (!isMounted) return;
 
         if (!friendships) {
           setFriends([]);
@@ -352,22 +352,24 @@ export default function ProfileScreen({ navigation }) {
           return;
         }
 
-        const transformedFriends = friendships.map((friendship) => {
-          const friendInfo =
-            friendship.user_id === userProfile.id
-              ? friendship.friend
-              : friendship.user;
+        const transformedFriends = friendships
+          .filter((friendship) => friendship.status === "accepted")
+          .map((friendship) => {
+            const friendInfo =
+              friendship.user_id === userProfile.id
+                ? friendship.friend
+                : friendship.user;
 
-          return {
-            id: friendInfo.id,
-            first_name: friendInfo.first_name,
-            last_name: friendInfo.last_name,
-            profile_image_url: friendInfo.profile_image_url,
-            friendshipId: friendship.id,
-          };
-        });
+            return {
+              id: friendInfo.id,
+              first_name: friendInfo.first_name,
+              last_name: friendInfo.last_name,
+              profile_image_url: friendInfo.profile_image_url,
+              friendshipId: friendship.id,
+            };
+          });
 
-        if (!isMounted) return; // Check again before setting state
+        if (!isMounted) return;
 
         setFriends(transformedFriends);
         setTotalFriends(transformedFriends.length);
@@ -386,11 +388,10 @@ export default function ProfileScreen({ navigation }) {
 
     fetchFriendsData();
 
-    // Cleanup function
     return () => {
       isMounted = false;
     };
-  }, [userProfile?.id]); // Only depend on userProfile.id
+  }, [userProfile?.id]);
 
   const navigateToFriendsList = () => {
     navigation.navigate("FriendsList", {

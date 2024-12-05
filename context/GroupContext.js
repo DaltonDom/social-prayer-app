@@ -332,6 +332,103 @@ export function GroupProvider({ children }) {
     }
   };
 
+  const sendJoinRequest = async (groupId) => {
+    const { data, error } = await supabase
+      .from("group_requests")
+      .insert([
+        { group_id: groupId, user_id: userProfile.id, status: "pending" },
+      ]);
+    return { data, error };
+  };
+
+  const getPendingRequests = async (groupId) => {
+    const { data, error } = await supabase
+      .from("group_requests")
+      .select(
+        `
+        *,
+        users:user_id (
+          id,
+          name,
+          avatar_url
+        )
+      `
+      )
+      .eq("group_id", groupId)
+      .eq("status", "pending");
+    return { data, error };
+  };
+
+  const acceptRequest = async (requestId) => {
+    // Start a transaction to update both tables
+    const { data: request, error: fetchError } = await supabase
+      .from("group_requests")
+      .select("*")
+      .eq("id", requestId)
+      .single();
+
+    if (fetchError) return { error: fetchError };
+
+    // Add to group members and update request status
+    const { error } = await supabase.rpc("accept_group_request", {
+      request_id: requestId,
+      group_id: request.group_id,
+      user_id: request.user_id,
+    });
+
+    return { error };
+  };
+
+  const rejectRequest = async (requestId) => {
+    const { error } = await supabase
+      .from("group_requests")
+      .update({ status: "rejected" })
+      .eq("id", requestId);
+    return { error };
+  };
+
+  const getGroupMembers = (groupId) => {
+    // Implement this function to fetch members from your backend
+    // Return an array of member objects with this structure:
+    // [{ id, name, image_url, isAdmin }]
+
+    // For now, return mock data:
+    return [
+      {
+        id: "1",
+        name: "John Doe",
+        image_url: "https://via.placeholder.com/50",
+        isAdmin: true,
+      },
+      // ... more members
+    ];
+  };
+
+  const updateGroup = async (groupId, updates) => {
+    try {
+      const { data, error } = await supabase
+        .from("groups")
+        .update(updates)
+        .eq("id", groupId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Update the local groups state
+      setGroups((prevGroups) =>
+        prevGroups.map((group) =>
+          group.id === groupId ? { ...group, ...updates } : group
+        )
+      );
+
+      return { data, error: null };
+    } catch (error) {
+      console.error("Error updating group:", error);
+      return { data: null, error };
+    }
+  };
+
   useEffect(() => {
     if (userProfile) {
       fetchGroups();
@@ -350,6 +447,12 @@ export function GroupProvider({ children }) {
         leaveGroup,
         refreshGroups: fetchGroups,
         deleteGroup,
+        sendJoinRequest,
+        getPendingRequests,
+        acceptRequest,
+        rejectRequest,
+        getGroupMembers,
+        updateGroup,
       }}
     >
       {children}

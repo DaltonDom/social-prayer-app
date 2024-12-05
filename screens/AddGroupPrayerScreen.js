@@ -13,12 +13,11 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { usePrayers } from "../context/PrayerContext";
 import { useTheme } from "../context/ThemeContext";
-import GroupDropdown from "../components/GroupDropdown";
-import { useGroups } from "../context/GroupContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 
-export default function AddPrayerScreen({ navigation }) {
+export default function AddGroupPrayerScreen({ navigation, route }) {
+  const { groupId, groupName } = route.params;
   const { addPrayer } = usePrayers();
   const [prayerData, setPrayerData] = useState({
     title: "",
@@ -36,15 +35,6 @@ export default function AddPrayerScreen({ navigation }) {
   ];
 
   const { theme, isDarkMode } = useTheme();
-
-  const [selectedGroup, setSelectedGroup] = useState(null);
-
-  const { groups } = useGroups();
-
-  const availableGroups = groups.map((group) => ({
-    id: group.id,
-    name: group.name,
-  }));
 
   const handleSubmit = () => {
     if (!prayerData.title.trim()) {
@@ -64,21 +54,17 @@ export default function AddPrayerScreen({ navigation }) {
 
     addPrayer({
       ...prayerData,
-      groupId: selectedGroup?.id,
-      groupName: selectedGroup?.name,
+      groupId,
+      groupName,
     });
 
     Alert.alert("Success", "Prayer request added successfully", [
       {
         text: "OK",
         onPress: () => {
-          navigation.navigate("Home");
-          setPrayerData({
-            title: "",
-            description: "",
-            category: "",
+          navigation.navigate("GroupDetail", {
+            group: { id: groupId, name: groupName },
           });
-          setSelectedGroup(null);
         },
       },
     ]);
@@ -109,7 +95,7 @@ export default function AddPrayerScreen({ navigation }) {
       <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
         <View style={styles.header}>
           <Text style={[styles.headerTitle, { color: theme.primary }]}>
-            New Prayer
+            New Group Prayer
           </Text>
         </View>
 
@@ -118,14 +104,6 @@ export default function AddPrayerScreen({ navigation }) {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.form}>
-            {/* Group Selection (Optional) */}
-            <Text style={[styles.label, { color: theme.text }]}>Group</Text>
-            <GroupDropdown
-              groups={availableGroups}
-              selectedGroup={selectedGroup}
-              onSelect={setSelectedGroup}
-            />
-
             {/* Category Selection */}
             <Text style={[styles.label, { color: theme.text }]}>Category</Text>
             <ScrollView
@@ -232,16 +210,14 @@ export default function AddPrayerScreen({ navigation }) {
             >
               <LinearGradient
                 colors={
-                  theme.dark
-                    ? ["#581C87", "#1E3A8A"] // dark mode: purple-900 to blue-900
-                    : ["#E9D5FF", "#BFDBFE"] // light mode: purple-200 to blue-200
+                  theme.dark ? ["#581C87", "#1E3A8A"] : ["#E9D5FF", "#BFDBFE"]
                 }
                 style={styles.submitGradient}
               >
                 <Text
                   style={[
                     styles.submitButtonText,
-                    { color: theme.dark ? "#E9D5FF" : "#6B21A8" }, // dark: purple-200, light: purple-800
+                    { color: theme.dark ? "#E9D5FF" : "#6B21A8" },
                   ]}
                 >
                   Share Prayer Request
@@ -324,7 +300,7 @@ const styles = StyleSheet.create({
   submitButton: {
     borderRadius: 16,
     marginTop: 24,
-    overflow: "hidden", // Important for the gradient to respect borderRadius
+    overflow: "hidden",
   },
   submitGradient: {
     padding: 16,

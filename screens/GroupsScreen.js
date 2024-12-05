@@ -8,6 +8,7 @@ import {
   FlatList,
   Image,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../context/ThemeContext";
@@ -15,12 +16,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useGroups } from "../context/GroupContext";
 import { useFocusEffect } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
+import { useUser } from "../context/UserContext";
 
 export default function GroupsScreen({ navigation }) {
   const { theme, isDarkMode } = useTheme();
   const { groups, refreshGroups } = useGroups();
+  const { user, userProfile } = useUser();
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredGroups, setFilteredGroups] = useState(groups);
+  const [pendingGroups, setPendingGroups] = useState([]);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -42,25 +46,61 @@ export default function GroupsScreen({ navigation }) {
     navigation.navigate("CreateGroup");
   };
 
+  const handleJoinGroup = (groupId) => {
+    setPendingGroups([...pendingGroups, groupId]);
+  };
+
   const renderGroupCard = ({ item }) => {
+    const isPending = pendingGroups.includes(item.id);
+    const isMember = Boolean(
+      item.membersList?.some((member) => member.id === userProfile?.id) ||
+        item.created_by === userProfile?.id
+    );
+
+    const getButtonConfig = (isPending, isMember) => {
+      if (isMember) {
+        return {
+          colors: ["#86EFAC", "#22C55E"],
+          icon: "checkmark-circle-outline",
+          text: "",
+          textColor: "#166534",
+          iconColor: "#166534",
+        };
+      }
+      if (isPending) {
+        return {
+          colors: ["#FEF3C7", "#FCD34D"],
+          icon: "hourglass-outline",
+          text: "Pending",
+          textColor: "#92400E",
+          iconColor: "#92400E",
+        };
+      }
+      return {
+        colors: theme.dark ? ["#581C87", "#1E3A8A"] : ["#E9D5FF", "#BFDBFE"],
+        icon: "person-add-outline",
+        text: "Join",
+        textColor: theme.dark ? "#E9D5FF" : "#6B21A8",
+        iconColor: theme.dark ? "#E9D5FF" : "#6B21A8",
+      };
+    };
+
+    const buttonConfig = getButtonConfig(isPending, isMember);
+
     return (
       <TouchableOpacity
         style={[styles.card, { backgroundColor: theme.card }]}
         onPress={() => {
-          const groupData = {
-            id: item.id,
-            name: item.name,
-            description: item.description,
-            image_url: item.image_url,
-            memberCount: item.memberCount,
-            membersList: item.membersList,
-            isAdmin: item.isAdmin,
-            created_by: item.created_by,
-          };
-          navigation.navigate("GroupDetail", {
-            group: groupData,
-          });
+          if (isMember) {
+            navigation.navigate("GroupDetail", {
+              group: {
+                ...item,
+                isAdmin: item.created_by === userProfile?.id,
+              },
+            });
+          }
         }}
+        disabled={!isMember}
       >
         <View style={styles.cardHeader}>
           <Image
@@ -78,33 +118,45 @@ export default function GroupsScreen({ navigation }) {
             </Text>
           </View>
           <View style={styles.statsContainer}>
-            <View style={styles.statItem}>
+            <TouchableOpacity
+              onPress={() => !isMember && handleJoinGroup(item.id)}
+              disabled={isPending || isMember}
+            >
               <LinearGradient
-                colors={
-                  theme.dark ? ["#581C87", "#1E3A8A"] : ["#E9D5FF", "#BFDBFE"]
-                }
-                style={styles.statBadge}
+                colors={buttonConfig.colors}
+                style={[styles.statBadge, isMember && styles.memberBadge]}
               >
                 <Ionicons
-                  name="add"
-                  size={16}
-                  color={theme.dark ? "#E9D5FF" : "#6B21A8"}
+                  name={buttonConfig.icon}
+                  size={isMember ? 20 : 16}
+                  color={buttonConfig.iconColor}
                 />
-                <Text
-                  style={[
-                    styles.statText,
-                    { color: theme.dark ? "#E9D5FF" : "#6B21A8" },
-                  ]}
-                >
-                  Join
-                </Text>
+                {buttonConfig.text && (
+                  <Text
+                    style={[styles.statText, { color: buttonConfig.textColor }]}
+                  >
+                    {buttonConfig.text}
+                  </Text>
+                )}
               </LinearGradient>
-            </View>
+            </TouchableOpacity>
           </View>
         </View>
       </TouchableOpacity>
     );
   };
+
+  if (!userProfile) {
+    return (
+      <SafeAreaView
+        style={[styles.container, { backgroundColor: theme.background }]}
+      >
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView
@@ -135,11 +187,19 @@ export default function GroupsScreen({ navigation }) {
             keyboardAppearance={isDarkMode ? "dark" : "light"}
           />
         </View>
-        <TouchableOpacity
-          style={[styles.addButton, { backgroundColor: theme.primary }]}
-          onPress={handleAddGroup}
-        >
-          <Ionicons name="add" size={24} color={theme.card} />
+        <TouchableOpacity onPress={handleAddGroup}>
+          <LinearGradient
+            colors={
+              theme.dark ? ["#581C87", "#1E3A8A"] : ["#E9D5FF", "#BFDBFE"]
+            }
+            style={styles.addButton}
+          >
+            <Ionicons
+              name="add"
+              size={24}
+              color={theme.dark ? "#E9D5FF" : "#6B21A8"}
+            />
+          </LinearGradient>
         </TouchableOpacity>
       </View>
       <FlatList
@@ -188,9 +248,16 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#6B4EFF",
     justifyContent: "center",
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   list: {
     padding: 16,
@@ -273,5 +340,10 @@ const styles = StyleSheet.create({
   statText: {
     fontSize: 14,
     fontWeight: "500",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

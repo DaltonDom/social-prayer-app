@@ -31,6 +31,8 @@ import PrayerDetailScreen from "./screens/PrayerDetailScreen";
 import JournalDetailScreen from "./screens/JournalDetailScreen";
 import FriendsListScreen from "./screens/FriendsListScreen";
 import FriendDetailScreen from "./screens/FriendDetailScreen";
+import GroupMembersScreen from "./screens/GroupMembersScreen";
+import AddGroupPrayerScreen from "./screens/AddGroupPrayerScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -164,6 +166,21 @@ function Navigation() {
               gestureDirection: "horizontal",
               cardStyle: { backgroundColor: "transparent" },
               cardOverlayEnabled: true,
+            }}
+          />
+          <Stack.Screen
+            name="GroupMembers"
+            component={GroupMembersScreen}
+            options={{
+              title: "Group Members",
+              headerBackTitle: "Back",
+            }}
+          />
+          <Stack.Screen
+            name="AddGroupPrayer"
+            component={AddGroupPrayerScreen}
+            options={{
+              headerShown: false,
             }}
           />
         </Stack.Navigator>
