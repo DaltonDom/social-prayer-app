@@ -14,6 +14,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { useJournals } from "../context/JournalContext";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { supabase } from "../lib/supabase";
+import { LinearGradient } from "expo-linear-gradient";
 
 const categories = [
   "Prayer",
@@ -201,35 +202,56 @@ export default function JournalDetailScreen({ route, navigation }) {
       style={[styles.container, { backgroundColor: theme.background }]}
     >
       <ScrollView style={styles.scrollView}>
-        <View style={[styles.card, { backgroundColor: theme.card }]}>
-          <View style={styles.header}>
-            <Text style={[styles.date, { color: theme.textSecondary }]}>
-              {journal.date}
-            </Text>
-            <TouchableOpacity
-              style={styles.editButton}
-              onPress={() => setIsEditing(true)}
-            >
-              <Ionicons name="pencil" size={20} color={theme.primary} />
-            </TouchableOpacity>
-          </View>
-          <Text style={[styles.title, { color: theme.text }]}>
-            {journal.title}
-          </Text>
-          <View
-            style={[
-              styles.categoryTag,
-              { backgroundColor: `${theme.primary}20` },
-            ]}
+        <View style={styles.card}>
+          <LinearGradient
+            colors={[theme.card, "#F8F7FF"]}
+            style={styles.cardGradient}
           >
-            <Ionicons name="bookmark" size={14} color={theme.primary} />
-            <Text style={[styles.categoryText, { color: theme.primary }]}>
-              {journal.category}
+            <View style={styles.header}>
+              <Text style={[styles.date, { color: theme.textSecondary }]}>
+                {journal.date}
+              </Text>
+              <TouchableOpacity
+                style={[
+                  styles.editButton,
+                  { backgroundColor: `${theme.primary}10` },
+                ]}
+                onPress={() => setIsEditing(true)}
+              >
+                <Ionicons name="pencil" size={20} color={theme.primary} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={[styles.title, { color: theme.text }]}>
+              {journal.title}
             </Text>
-          </View>
-          <Text style={[styles.content, { color: theme.text }]}>
-            {journal.content}
-          </Text>
+
+            <LinearGradient
+              colors={
+                theme.dark ? ["#581C87", "#1E3A8A"] : ["#E9D5FF", "#BFDBFE"]
+              }
+              style={styles.categoryTag}
+            >
+              <Ionicons
+                name="bookmark"
+                size={14}
+                color={theme.dark ? "#E9D5FF" : "#6B21A8"}
+                style={styles.categoryIcon}
+              />
+              <Text
+                style={[
+                  styles.categoryText,
+                  { color: theme.dark ? "#E9D5FF" : "#6B21A8" },
+                ]}
+              >
+                {journal.category}
+              </Text>
+            </LinearGradient>
+
+            <Text style={[styles.content, { color: theme.text }]}>
+              {journal.content}
+            </Text>
+          </LinearGradient>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -245,8 +267,16 @@ const styles = StyleSheet.create({
   },
   card: {
     margin: 16,
+    borderRadius: 16,
+    overflow: "hidden",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+  },
+  cardGradient: {
     padding: 16,
-    borderRadius: 12,
   },
   header: {
     flexDirection: "row",
@@ -265,15 +295,17 @@ const styles = StyleSheet.create({
   categoryTag: {
     flexDirection: "row",
     alignItems: "center",
-    alignSelf: "flex-start",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
+    alignSelf: "flex-start",
     marginBottom: 16,
-    gap: 6,
+  },
+  categoryIcon: {
+    marginRight: 4,
   },
   categoryText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "600",
   },
   content: {
@@ -322,5 +354,13 @@ const styles = StyleSheet.create({
   },
   dateButtonText: {
     fontSize: 14,
+  },
+  editButton: {
+    padding: 8,
+    borderRadius: 20,
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

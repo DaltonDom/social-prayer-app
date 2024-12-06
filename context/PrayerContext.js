@@ -309,12 +309,39 @@ export function PrayerProvider({ children }) {
           )
           .eq("id", prayerId)
           .single(),
-        getComments(prayerId),
+        supabase
+          .from("prayer_comments")
+          .select(
+            `
+            *,
+            profiles (
+              id,
+              first_name,
+              last_name,
+              profile_image_url
+            )
+          `
+          )
+          .eq("prayer_id", prayerId)
+          .order("created_at", { ascending: false }),
       ]);
 
       if (prayerResult.error) throw prayerResult.error;
+      if (commentsResult.error) throw commentsResult.error;
 
-      const transformedData = {
+      // Transform comments data
+      const transformedComments = commentsResult.data.map((comment) => ({
+        id: comment.id,
+        user_id: comment.user_id,
+        userName:
+          `${comment.profiles.first_name} ${comment.profiles.last_name}`.trim(),
+        userImage: comment.profiles.profile_image_url,
+        text: comment.text,
+        date: new Date(comment.created_at).toISOString().split("T")[0],
+      }));
+
+      // Transform prayer data
+      const transformedPrayer = {
         ...prayerResult.data,
         userName:
           `${prayerResult.data.profiles.first_name} ${prayerResult.data.profiles.last_name}`.trim(),
@@ -322,16 +349,16 @@ export function PrayerProvider({ children }) {
         date: new Date(prayerResult.data.created_at)
           .toISOString()
           .split("T")[0],
-        comments: prayerResult.data.comment_count || 0,
+        comments: transformedComments.length,
+        comments_list: transformedComments,
         updates: prayerResult.data.updates?.length || 0,
         updates_list: prayerResult.data.updates || [],
-        comments_list: commentsResult.data || [],
         groupName: prayerResult.data.groups?.name || null,
       };
 
-      return { data: transformedData, error: null };
+      return { data: transformedPrayer, error: null };
     } catch (error) {
-      console.error("Error fetching prayer:", error.message);
+      console.error("Error in getPrayer:", error);
       return { data: null, error };
     }
   };
@@ -497,6 +524,116 @@ export function PrayerProvider({ children }) {
     }
   };
 
+  const deleteUpdate = async (prayerId, updateId) => {
+    try {
+      // First get the current prayer and its updates
+      const { data: currentPrayer, error: fetchError } = await supabase
+        .from("prayers")
+        .select("updates")
+        .eq("id", prayerId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Filter out the update to delete
+      const updatedUpdates = currentPrayer.updates.filter(
+        (update) => update.id !== updateId
+      );
+
+      // Update the prayer with the new updates array
+      const { data, error } = await supabase
+        .from("prayers")
+        .update({
+          updates: updatedUpdates,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", prayerId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Update local state
+      setPrayers((currentPrayers) =>
+        currentPrayers.map((prayer) =>
+          prayer.id === prayerId
+            ? {
+                ...prayer,
+                updates: updatedUpdates.length,
+                updates_list: updatedUpdates,
+              }
+            : prayer
+        )
+      );
+
+      return { error: null };
+    } catch (error) {
+      console.error("Error deleting update:", error.message);
+      return { error };
+    }
+  };
+
+  const deleteComment = async (commentId) => {
+    try {
+      // Get the comment to find its prayer_id before deletion
+      const { data: comment, error: fetchError } = await supabase
+        .from("prayer_comments")
+        .select("prayer_id")
+        .eq("id", commentId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Delete the comment
+      const { error: deleteError } = await supabase
+        .from("prayer_comments")
+        .delete()
+        .eq("id", commentId);
+
+      if (deleteError) throw deleteError;
+
+      // Get current prayer to get the comment count
+      const { data: prayer, error: prayerError } = await supabase
+        .from("prayers")
+        .select("comment_count")
+        .eq("id", comment.prayer_id)
+        .single();
+
+      if (prayerError) throw prayerError;
+
+      // Update the prayer's comment count
+      const { error: updateError } = await supabase
+        .from("prayers")
+        .update({
+          comment_count: Math.max(0, (prayer.comment_count || 1) - 1),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", comment.prayer_id);
+
+      if (updateError) throw updateError;
+
+      // Update local state
+      setPrayers((currentPrayers) =>
+        currentPrayers.map((prayer) => {
+          if (prayer.id === comment.prayer_id) {
+            return {
+              ...prayer,
+              comments: Math.max(0, (prayer.comments || 1) - 1),
+              comments_list:
+                prayer.comments_list?.filter((c) => c.id !== commentId) || [],
+            };
+          }
+          return prayer;
+        })
+      );
+
+      return { error: null };
+    } catch (error) {
+      console.error("Error deleting comment:", error.message);
+      return { error };
+    }
+  };
+
   return (
     <PrayerContext.Provider
       value={{
@@ -508,6 +645,8 @@ export function PrayerProvider({ children }) {
         getUserPrayers,
         getGroupPrayers,
         addUpdate,
+        deleteUpdate,
+        deleteComment,
         getPrayer,
         addComment,
         getComments,

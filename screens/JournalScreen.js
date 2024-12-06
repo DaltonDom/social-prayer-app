@@ -15,6 +15,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { Calendar } from "react-native-calendars";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "../lib/supabase";
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function JournalScreen({ navigation }) {
   const { theme, isDarkMode } = useTheme();
@@ -54,21 +55,56 @@ export default function JournalScreen({ navigation }) {
 
   const renderJournalItem = ({ item }) => (
     <TouchableOpacity
-      style={[styles.journalCard, { backgroundColor: theme.card }]}
+      style={styles.card}
       onPress={() => navigation.navigate("JournalDetail", { journal: item })}
     >
-      <Text style={[styles.journalDate, { color: theme.textSecondary }]}>
-        {item.date}
-      </Text>
-      <Text style={[styles.journalTitle, { color: theme.text }]}>
-        {item.title}
-      </Text>
-      <Text
-        style={[styles.journalPreview, { color: theme.textSecondary }]}
-        numberOfLines={2}
+      <LinearGradient
+        colors={[theme.card, "#F8F7FF"]}
+        style={styles.cardGradient}
       >
-        {item.content}
-      </Text>
+        <View style={styles.cardHeader}>
+          <View style={styles.cardHeaderLeft}>
+            <View style={styles.headerText}>
+              <Text style={[styles.journalTitle, { color: theme.text }]}>
+                {item.title}
+              </Text>
+              <Text
+                style={[styles.journalDate, { color: theme.textSecondary }]}
+              >
+                {item.date}
+              </Text>
+            </View>
+          </View>
+          <LinearGradient
+            colors={
+              theme.dark ? ["#581C87", "#1E3A8A"] : ["#E9D5FF", "#BFDBFE"]
+            }
+            style={styles.categoryTag}
+          >
+            <Ionicons
+              name="bookmark"
+              size={14}
+              color={theme.dark ? "#E9D5FF" : "#6B21A8"}
+              style={styles.categoryIcon}
+            />
+            <Text
+              style={[
+                styles.categoryText,
+                { color: theme.dark ? "#E9D5FF" : "#6B21A8" },
+              ]}
+            >
+              {item.category}
+            </Text>
+          </LinearGradient>
+        </View>
+
+        <Text
+          style={[styles.journalPreview, { color: theme.text }]}
+          numberOfLines={3}
+        >
+          {item.content}
+        </Text>
+      </LinearGradient>
     </TouchableOpacity>
   );
 
@@ -159,12 +195,29 @@ export default function JournalScreen({ navigation }) {
 
       {activeTab === "list" && (
         <View style={styles.listContent}>
-          <TouchableOpacity
-            style={[styles.addButton, { backgroundColor: theme.primary }]}
-            onPress={handleAddPress}
-          >
-            <Ionicons name="add" size={24} color="white" />
-            <Text style={styles.addButtonText}>New Entry</Text>
+          <TouchableOpacity style={styles.addButton} onPress={handleAddPress}>
+            <LinearGradient
+              colors={
+                theme.dark
+                  ? ["#581C87", "#1E3A8A"] // dark mode: purple-900 to blue-900
+                  : ["#E9D5FF", "#BFDBFE"] // light mode: purple-200 to blue-200
+              }
+              style={styles.addButtonGradient}
+            >
+              <Ionicons
+                name="add"
+                size={24}
+                color={theme.dark ? "#E9D5FF" : "#6B21A8"}
+              />
+              <Text
+                style={[
+                  styles.addButtonText,
+                  { color: theme.dark ? "#E9D5FF" : "#6B21A8" },
+                ]}
+              >
+                New Entry
+              </Text>
+            </LinearGradient>
           </TouchableOpacity>
           {loading ? (
             <ActivityIndicator size="large" color={theme.primary} />
@@ -308,32 +361,67 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   addButton: {
+    borderRadius: 16,
+    marginBottom: 16,
+    overflow: "hidden",
+  },
+  addButtonGradient: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 16,
+    padding: 16,
   },
   addButtonText: {
-    color: "white",
     fontSize: 16,
     fontWeight: "600",
     marginLeft: 8,
   },
-  journalCard: {
+  card: {
+    marginBottom: 16,
+    borderRadius: 16,
+    overflow: "hidden",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+  },
+  cardGradient: {
     padding: 16,
-    borderRadius: 12,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
     marginBottom: 12,
   },
-  journalDate: {
+  categoryTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    alignSelf: "flex-start",
+  },
+  categoryIcon: {
+    marginRight: 4,
+  },
+  categoryText: {
     fontSize: 12,
-    marginBottom: 4,
+    fontWeight: "600",
+  },
+  headerText: {
+    flexDirection: "column",
+    alignItems: "flex-start",
   },
   journalTitle: {
     fontSize: 18,
     fontWeight: "600",
     marginBottom: 8,
+  },
+  journalDate: {
+    fontSize: 12,
+    marginBottom: 4,
   },
   journalPreview: {
     fontSize: 14,

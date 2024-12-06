@@ -26,8 +26,15 @@ import { LinearGradient } from "expo-linear-gradient";
 export default function PrayerDetailScreen({ route, navigation }) {
   const { theme, isDarkMode } = useTheme();
   const { prayerId } = route.params;
-  const { prayers, addUpdate, updatePrayer, addComment, getPrayer } =
-    usePrayers();
+  const {
+    prayers,
+    addUpdate,
+    updatePrayer,
+    addComment,
+    getPrayer,
+    deleteUpdate,
+    deleteComment,
+  } = usePrayers();
   const { userProfile } = useUser();
   const [keyboardHeight] = useState(new Animated.Value(0));
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
@@ -55,13 +62,22 @@ export default function PrayerDetailScreen({ route, navigation }) {
   }, [prayerId]);
 
   const loadPrayer = async () => {
-    const { data, error } = await getPrayer(prayerId);
-    if (error) {
-      console.error("Error loading prayer:", error);
-    } else {
-      setPrayer(data);
+    setLoading(true);
+    try {
+      const { data, error } = await getPrayer(prayerId);
+      if (error) {
+        console.error("Error loading prayer:", error);
+        Alert.alert("Error", "Failed to load prayer");
+      } else {
+        console.log("Prayer loaded successfully:", data);
+        setPrayer(data);
+      }
+    } catch (error) {
+      console.error("Error in loadPrayer:", error);
+      Alert.alert("Error", "An unexpected error occurred");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleAddComment = async () => {
@@ -132,6 +148,60 @@ export default function PrayerDetailScreen({ route, navigation }) {
       default:
         return "bookmark";
     }
+  };
+
+  const handleDeleteUpdate = async (updateId) => {
+    console.log("Attempting to delete update:", updateId);
+
+    Alert.alert(
+      "Delete Update",
+      "Are you sure you want to delete this update?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            console.log("Deleting update...");
+            const { error } = await deleteUpdate(prayerId, updateId);
+            if (error) {
+              console.error("Delete update error:", error);
+              Alert.alert("Error", "Failed to delete update");
+            } else {
+              console.log("Update deleted successfully");
+              await loadPrayer(); // Make sure to await this
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    console.log("Attempting to delete comment:", commentId);
+
+    Alert.alert(
+      "Delete Comment",
+      "Are you sure you want to delete this comment?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            console.log("Deleting comment...");
+            const { error } = await deleteComment(commentId);
+            if (error) {
+              console.error("Delete comment error:", error);
+              Alert.alert("Error", "Failed to delete comment");
+            } else {
+              console.log("Comment deleted successfully");
+              await loadPrayer(); // Make sure to await this
+            }
+          },
+        },
+      ]
+    );
   };
 
   if (loading) {
@@ -404,9 +474,28 @@ export default function PrayerDetailScreen({ route, navigation }) {
                   key={update.id}
                   style={[styles.updateCard, styles.cardShadow]}
                 >
-                  <Text style={styles.updateDate}>
-                    {new Date(update.created_at).toLocaleDateString()}
-                  </Text>
+                  <View style={styles.updateHeader}>
+                    <View style={styles.updateInfo}>
+                      <Text style={styles.updateDate}>
+                        {new Date(update.created_at).toLocaleDateString()}
+                      </Text>
+                    </View>
+                    {userProfile?.id === prayer.user_id && (
+                      <TouchableOpacity
+                        onPress={() => handleDeleteUpdate(update.id)}
+                        style={[
+                          styles.deleteButton,
+                          { backgroundColor: "#fee2e2" },
+                        ]}
+                      >
+                        <Ionicons
+                          name="trash-outline"
+                          size={20}
+                          color="#ef4444"
+                        />
+                      </TouchableOpacity>
+                    )}
+                  </View>
                   <Text style={styles.updateText}>{update.text}</Text>
                 </View>
               ))
@@ -434,9 +523,26 @@ export default function PrayerDetailScreen({ route, navigation }) {
                         <Text style={styles.commentUserName}>
                           {comment.userName}
                         </Text>
-                        <Text style={styles.commentDate}>
-                          {new Date(comment.date).toLocaleDateString()}
-                        </Text>
+                        <View style={styles.commentActions}>
+                          <Text style={styles.commentDate}>
+                            {new Date(comment.date).toLocaleDateString()}
+                          </Text>
+                          {userProfile?.id === comment.user_id && (
+                            <TouchableOpacity
+                              onPress={() => handleDeleteComment(comment.id)}
+                              style={[
+                                styles.deleteButton,
+                                { backgroundColor: "#fee2e2" },
+                              ]}
+                            >
+                              <Ionicons
+                                name="trash-outline"
+                                size={20}
+                                color="#ef4444"
+                              />
+                            </TouchableOpacity>
+                          )}
+                        </View>
                       </View>
                       <Text style={styles.commentText}>{comment.text}</Text>
                     </View>
@@ -619,8 +725,7 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   commentMeta: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: "column",
     marginBottom: 4,
   },
   commentUserName: {
@@ -801,5 +906,36 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     marginLeft: 4,
+  },
+  updateHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  deleteButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 8,
+    borderRadius: 8,
+  },
+  commentActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 4,
+  },
+  debugText: {
+    fontSize: 12,
+    color: "#666",
+  },
+  deleteText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#ef4444",
+    marginLeft: 4,
+  },
+  updateInfo: {
+    flex: 1,
   },
 });
