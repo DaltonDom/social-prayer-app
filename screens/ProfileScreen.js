@@ -668,8 +668,15 @@ export default function ProfileScreen({ navigation }) {
       <EditProfileModal
         visible={editProfileVisible}
         onClose={() => setEditProfileVisible(false)}
-        userInfo={userInfo}
-        onSave={setUserInfo}
+        userInfo={userProfile}
+        onSave={(updatedInfo) => {
+          setUserInfo((prev) => ({
+            ...prev,
+            name: `${updatedInfo.firstName} ${updatedInfo.lastName}`.trim(),
+            email: updatedInfo.email,
+            profileImage: updatedInfo.profileImageUrl,
+          }));
+        }}
       />
 
       <ChangePasswordModal
