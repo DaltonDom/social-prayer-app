@@ -17,6 +17,7 @@ import { useGroups } from "../context/GroupContext";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import Modal from "react-native-modal";
+import { supabase } from "../lib/supabase";
 
 export default function GroupDetailScreen({ route, navigation }) {
   const { theme } = useTheme();
@@ -27,6 +28,7 @@ export default function GroupDetailScreen({ route, navigation }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(group.name);
   const [editedDescription, setEditedDescription] = useState(group.description);
+  const [membershipRequests, setMembershipRequests] = useState([]);
 
   useEffect(() => {
     console.log("=== Group Detail Screen ===");
@@ -34,6 +36,50 @@ export default function GroupDetailScreen({ route, navigation }) {
     console.log("Is admin?", group.isAdmin);
     console.log("========================");
   }, [group]);
+
+  useEffect(() => {
+    if (group?.id) {
+      fetchMembershipRequests();
+    }
+  }, [group?.id]);
+
+  const fetchMembershipRequests = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("group_requests")
+        .select(
+          `
+          id,
+          created_at,
+          profiles:user_id (
+            id,
+            first_name,
+            last_name,
+            profile_image_url
+          )
+        `
+        )
+        .eq("group_id", group.id)
+        .eq("status", "pending");
+
+      if (error) throw error;
+      setMembershipRequests(
+        data.map((request) => ({
+          id: request.id,
+          name: `${request.profiles.first_name || ""} ${
+            request.profiles.last_name || ""
+          }`.trim(),
+          image:
+            request.profiles.profile_image_url ||
+            "https://via.placeholder.com/40",
+          userId: request.profiles.id,
+        }))
+      );
+    } catch (error) {
+      console.error("Error fetching membership requests:", error);
+      Alert.alert("Error", "Failed to load membership requests");
+    }
+  };
 
   const groupPrayers = group?.id ? getGroupPrayers(group.id) : [];
 
@@ -168,15 +214,51 @@ export default function GroupDetailScreen({ route, navigation }) {
     </TouchableOpacity>
   );
 
-  // Mock data - replace with actual requests from your backend
-  const membershipRequests = [
-    { id: 1, name: "John Doe", image: "https://via.placeholder.com/40" },
-    { id: 2, name: "Jane Smith", image: "https://via.placeholder.com/40" },
-  ];
+  const handleAcceptRequest = async (requestId) => {
+    try {
+      // Update the request status
+      const { error: requestError } = await supabase
+        .from("group_requests")
+        .update({ status: "accepted" })
+        .eq("id", requestId);
 
-  const handleAcceptRequest = (requestId) => {
-    // Implement accept logic
-    console.log("Accepted request:", requestId);
+      if (requestError) throw requestError;
+
+      // Add the user to group_members
+      const request = membershipRequests.find((r) => r.id === requestId);
+      const { error: memberError } = await supabase
+        .from("group_members")
+        .insert({
+          group_id: group.id,
+          user_id: request.userId,
+          role: "member",
+        });
+
+      if (memberError) throw memberError;
+
+      // Fetch updated group details including new member count
+      const { data: updatedGroup, error: groupError } = await supabase
+        .from("groups")
+        .select("*, group_members(count)")
+        .eq("id", group.id)
+        .single();
+
+      if (groupError) throw groupError;
+
+      // Update the local group state with new member count
+      navigation.setParams({
+        group: {
+          ...group,
+          memberCount: updatedGroup.group_members[0].count,
+        },
+      });
+
+      // Refresh the requests list
+      fetchMembershipRequests();
+    } catch (error) {
+      console.error("Error accepting request:", error);
+      Alert.alert("Error", "Failed to accept request");
+    }
   };
 
   const handleDeclineRequest = (requestId) => {

@@ -17,6 +17,7 @@ import { useGroups } from "../context/GroupContext";
 import { useFocusEffect } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useUser } from "../context/UserContext";
+import { supabase } from "../lib/supabase";
 
 export default function GroupsScreen({ navigation }) {
   const { theme, isDarkMode } = useTheme();
@@ -46,8 +47,53 @@ export default function GroupsScreen({ navigation }) {
     navigation.navigate("CreateGroup");
   };
 
-  const handleJoinGroup = (groupId) => {
-    setPendingGroups([...pendingGroups, groupId]);
+  const handleJoinGroup = async (groupId) => {
+    try {
+      console.log("Attempting to join group:", {
+        groupId,
+        userId: userProfile?.id,
+      });
+
+      if (!userProfile?.id) {
+        console.error("User profile ID is missing");
+        return;
+      }
+
+      setPendingGroups([...pendingGroups, groupId]);
+
+      const requestData = {
+        group_id: groupId,
+        user_id: userProfile.id,
+        status: "pending",
+        created_at: new Date().toISOString(),
+      };
+      console.log("Sending request with data:", requestData);
+
+      const { data, error, status, statusText } = await supabase
+        .from("group_requests")
+        .insert([requestData])
+        .select();
+
+      if (error) {
+        console.error("Error details:", {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          status,
+          statusText,
+        });
+        setPendingGroups(pendingGroups.filter((id) => id !== groupId));
+      } else {
+        console.log("Join request sent successfully:", data);
+      }
+    } catch (error) {
+      console.error("Caught error:", {
+        error,
+        message: error?.message,
+        stack: error?.stack,
+      });
+      setPendingGroups(pendingGroups.filter((id) => id !== groupId));
+    }
   };
 
   const renderGroupCard = ({ item }) => {

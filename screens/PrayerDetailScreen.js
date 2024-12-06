@@ -282,26 +282,60 @@ export default function PrayerDetailScreen({ route, navigation }) {
                 </View>
               ) : (
                 <>
-                  <View style={styles.titleRow}>
-                    <Text style={styles.title}>{prayer.title}</Text>
-                    <LinearGradient
-                      colors={
-                        theme.dark
-                          ? ["#581C87", "#1E3A8A"]
-                          : ["#E9D5FF", "#BFDBFE"]
-                      }
-                      style={styles.categoryTag}
-                    >
-                      <Ionicons
-                        name={getCategoryIcon(prayer.category)}
-                        size={14}
-                        color={theme.dark ? "#E9D5FF" : "#6B21A8"}
-                        style={styles.categoryIcon}
-                      />
-                      <Text style={styles.categoryText}>{prayer.category}</Text>
-                    </LinearGradient>
+                  <View style={styles.contentRow}>
+                    <View style={styles.descriptionContainer}>
+                      <Text style={styles.title}>{prayer.title}</Text>
+                      <Text style={styles.description}>
+                        {prayer.description}
+                      </Text>
+                    </View>
+                    <View style={styles.tagsContainer}>
+                      <LinearGradient
+                        colors={
+                          theme.dark
+                            ? ["#581C87", "#1E3A8A"]
+                            : ["#E9D5FF", "#BFDBFE"]
+                        }
+                        style={styles.categoryTag}
+                      >
+                        <Ionicons
+                          name={getCategoryIcon(prayer.category)}
+                          size={14}
+                          color={theme.dark ? "#E9D5FF" : "#6B21A8"}
+                          style={styles.categoryIcon}
+                        />
+                        <Text style={styles.categoryText}>
+                          {prayer.category}
+                        </Text>
+                      </LinearGradient>
+
+                      {prayer.groups && (
+                        <LinearGradient
+                          colors={
+                            theme.dark
+                              ? ["#065F46", "#064E3B"]
+                              : ["#D1FAE5", "#A7F3D0"]
+                          }
+                          style={styles.categoryTag}
+                        >
+                          <Ionicons
+                            name="people"
+                            size={14}
+                            color={theme.dark ? "#D1FAE5" : "#065F46"}
+                            style={styles.categoryIcon}
+                          />
+                          <Text
+                            style={[
+                              styles.categoryText,
+                              { color: theme.dark ? "#D1FAE5" : "#065F46" },
+                            ]}
+                          >
+                            {prayer.groups.name}
+                          </Text>
+                        </LinearGradient>
+                      )}
+                    </View>
                   </View>
-                  <Text style={styles.description}>{prayer.description}</Text>
                 </>
               )}
             </View>
@@ -500,15 +534,30 @@ const styles = StyleSheet.create({
   cardContent: {
     padding: 16,
   },
-  titleRow: {
+  contentRow: {
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 12,
+    gap: 16,
+  },
+  descriptionContainer: {
+    flex: 1,
+    paddingRight: 8,
+  },
+  tagsContainer: {
+    flexDirection: "column",
+    gap: 8,
+    alignItems: "flex-end",
+    paddingLeft: 8,
   },
   title: {
     fontSize: 20,
     fontWeight: "600",
+    color: "#1a1a1a",
+    marginBottom: 8,
+  },
+  description: {
+    fontSize: 14,
+    lineHeight: 20,
     color: "#1a1a1a",
   },
   categoryBadge: {
