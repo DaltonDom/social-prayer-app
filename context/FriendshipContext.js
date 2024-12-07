@@ -20,15 +20,6 @@ export function FriendshipProvider({ children }) {
         },
         fetchFriendships
       )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "friend_requests",
-        },
-        fetchFriendships
-      )
       .subscribe();
 
     return () => {
@@ -43,24 +34,38 @@ export function FriendshipProvider({ children }) {
       } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Fetch accepted friendships
-      const { data: friendshipsData, error: friendshipsError } = await supabase
+      // Fetch all friendships for the current user
+      const { data: friendshipsData, error } = await supabase
         .from("friendships")
-        .select("*")
+        .select(
+          `
+          *,
+          friend:profiles!friendships_friend_id_fkey (
+            id,
+            first_name,
+            last_name,
+            profile_image_url
+          )
+        `
+        )
         .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`);
 
-      if (friendshipsError) throw friendshipsError;
-      setFriendships(friendshipsData || []);
+      if (error) throw error;
 
-      // Fetch pending friend requests
-      const { data: pendingData, error: pendingError } = await supabase
-        .from("friend_requests")
-        .select("*")
-        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
-        .eq("status", "pending");
+      // Separate accepted and pending friendships
+      const accepted = [];
+      const pending = [];
 
-      if (pendingError) throw pendingError;
-      setPendingFriendships(pendingData || []);
+      friendshipsData?.forEach((friendship) => {
+        if (friendship.status === "accepted") {
+          accepted.push(friendship);
+        } else if (friendship.status === "pending") {
+          pending.push(friendship);
+        }
+      });
+
+      setFriendships(accepted);
+      setPendingFriendships(pending);
     } catch (error) {
       console.error("Error fetching friendships:", error);
     }

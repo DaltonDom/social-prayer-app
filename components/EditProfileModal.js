@@ -32,7 +32,6 @@ export default function EditProfileModal({
 
   useEffect(() => {
     if (visible && userInfo?.id) {
-      console.log("UserInfo received:", userInfo);
       fetchProfile();
     }
   }, [visible, userInfo]);

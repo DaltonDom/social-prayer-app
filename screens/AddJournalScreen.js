@@ -7,11 +7,15 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { useTheme } from "../context/ThemeContext";
 import { useJournals } from "../context/JournalContext";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { Platform } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "../lib/supabase";
 
 const categories = [
@@ -34,8 +38,12 @@ export default function AddJournalScreen({ navigation }) {
   });
   const [showDatePicker, setShowDatePicker] = useState(false);
 
+  const handleDatePress = () => {
+    setShowDatePicker(true);
+  };
+
   const handleDateChange = (event, selectedDate) => {
-    setShowDatePicker(Platform.OS === "ios");
+    setShowDatePicker(false);
     if (selectedDate) {
       setJournalData({ ...journalData, date: selectedDate });
     }
@@ -89,104 +97,179 @@ export default function AddJournalScreen({ navigation }) {
     }
   };
 
+  const getCategoryIcon = (category) => {
+    switch (category) {
+      case "Prayer":
+        return "hand-left";
+      case "Gratitude":
+        return "heart";
+      case "Scripture":
+        return "book";
+      case "Reflection":
+        return "bulb";
+      case "Testimony":
+        return "megaphone";
+      default:
+        return "bookmark";
+    }
+  };
+
   return (
-    <ScrollView
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={[styles.container, { backgroundColor: theme.background }]}
-      contentContainerStyle={styles.contentContainer}
     >
-      <Text style={[styles.label, { color: theme.text }]}>Date</Text>
-      <TouchableOpacity
-        style={[styles.dateButton, { backgroundColor: theme.card }]}
-        onPress={() => setShowDatePicker(true)}
-      >
-        <Text style={[styles.dateButtonText, { color: theme.text }]}>
-          {journalData.date.toLocaleDateString()}
-        </Text>
-      </TouchableOpacity>
-
-      {showDatePicker && (
-        <DateTimePicker
-          value={journalData.date}
-          mode="date"
-          display="default"
-          onChange={handleDateChange}
-          maximumDate={new Date()}
-        />
-      )}
-
-      <Text style={[styles.label, { color: theme.text }]}>Title</Text>
-      <TextInput
-        style={[
-          styles.input,
-          { backgroundColor: theme.card, color: theme.text },
-        ]}
-        placeholder="Enter title"
-        placeholderTextColor={theme.textSecondary}
-        value={journalData.title}
-        onChangeText={(text) => setJournalData({ ...journalData, title: text })}
-        keyboardAppearance={isDarkMode ? "dark" : "light"}
-      />
-
-      <Text style={[styles.label, { color: theme.text }]}>Category</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <View style={styles.categoryContainer}>
-          {categories.map((category) => (
+      <SafeAreaView style={[styles.safeArea]} edges={["top"]}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollViewContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.form}>
+            {/* Date Selection */}
+            <Text style={[styles.label, { color: theme.text }]}>Date</Text>
             <TouchableOpacity
-              key={category}
-              style={[
-                styles.categoryButton,
-                {
-                  backgroundColor:
-                    journalData.category === category
-                      ? theme.primary
-                      : theme.card,
-                },
-              ]}
-              onPress={() =>
-                setJournalData({ ...journalData, category: category })
-              }
+              style={[styles.inputWrapper, { backgroundColor: theme.card }]}
+              onPress={handleDatePress}
             >
-              <Text
-                style={[
-                  styles.categoryText,
-                  {
-                    color:
-                      journalData.category === category ? "white" : theme.text,
-                  },
-                ]}
-              >
-                {category}
+              <Text style={[styles.input, { color: theme.text }]}>
+                {journalData.date.toLocaleDateString()}
               </Text>
             </TouchableOpacity>
-          ))}
-        </View>
-      </ScrollView>
 
-      <Text style={[styles.label, { color: theme.text }]}>Journal Entry</Text>
-      <TextInput
-        style={[
-          styles.input,
-          styles.contentInput,
-          { backgroundColor: theme.card, color: theme.text },
-        ]}
-        placeholder="Write your journal entry..."
-        placeholderTextColor={theme.textSecondary}
-        multiline
-        textAlignVertical="top"
-        value={journalData.content}
-        onChangeText={(text) =>
-          setJournalData({ ...journalData, content: text })
-        }
-        keyboardAppearance={isDarkMode ? "dark" : "light"}
-      />
+            {showDatePicker && (
+              <DateTimePicker
+                value={journalData.date}
+                mode="date"
+                display={Platform.OS === "ios" ? "inline" : "default"}
+                onChange={handleDateChange}
+                maximumDate={new Date()}
+              />
+            )}
 
-      <TouchableOpacity
-        style={[styles.submitButton, { backgroundColor: theme.primary }]}
-        onPress={handleSubmit}
-      >
-        <Text style={styles.submitButtonText}>Save Entry</Text>
-      </TouchableOpacity>
-    </ScrollView>
+            {/* Category Selection */}
+            <Text style={[styles.label, { color: theme.text }]}>Category</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.categoryContainer}
+            >
+              {categories.map((category) => (
+                <TouchableOpacity
+                  key={category}
+                  onPress={() =>
+                    setJournalData({ ...journalData, category: category })
+                  }
+                >
+                  <LinearGradient
+                    colors={
+                      journalData.category === category
+                        ? theme.dark
+                          ? ["#581C87", "#1E3A8A"]
+                          : ["#E9D5FF", "#BFDBFE"]
+                        : [theme.card, theme.card]
+                    }
+                    style={styles.categoryTag}
+                  >
+                    <Ionicons
+                      name={getCategoryIcon(category)}
+                      size={14}
+                      color={
+                        journalData.category === category
+                          ? theme.dark
+                            ? "#E9D5FF"
+                            : "#6B21A8"
+                          : theme.textSecondary
+                      }
+                      style={styles.categoryIcon}
+                    />
+                    <Text
+                      style={[
+                        styles.categoryText,
+                        {
+                          color:
+                            journalData.category === category
+                              ? theme.dark
+                                ? "#E9D5FF"
+                                : "#6B21A8"
+                              : theme.textSecondary,
+                        },
+                      ]}
+                    >
+                      {category}
+                    </Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            {/* Title Input */}
+            <Text style={[styles.label, { color: theme.text }]}>Title</Text>
+            <View
+              style={[styles.inputWrapper, { backgroundColor: theme.card }]}
+            >
+              <TextInput
+                style={[styles.input, { color: theme.text }]}
+                placeholder="Enter title"
+                placeholderTextColor={theme.textSecondary}
+                value={journalData.title}
+                onChangeText={(text) =>
+                  setJournalData({ ...journalData, title: text })
+                }
+                keyboardAppearance={isDarkMode ? "dark" : "light"}
+              />
+            </View>
+
+            {/* Journal Content */}
+            <Text style={[styles.label, { color: theme.text }]}>
+              Journal Entry
+            </Text>
+            <View
+              style={[
+                styles.inputWrapper,
+                styles.textAreaWrapper,
+                { backgroundColor: theme.card },
+              ]}
+            >
+              <TextInput
+                style={[styles.input, styles.textArea, { color: theme.text }]}
+                placeholder="Write your journal entry..."
+                placeholderTextColor={theme.textSecondary}
+                multiline
+                numberOfLines={6}
+                textAlignVertical="top"
+                value={journalData.content}
+                onChangeText={(text) =>
+                  setJournalData({ ...journalData, content: text })
+                }
+                keyboardAppearance={isDarkMode ? "dark" : "light"}
+              />
+            </View>
+
+            <TouchableOpacity
+              style={styles.submitButton}
+              onPress={handleSubmit}
+            >
+              <LinearGradient
+                colors={
+                  theme.dark ? ["#581C87", "#1E3A8A"] : ["#E9D5FF", "#BFDBFE"]
+                }
+                style={styles.submitGradient}
+              >
+                <Text
+                  style={[
+                    styles.submitButtonText,
+                    { color: theme.dark ? "#E9D5FF" : "#6B21A8" },
+                  ]}
+                >
+                  Save Journal Entry
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -194,8 +277,21 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  contentContainer: {
-    padding: 16,
+  safeArea: {
+    flex: 1,
+    paddingTop: 0,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollViewContent: {
+    flexGrow: 1,
+    paddingTop: 0,
+  },
+  form: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    paddingTop: 0,
   },
   label: {
     fontSize: 16,
@@ -203,48 +299,55 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginTop: 16,
   },
+  inputWrapper: {
+    borderRadius: 16,
+    overflow: "hidden",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+  },
   input: {
-    borderRadius: 12,
     padding: 12,
     fontSize: 16,
-    marginBottom: 16,
   },
-  contentInput: {
-    height: 200,
-    textAlignVertical: "top",
+  textAreaWrapper: {
+    height: 120,
+  },
+  textArea: {
+    height: "100%",
   },
   categoryContainer: {
     flexDirection: "row",
-    marginBottom: 16,
-    gap: 8,
+    marginVertical: 8,
   },
-  categoryButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+  categoryTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
     marginRight: 8,
   },
+  categoryIcon: {
+    marginRight: 4,
+  },
   categoryText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "600",
   },
   submitButton: {
-    padding: 16,
-    borderRadius: 12,
-    alignItems: "center",
+    borderRadius: 16,
     marginTop: 24,
+    overflow: "hidden",
+  },
+  submitGradient: {
+    padding: 16,
+    alignItems: "center",
   },
   submitButtonText: {
-    color: "white",
     fontSize: 16,
     fontWeight: "600",
-  },
-  dateButton: {
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 16,
-  },
-  dateButtonText: {
-    fontSize: 16,
   },
 });
