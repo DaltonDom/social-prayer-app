@@ -22,6 +22,7 @@ import { supabase } from "../lib/supabase";
 import { useUser } from "../context/UserContext";
 import uuid from "react-native-uuid";
 import { decode } from "base64-arraybuffer";
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function CreateGroupScreen({ navigation }) {
   const { theme } = useTheme();
@@ -31,7 +32,6 @@ export default function CreateGroupScreen({ navigation }) {
   const [description, setDescription] = useState("");
   const [isPrivate, setIsPrivate] = useState(false);
   const [category, setCategory] = useState("");
-  const [guidelines, setGuidelines] = useState("");
   const [groupImage, setGroupImage] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -137,7 +137,6 @@ export default function CreateGroupScreen({ navigation }) {
         imageUrl,
         isPrivate,
         category: category.trim(),
-        guidelines: guidelines.trim(),
       });
 
       if (error) throw error;
@@ -151,140 +150,162 @@ export default function CreateGroupScreen({ navigation }) {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={[styles.container, { backgroundColor: theme.background }]}
     >
-      <SafeAreaView
-        style={[styles.container, { backgroundColor: theme.background }]}
-        edges={["left", "right"]}
-      >
+      <SafeAreaView style={{ flex: 1, marginTop: 0 }} edges={["top"]}>
         <ScrollView
+          style={[styles.scrollView, { marginTop: 0 }]}
+          contentContainerStyle={{ paddingTop: 0 }}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
         >
-          <View style={[styles.imageSection, { backgroundColor: theme.card }]}>
-            <TouchableOpacity onPress={pickImage} style={styles.imageContainer}>
-              {groupImage ? (
-                <Image source={{ uri: groupImage }} style={styles.groupImage} />
-              ) : (
-                <View
-                  style={[
-                    styles.placeholderImage,
-                    { backgroundColor: theme.searchBg },
-                  ]}
+          <View style={[styles.form, { marginTop: 0, paddingTop: 0 }]}>
+            <View
+              style={[
+                styles.imageSection,
+                {
+                  backgroundColor: theme.card,
+                  marginTop: 0,
+                  marginBottom: 16,
+                },
+              ]}
+            >
+              <TouchableOpacity
+                onPress={pickImage}
+                style={styles.imageContainer}
+              >
+                {groupImage ? (
+                  <Image
+                    source={{ uri: groupImage }}
+                    style={styles.groupImage}
+                  />
+                ) : (
+                  <View
+                    style={[
+                      styles.placeholderImage,
+                      { backgroundColor: theme.searchBg },
+                    ]}
+                  >
+                    <Ionicons
+                      name="image-outline"
+                      size={40}
+                      color={theme.textSecondary}
+                    />
+                  </View>
+                )}
+                <LinearGradient
+                  colors={
+                    theme.dark ? ["#581C87", "#1E3A8A"] : ["#E9D5FF", "#BFDBFE"]
+                  }
+                  style={styles.editImageButton}
                 >
                   <Ionicons
-                    name="image-outline"
-                    size={40}
-                    color={theme.textSecondary}
+                    name="camera"
+                    size={20}
+                    color={theme.dark ? "#E9D5FF" : "#6B21A8"}
                   />
-                </View>
-              )}
-              <View
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+
+            <View
+              style={[styles.inputWrapper, { backgroundColor: theme.card }]}
+            >
+              <Text style={[styles.label, { color: theme.text }]}>
+                Group Name
+              </Text>
+              <TextInput
                 style={[
-                  styles.editImageButton,
-                  { backgroundColor: theme.primary },
+                  styles.input,
+                  {
+                    color: theme.text,
+                    borderColor: theme.dark ? "#475569" : "#e2e8f0",
+                    backgroundColor: theme.searchBg,
+                  },
                 ]}
+                placeholder="Enter group name"
+                placeholderTextColor={theme.textSecondary}
+                value={groupName}
+                onChangeText={setGroupName}
+                keyboardAppearance={theme.dark ? "dark" : "light"}
+              />
+
+              <Text style={[styles.label, { color: theme.text }]}>
+                Description
+              </Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  styles.textArea,
+                  {
+                    color: theme.text,
+                    borderColor: theme.dark ? "#475569" : "#e2e8f0",
+                    backgroundColor: theme.searchBg,
+                  },
+                ]}
+                placeholder="Describe your group's purpose"
+                placeholderTextColor={theme.textSecondary}
+                value={description}
+                onChangeText={setDescription}
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+                keyboardAppearance={theme.dark ? "dark" : "light"}
+              />
+
+              <Text style={[styles.label, { color: theme.text }]}>
+                Category
+              </Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    color: theme.text,
+                    borderColor: theme.dark ? "#475569" : "#e2e8f0",
+                    backgroundColor: theme.searchBg,
+                  },
+                ]}
+                placeholder="Enter group category"
+                placeholderTextColor={theme.textSecondary}
+                value={category}
+                onChangeText={setCategory}
+                keyboardAppearance={theme.dark ? "dark" : "light"}
+              />
+            </View>
+
+            <View
+              style={[styles.buttonWrapper, { backgroundColor: theme.card }]}
+            >
+              <TouchableOpacity
+                style={styles.submitButton}
+                onPress={handleCreateGroup}
+                disabled={isLoading}
               >
-                <Ionicons name="camera" size={20} color="white" />
-              </View>
-            </TouchableOpacity>
-          </View>
-
-          <View style={[styles.section, { backgroundColor: theme.card }]}>
-            <Text style={[styles.label, { color: theme.text }]}>
-              Group Name
-            </Text>
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  backgroundColor: theme.searchBg,
-                  color: theme.text,
-                  borderColor: theme.border,
-                },
-              ]}
-              placeholder="Enter group name"
-              placeholderTextColor={theme.textSecondary}
-              value={groupName}
-              onChangeText={setGroupName}
-            />
-
-            <Text style={[styles.label, { color: theme.text }]}>
-              Description
-            </Text>
-            <TextInput
-              style={[
-                styles.textArea,
-                {
-                  backgroundColor: theme.searchBg,
-                  color: theme.text,
-                  borderColor: theme.border,
-                },
-              ]}
-              placeholder="Describe your group's purpose"
-              placeholderTextColor={theme.textSecondary}
-              value={description}
-              onChangeText={setDescription}
-              multiline
-              numberOfLines={4}
-            />
-
-            <Text style={[styles.label, { color: theme.text }]}>Category</Text>
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  backgroundColor: theme.searchBg,
-                  color: theme.text,
-                  borderColor: theme.border,
-                },
-              ]}
-              placeholder="Enter group category"
-              placeholderTextColor={theme.textSecondary}
-              value={category}
-              onChangeText={setCategory}
-            />
-
-            <Text style={[styles.label, { color: theme.text }]}>
-              Guidelines
-            </Text>
-            <TextInput
-              style={[
-                styles.textArea,
-                {
-                  backgroundColor: theme.searchBg,
-                  color: theme.text,
-                  borderColor: theme.border,
-                },
-              ]}
-              placeholder="Enter group guidelines (optional)"
-              placeholderTextColor={theme.textSecondary}
-              value={guidelines}
-              onChangeText={setGuidelines}
-              multiline
-              numberOfLines={4}
-            />
+                <LinearGradient
+                  colors={
+                    theme.dark ? ["#581C87", "#1E3A8A"] : ["#E9D5FF", "#BFDBFE"]
+                  }
+                  style={styles.submitGradient}
+                >
+                  {isLoading ? (
+                    <ActivityIndicator
+                      color={theme.dark ? "#E9D5FF" : "#6B21A8"}
+                    />
+                  ) : (
+                    <Text
+                      style={[
+                        styles.submitButtonText,
+                        { color: theme.dark ? "#E9D5FF" : "#6B21A8" },
+                      ]}
+                    >
+                      Create Group
+                    </Text>
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
           </View>
         </ScrollView>
-
-        <View style={[styles.footer, { backgroundColor: theme.card }]}>
-          <TouchableOpacity
-            style={[
-              styles.createButton,
-              { backgroundColor: theme.primary },
-              isLoading && styles.disabledButton,
-            ]}
-            onPress={handleCreateGroup}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text style={styles.createButtonText}>Create Group</Text>
-            )}
-          </TouchableOpacity>
-        </View>
       </SafeAreaView>
     </KeyboardAvoidingView>
   );
@@ -294,13 +315,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  scrollContent: {
-    paddingBottom: 20,
+  scrollView: {
+    flex: 1,
+  },
+  form: {
+    padding: 16,
+    paddingTop: 0,
   },
   imageSection: {
     alignItems: "center",
     padding: 16,
-    marginBottom: 16,
+    borderRadius: 16,
   },
   imageContainer: {
     position: "relative",
@@ -329,10 +354,14 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: "white",
   },
-  section: {
+  inputWrapper: {
+    borderRadius: 16,
     padding: 16,
-    marginHorizontal: 16,
-    borderRadius: 12,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
   },
   label: {
     fontSize: 16,
@@ -341,41 +370,39 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   input: {
-    borderRadius: 8,
     padding: 12,
-    borderWidth: 1,
     fontSize: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    backgroundColor: "transparent",
   },
   textArea: {
-    borderRadius: 8,
-    padding: 12,
-    borderWidth: 1,
-    fontSize: 16,
     minHeight: 100,
     textAlignVertical: "top",
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    backgroundColor: "transparent",
   },
-  privacyContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 24,
-  },
-  privacyNote: {
-    fontSize: 14,
-    marginTop: 8,
-  },
-  footer: {
+  buttonWrapper: {
+    borderRadius: 16,
     padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: "#eee",
+    marginTop: 16,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
   },
-  createButton: {
+  submitButton: {
+    borderRadius: 16,
+    overflow: "hidden",
+  },
+  submitGradient: {
     padding: 16,
-    borderRadius: 8,
     alignItems: "center",
   },
-  createButtonText: {
-    color: "white",
+  submitButtonText: {
     fontSize: 16,
     fontWeight: "600",
   },
