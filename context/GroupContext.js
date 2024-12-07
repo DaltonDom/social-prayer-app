@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import { useUser } from "./UserContext";
+import * as ImagePicker from "expo-image-picker";
+import { decode } from "base64-arraybuffer";
 
 const GroupContext = createContext({});
 
@@ -429,6 +431,86 @@ export function GroupProvider({ children }) {
     }
   };
 
+  const uploadGroupImage = async (groupId, uri) => {
+    try {
+      console.log("Starting uploadGroupImage for group:", groupId);
+      console.log("Image URI:", uri);
+
+      // First fetch the image data
+      const response = await fetch(uri);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch image: ${response.statusText}`);
+      }
+
+      const blob = await response.blob();
+      console.log("Blob size:", blob.size);
+
+      // Convert blob to base64
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64data = reader.result.split(",")[1];
+          resolve(base64data);
+        };
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(blob);
+      });
+
+      const fileName = `group-${groupId}-${Date.now()}.jpg`;
+      const filePath = `${fileName}`; // Simplified path
+
+      console.log("Uploading to path:", filePath);
+
+      // Upload to Supabase storage using base64
+      const { error: uploadError } = await supabase.storage
+        .from("group-images")
+        .upload(filePath, decode(base64), {
+          contentType: "image/jpeg",
+          cacheControl: "3600",
+          upsert: true,
+        });
+
+      if (uploadError) {
+        console.error("Storage error:", uploadError);
+        throw uploadError;
+      }
+
+      // Get public URL
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("group-images").getPublicUrl(filePath);
+
+      if (!publicUrl) {
+        throw new Error("Failed to get public URL");
+      }
+
+      console.log("Got public URL:", publicUrl);
+
+      // Update group record with new image URL
+      const { error: updateError } = await supabase
+        .from("groups")
+        .update({ image_url: publicUrl })
+        .eq("id", groupId);
+
+      if (updateError) {
+        console.error("Update error:", updateError);
+        throw updateError;
+      }
+
+      // Update local state
+      setGroups((prevGroups) =>
+        prevGroups.map((group) =>
+          group.id === groupId ? { ...group, image_url: publicUrl } : group
+        )
+      );
+
+      return { publicUrl, error: null };
+    } catch (error) {
+      console.error("Error in uploadGroupImage:", error);
+      return { publicUrl: null, error };
+    }
+  };
+
   useEffect(() => {
     if (userProfile) {
       fetchGroups();
@@ -453,6 +535,7 @@ export function GroupProvider({ children }) {
         rejectRequest,
         getGroupMembers,
         updateGroup,
+        uploadGroupImage,
       }}
     >
       {children}

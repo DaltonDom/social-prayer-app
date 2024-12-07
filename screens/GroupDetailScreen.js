@@ -18,12 +18,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import Modal from "react-native-modal";
 import { supabase } from "../lib/supabase";
+import * as ImagePicker from "expo-image-picker";
 
 export default function GroupDetailScreen({ route, navigation }) {
   const { theme } = useTheme();
   const { group } = route.params;
   const { getGroupPrayers } = usePrayers();
-  const { deleteGroup } = useGroups();
+  const { deleteGroup, uploadGroupImage } = useGroups();
   const [isRequestModalVisible, setRequestModalVisible] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(group.name);
@@ -282,6 +283,59 @@ export default function GroupDetailScreen({ route, navigation }) {
     }
   };
 
+  const handleImageUpload = async () => {
+    try {
+      // Request permission
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission needed",
+          "Please grant permission to access your photos"
+        );
+        return;
+      }
+
+      // Launch image picker with correct mediaTypes value
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: "images",
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.5,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        // Show loading indicator
+        Alert.alert("Uploading...", "Please wait while we upload your image");
+
+        const { publicUrl, error } = await uploadGroupImage(
+          group.id,
+          result.assets[0].uri
+        );
+
+        if (error) {
+          console.error("Error uploading image:", error);
+          Alert.alert("Error", "Failed to upload image");
+          return;
+        }
+
+        if (publicUrl) {
+          // Update the local group state with new image
+          navigation.setParams({
+            group: {
+              ...group,
+              image_url: publicUrl,
+            },
+          });
+          Alert.alert("Success", "Group image updated successfully");
+        }
+      }
+    } catch (error) {
+      console.error("Error picking image:", error);
+      Alert.alert("Error", "Failed to pick image");
+    }
+  };
+
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.background }]}
@@ -290,10 +344,7 @@ export default function GroupDetailScreen({ route, navigation }) {
         <View style={[styles.groupInfo, { backgroundColor: theme.card }]}>
           <TouchableOpacity
             style={styles.imageContainer}
-            onPress={() =>
-              group.isAdmin &&
-              Alert.alert("Coming soon", "Image upload functionality")
-            }
+            onPress={() => group.isAdmin && handleImageUpload()}
           >
             <Image
               source={{

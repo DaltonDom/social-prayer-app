@@ -121,7 +121,16 @@ export default function PrayerDetailScreen({ route, navigation }) {
       return;
     }
 
-    const { error } = await updatePrayer(prayer.id, editedPrayer);
+    // Preserve the existing updates and other fields when saving edits
+    const updatedPrayer = {
+      ...editedPrayer,
+      updates: prayer.updates || [],
+      updates_list: prayer.updates_list || [],
+      comment_count: prayer.comment_count || 0,
+      comments_list: prayer.comments_list || [],
+    };
+
+    const { error } = await updatePrayer(prayer.id, updatedPrayer);
 
     if (error) {
       Alert.alert("Error", "Failed to update prayer");

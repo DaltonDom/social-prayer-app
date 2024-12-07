@@ -89,23 +89,60 @@ export function PrayerProvider({ children }) {
 
   const updatePrayer = async (prayerId, updates) => {
     try {
+      // Ensure we're only sending valid fields to Supabase
+      const validUpdateFields = {
+        title: updates.title,
+        description: updates.description,
+        category: updates.category,
+        updated_at: new Date().toISOString(),
+        updates: updates.updates || [],
+        comment_count: updates.comment_count || 0,
+      };
+
       const { data, error } = await supabase
         .from("prayers")
-        .update({ ...updates, updated_at: new Date().toISOString() })
+        .update(validUpdateFields)
         .eq("id", prayerId)
-        .select()
+        .select(
+          `
+          *,
+          profiles!prayers_user_id_fkey (
+            id,
+            first_name,
+            last_name,
+            profile_image_url
+          ),
+          groups!prayers_group_id_fkey (
+            id,
+            name
+          )
+        `
+        )
         .single();
 
       if (error) throw error;
 
+      // Transform the data to match the expected format
+      const transformedData = {
+        ...data,
+        userName:
+          `${data.profiles.first_name} ${data.profiles.last_name}`.trim(),
+        userImage: data.profiles.profile_image_url,
+        date: new Date(data.created_at).toISOString().split("T")[0],
+        comments: data.comment_count || 0,
+        updates: data.updates?.length || 0,
+        updates_list: data.updates || [],
+        groupName: data.groups?.name || null,
+      };
+
       // Update local state
       setPrayers((currentPrayers) =>
         currentPrayers.map((prayer) =>
-          prayer.id === prayerId ? { ...prayer, ...data } : prayer
+          prayer.id === prayerId ? transformedData : prayer
         )
       );
 
-      return { data, error: null };
+      return { data: transformedData, error: null };
     } catch (error) {
       console.error("Error updating prayer:", error.message);
       return { data: null, error };
