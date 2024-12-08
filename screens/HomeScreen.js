@@ -19,13 +19,47 @@ import Ionicons from "react-native-vector-icons/Ionicons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import Modal from "react-native-modal";
+import { useAuth } from "../context/AuthContext";
+import { useUser } from "../context/UserContext";
 
 export default function HomeScreen({ navigation }) {
   const { prayers, fetchPrayers } = usePrayers();
+  const { user } = useAuth();
+  const { friendships } = useUser();
   const { theme } = useTheme();
   const [refreshing, setRefreshing] = useState(false);
   const [isNotificationModalVisible, setNotificationModalVisible] =
     useState(false);
+
+  // Add debug logs
+  console.log("Current user:", user);
+  console.log("All prayers:", prayers);
+
+  const filteredPrayers = prayers.filter((prayer) => {
+    // Log the full prayer object to see its structure
+    console.log("Full prayer object:", prayer);
+
+    const isOwnPrayer = prayer.user_id === user.id;
+    const isFriendsPrayer = friendships?.some(
+      (friendship) =>
+        (friendship.user_id === user.id &&
+          friendship.friend_id === prayer.user_id) ||
+        (friendship.friend_id === user.id &&
+          friendship.user_id === prayer.user_id)
+    );
+
+    // Debug log for each prayer
+    console.log("Prayer:", {
+      prayerId: prayer.id,
+      prayerUserId: prayer.user_id,
+      isOwnPrayer,
+      isFriendsPrayer,
+    });
+
+    return isOwnPrayer || isFriendsPrayer;
+  });
+
+  console.log("Filtered prayers:", filteredPrayers);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -188,7 +222,7 @@ export default function HomeScreen({ navigation }) {
         </View>
 
         <FlatList
-          data={prayers}
+          data={filteredPrayers}
           renderItem={renderPrayerCard}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}

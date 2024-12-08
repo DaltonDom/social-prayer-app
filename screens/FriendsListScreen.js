@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   TextInput,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../context/ThemeContext";
@@ -22,6 +23,7 @@ export default function FriendsListScreen({ navigation }) {
   const [availableUsers, setAvailableUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -109,10 +111,12 @@ export default function FriendsListScreen({ navigation }) {
         </Text>
       </View>
       <TouchableOpacity
-        style={[styles.removeButton, { backgroundColor: theme.danger }]}
+        style={[styles.removeButton]}
         onPress={() => handleRemoveFriend(item.id)}
       >
-        <Text style={styles.buttonText}>Remove</Text>
+        <View style={styles.removeButtonContent}>
+          <Ionicons name="person-remove" size={16} color="white" />
+        </View>
       </TouchableOpacity>
     </View>
   );
@@ -193,6 +197,11 @@ export default function FriendsListScreen({ navigation }) {
     </View>
   );
 
+  const onRefresh = React.useCallback(() => {
+    setRefreshing(true);
+    fetchData().then(() => setRefreshing(false));
+  }, []);
+
   if (isLoading) {
     return (
       <SafeAreaView
@@ -228,22 +237,22 @@ export default function FriendsListScreen({ navigation }) {
         data={[
           {
             title: "Friend Requests",
-            data: pendingRequests || [],
+            data: filterData(pendingRequests) || [],
             renderItem: renderPendingRequest,
           },
           {
             title: "Sent Requests",
-            data: pendingSent || [],
+            data: filterData(pendingSent) || [],
             renderItem: renderPendingSent,
           },
           {
             title: "Friends",
-            data: friends || [],
+            data: filterData(friends) || [],
             renderItem: renderFriend,
           },
           {
             title: "People You May Know",
-            data: availableUsers || [],
+            data: filterData(availableUsers) || [],
             renderItem: renderPotentialFriend,
           },
         ]}
@@ -255,10 +264,17 @@ export default function FriendsListScreen({ navigation }) {
                   {section.title} ({section.data.length})
                 </Text>
                 <FlatList
-                  data={section.data}
+                  data={filterData(section.data)}
                   renderItem={section.renderItem}
-                  keyExtractor={(item) => item.id}
+                  keyExtractor={(item) => item.id.toString()}
                   scrollEnabled={false}
+                  refreshControl={
+                    <RefreshControl
+                      refreshing={refreshing}
+                      onRefresh={onRefresh}
+                      tintColor={theme.primary}
+                    />
+                  }
                 />
               </View>
             )}
@@ -343,8 +359,15 @@ const styles = StyleSheet.create({
   },
   removeButton: {
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 8,
     borderRadius: 16,
+    marginLeft: 8,
+    backgroundColor: "#FF3B30",
+  },
+  removeButtonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
   addButton: {
     paddingHorizontal: 12,

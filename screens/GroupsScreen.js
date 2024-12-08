@@ -9,6 +9,7 @@ import {
   Image,
   Platform,
   ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../context/ThemeContext";
@@ -26,6 +27,7 @@ export default function GroupsScreen({ navigation }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredGroups, setFilteredGroups] = useState(groups);
   const [pendingGroups, setPendingGroups] = useState([]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -94,6 +96,12 @@ export default function GroupsScreen({ navigation }) {
       });
       setPendingGroups(pendingGroups.filter((id) => id !== groupId));
     }
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await refreshGroups(false); // Force refresh by passing false
+    setIsRefreshing(false);
   };
 
   const renderGroupCard = ({ item }) => {
@@ -254,6 +262,14 @@ export default function GroupsScreen({ navigation }) {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            colors={[theme.primary]} // Android
+            tintColor={theme.primary} // iOS
+          />
+        }
       />
     </SafeAreaView>
   );

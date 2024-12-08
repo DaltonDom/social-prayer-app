@@ -70,16 +70,6 @@ export default function AuthScreen() {
         });
         if (signUpError) throw signUpError;
 
-        // Create user profile
-        const { error: profileError } = await supabase.from("profiles").insert({
-          id: data.user.id,
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          email: formData.email,
-        });
-
-        if (profileError) throw profileError;
-
         Alert.alert(
           "Success",
           "Please check your email to verify your account"

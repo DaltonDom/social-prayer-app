@@ -31,6 +31,7 @@ import JournalScreen from "./screens/JournalScreen";
 import PrayerDetailScreen from "./screens/PrayerDetailScreen";
 import JournalDetailScreen from "./screens/JournalDetailScreen";
 import FriendsListScreen from "./screens/FriendsListScreen";
+import MyPrayersScreen from "./screens/MyPrayersScreen";
 import FriendDetailScreen from "./screens/FriendDetailScreen";
 import GroupMembersScreen from "./screens/GroupMembersScreen";
 import AddGroupPrayerScreen from "./screens/AddGroupPrayerScreen";
@@ -129,6 +130,11 @@ function Navigation() {
             name="JournalDetail"
             component={JournalDetailScreen}
             options={{ title: "Journal Entry" }}
+          />
+          <Stack.Screen
+            name="MyPrayersList"
+            component={MyPrayersScreen}
+            options={{ title: "My Prayers", headerBackTitle: "Back" }}
           />
           <Stack.Screen
             name="FriendsList"

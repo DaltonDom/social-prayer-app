@@ -6,7 +6,41 @@ const UserContext = createContext({});
 
 export function UserProvider({ children }) {
   const [userProfile, setUserProfile] = useState(null);
+  const [friendships, setFriendships] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const fetchFriendships = async (userId) => {
+    try {
+      const { data, error } = await supabase
+        .from("friendships")
+        .select(
+          `
+          *,
+          friend:profiles!friendships_friend_id_fkey (
+            id,
+            first_name,
+            last_name,
+            profile_image_url
+          ),
+          user:profiles!friendships_user_id_fkey (
+            id,
+            first_name,
+            last_name,
+            profile_image_url
+          )
+        `
+        )
+        .or(`user_id.eq.${userId},friend_id.eq.${userId}`)
+        .eq("status", "accepted");
+
+      if (error) throw error;
+      setFriendships(data);
+      return data;
+    } catch (error) {
+      console.error("Error fetching friendships:", error);
+      return [];
+    }
+  };
 
   const fetchUserProfile = async (userId) => {
     try {
@@ -45,6 +79,7 @@ export function UserProvider({ children }) {
         }
       } else {
         setUserProfile(existingProfile);
+        await fetchFriendships(userId);
       }
     } catch (error) {
       console.error("Error fetching user profile:", error.message);
@@ -169,11 +204,13 @@ export function UserProvider({ children }) {
     <UserContext.Provider
       value={{
         userProfile,
+        friendships,
         loading,
         updateProfile,
         sendFriendRequest,
         acceptFriendRequest,
         uploadProfileImage,
+        fetchFriendships,
       }}
     >
       {children}

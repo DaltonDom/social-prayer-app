@@ -442,6 +442,15 @@ export default function ProfileScreen({ navigation }) {
     }
   };
 
+  const navigateToMyPrayers = () => {
+    navigation.navigate("MyPrayersList", {
+      prayers: userPrayers || [],
+      onRefresh: () => {
+        getUserPrayers();
+      },
+    });
+  };
+
   const renderFriendsSection = () => (
     <View style={[styles.section, { backgroundColor: theme.card }]}>
       <View style={styles.sectionHeader}>
@@ -497,6 +506,28 @@ export default function ProfileScreen({ navigation }) {
     </View>
   );
 
+  const statsContainer = (
+    <View style={styles.statsContainer}>
+      <TouchableOpacity style={styles.statItem} onPress={navigateToMyPrayers}>
+        <Text style={[styles.statNumber, { color: theme.primary }]}>
+          {totalPrayers}
+        </Text>
+        <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
+          Prayers
+        </Text>
+      </TouchableOpacity>
+      <View style={[styles.statDivider, { backgroundColor: theme.border }]} />
+      <TouchableOpacity style={styles.statItem} onPress={navigateToFriendsList}>
+        <Text style={[styles.statNumber, { color: theme.primary }]}>
+          {totalFriends}
+        </Text>
+        <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
+          Friends
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+
   return (
     <SafeAreaView
       style={{ flex: 1, backgroundColor: theme.background }}
@@ -528,30 +559,7 @@ export default function ProfileScreen({ navigation }) {
           <Text style={[styles.userEmail, { color: theme.textSecondary }]}>
             {userInfo.email}
           </Text>
-          <View style={styles.statsContainer}>
-            <View style={styles.statItem}>
-              <Text style={[styles.statNumber, { color: theme.primary }]}>
-                {totalPrayers}
-              </Text>
-              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
-                Prayers
-              </Text>
-            </View>
-            <View
-              style={[styles.statDivider, { backgroundColor: theme.border }]}
-            />
-            <TouchableOpacity
-              style={styles.statItem}
-              onPress={navigateToFriendsList}
-            >
-              <Text style={[styles.statNumber, { color: theme.primary }]}>
-                {totalFriends}
-              </Text>
-              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
-                Friends
-              </Text>
-            </TouchableOpacity>
-          </View>
+          {statsContainer}
         </View>
 
         {renderFriendsSection()}
@@ -635,24 +643,6 @@ export default function ProfileScreen({ navigation }) {
               trackColor={{ false: "#767577", true: theme.primary }}
             />
           </View>
-        </View>
-
-        {/* My Prayers Section */}
-        <View style={[styles.section, { backgroundColor: theme.card }]}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>
-            My Prayers ({userPrayers.length})
-          </Text>
-          <FlatList
-            data={userPrayers}
-            renderItem={renderPrayerItem}
-            keyExtractor={(item) => item.id}
-            scrollEnabled={false}
-            ListEmptyComponent={
-              <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-                No prayers added yet
-              </Text>
-            }
-          />
         </View>
 
         {/* Logout Button */}
@@ -791,66 +781,6 @@ const styles = StyleSheet.create({
   settingText: {
     fontSize: 16,
     marginLeft: 12,
-  },
-  prayerCard: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    marginBottom: 12,
-    marginHorizontal: 4,
-    marginTop: 4,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 2,
-      height: 2,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 5,
-  },
-  prayerHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    padding: 16,
-    paddingBottom: 8,
-  },
-  prayerTitleRow: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  categoryTag: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  categoryText: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  prayerTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    flex: 1,
-  },
-  prayerDescription: {
-    fontSize: 14,
-    lineHeight: 20,
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-  },
-  prayerStats: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    borderTopWidth: 1,
-    padding: 12,
-  },
-  statsText: {
-    fontSize: 12,
-  },
-  deleteButton: {
-    padding: 4,
   },
   emptyText: {
     textAlign: "center",

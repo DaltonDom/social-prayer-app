@@ -39,9 +39,9 @@ export default function AddPrayerScreen({ navigation }) {
 
   const [selectedGroup, setSelectedGroup] = useState(null);
 
-  const { groups } = useGroups();
+  const { groups, myGroups } = useGroups();
 
-  const availableGroups = groups.map((group) => ({
+  const availableGroups = myGroups.map((group) => ({
     id: group.id,
     name: group.name,
   }));
