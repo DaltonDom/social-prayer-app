@@ -24,7 +24,7 @@ export default function GroupDetailScreen({ route, navigation }) {
   const { theme } = useTheme();
   const { group } = route.params;
   const { getGroupPrayers } = usePrayers();
-  const { deleteGroup, uploadGroupImage } = useGroups();
+  const { deleteGroup, uploadGroupImage, leaveGroup } = useGroups();
   const [isRequestModalVisible, setRequestModalVisible] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(group.name);
@@ -135,6 +135,34 @@ export default function GroupDetailScreen({ route, navigation }) {
       groupId: group.id,
       groupName: group.name,
     });
+  };
+
+  const handleLeaveGroup = () => {
+    Alert.alert("Leave Group", "Are you sure you want to leave this group?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Leave",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            const { error } = await leaveGroup(group.id);
+            if (error) {
+              Alert.alert("Error", "Could not leave group. Please try again.");
+              return;
+            }
+            navigation.reset({
+              index: 0,
+              routes: [{ name: "MainTabs", params: { screen: "Groups" } }],
+            });
+          } catch (error) {
+            Alert.alert(
+              "Error",
+              "An unexpected error occurred. Please try again."
+            );
+          }
+        },
+      },
+    ]);
   };
 
   const renderPrayerItem = ({ item }) => (
@@ -440,6 +468,18 @@ export default function GroupDetailScreen({ route, navigation }) {
               </Text>
             </View>
           </View>
+
+          {!group.isAdmin && group.isMember && (
+            <TouchableOpacity
+              style={[
+                styles.leaveButton,
+                { backgroundColor: `${theme.error}15` },
+              ]}
+              onPress={handleLeaveGroup}
+            >
+              <Ionicons name="exit-outline" size={24} color={theme.error} />
+            </TouchableOpacity>
+          )}
         </View>
 
         {group.isAdmin && (
@@ -900,5 +940,23 @@ const styles = StyleSheet.create({
   descriptionInput: {
     height: 80,
     textAlignVertical: "top",
+  },
+  leaveButton: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
 });

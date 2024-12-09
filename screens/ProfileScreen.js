@@ -11,6 +11,8 @@ import {
   Animated,
   Alert,
   ActivityIndicator,
+  Linking,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { usePrayers } from "../context/PrayerContext";
@@ -22,6 +24,10 @@ import * as ImagePicker from "expo-image-picker";
 import { supabase } from "../lib/supabase";
 import { useUser } from "../context/UserContext";
 import { friendshipService } from "../services/friendshipService";
+import * as Notifications from "expo-notifications";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as IntentLauncher from "expo-intent-launcher";
+import * as Application from "expo-application";
 
 export default function ProfileScreen({ navigation }) {
   const { theme, isDarkMode, toggleTheme } = useTheme();
@@ -36,6 +42,7 @@ export default function ProfileScreen({ navigation }) {
   const [pendingRequests, setPendingRequests] = useState([]);
   const [availableUsers, setAvailableUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
 
   // Filter prayers to only show user's prayers
   const userPrayers = prayers.filter(
@@ -528,6 +535,59 @@ export default function ProfileScreen({ navigation }) {
     </View>
   );
 
+  // Add this useEffect to check notification status on mount
+  useEffect(() => {
+    checkNotificationStatus();
+  }, []);
+
+  const checkNotificationStatus = async () => {
+    const { status } = await Notifications.getPermissionsAsync();
+    setNotificationsEnabled(status === "granted");
+  };
+
+  const handleNotificationToggle = async () => {
+    const currentStatus = await Notifications.getPermissionsAsync();
+
+    if (currentStatus.status === "granted") {
+      // If notifications are currently enabled, open settings to let them disable
+      openNotificationSettings();
+    } else {
+      // If notifications are disabled, request permissions again
+      const { status } = await Notifications.requestPermissionsAsync();
+
+      if (status === "granted") {
+        setNotificationsEnabled(true);
+        await AsyncStorage.setItem("notificationStatus", "granted");
+      } else {
+        // If they deny again, prompt to open settings
+        Alert.alert(
+          "Enable Notifications",
+          "To enable notifications, please update your device settings.",
+          [
+            {
+              text: "Cancel",
+              style: "cancel",
+            },
+            {
+              text: "Open Settings",
+              onPress: openNotificationSettings,
+            },
+          ]
+        );
+      }
+    }
+  };
+
+  const openNotificationSettings = () => {
+    if (Platform.OS === "ios") {
+      Linking.openSettings();
+    } else {
+      IntentLauncher.startActivityAsync(
+        IntentLauncher.ActivityAction.NOTIFICATION_SETTINGS
+      );
+    }
+  };
+
   return (
     <SafeAreaView
       style={{ flex: 1, backgroundColor: theme.background }}
@@ -609,7 +669,7 @@ export default function ProfileScreen({ navigation }) {
               color={theme.textSecondary}
             />
           </TouchableOpacity>
-          <View style={styles.settingItem}>
+          <View style={[styles.settingItem, { backgroundColor: theme.card }]}>
             <View style={styles.settingLeft}>
               <Ionicons
                 name="notifications-outline"
@@ -621,12 +681,19 @@ export default function ProfileScreen({ navigation }) {
               </Text>
             </View>
             <Switch
-              value={notifications}
-              onValueChange={setNotifications}
-              trackColor={{ false: "#767577", true: theme.primary }}
+              value={notificationsEnabled}
+              onValueChange={handleNotificationToggle}
+              trackColor={{ false: theme.textSecondary, true: theme.primary }}
+              thumbColor={
+                Platform.OS === "ios"
+                  ? "#FFFFFF"
+                  : notificationsEnabled
+                  ? theme.primary
+                  : "#f4f3f4"
+              }
             />
           </View>
-          <View style={[styles.lastSettingItem]}>
+          <View style={[styles.settingItem, { backgroundColor: theme.card }]}>
             <View style={styles.settingLeft}>
               <Ionicons
                 name={isDarkMode ? "moon" : "moon-outline"}
@@ -640,7 +707,14 @@ export default function ProfileScreen({ navigation }) {
             <Switch
               value={isDarkMode}
               onValueChange={toggleTheme}
-              trackColor={{ false: "#767577", true: theme.primary }}
+              trackColor={{ false: theme.textSecondary, true: theme.primary }}
+              thumbColor={
+                Platform.OS === "ios"
+                  ? "#FFFFFF"
+                  : isDarkMode
+                  ? theme.primary
+                  : "#f4f3f4"
+              }
             />
           </View>
         </View>
@@ -762,11 +836,11 @@ const styles = StyleSheet.create({
   },
   settingItem: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    justifyContent: "space-between",
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 8,
   },
   lastSettingItem: {
     flexDirection: "row",
@@ -777,10 +851,10 @@ const styles = StyleSheet.create({
   settingLeft: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 12,
   },
   settingText: {
     fontSize: 16,
-    marginLeft: 12,
   },
   emptyText: {
     textAlign: "center",

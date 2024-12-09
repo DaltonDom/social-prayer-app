@@ -236,22 +236,18 @@ export default function FriendsListScreen({ navigation }) {
       <FlatList
         data={[
           {
-            title: "Friend Requests",
             data: filterData(pendingRequests) || [],
             renderItem: renderPendingRequest,
           },
           {
-            title: "Sent Requests",
             data: filterData(pendingSent) || [],
             renderItem: renderPendingSent,
           },
           {
-            title: "Friends",
             data: filterData(friends) || [],
             renderItem: renderFriend,
           },
           {
-            title: "People You May Know",
             data: filterData(availableUsers) || [],
             renderItem: renderPotentialFriend,
           },
@@ -260,11 +256,8 @@ export default function FriendsListScreen({ navigation }) {
           <>
             {section.data.length > 0 && (
               <View style={styles.section}>
-                <Text style={[styles.sectionTitle, { color: theme.text }]}>
-                  {section.title} ({section.data.length})
-                </Text>
                 <FlatList
-                  data={filterData(section.data)}
+                  data={section.data}
                   renderItem={section.renderItem}
                   keyExtractor={(item) => item.id.toString()}
                   scrollEnabled={false}
@@ -307,7 +300,7 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   section: {
-    padding: 16,
+    paddingHorizontal: 16,
   },
   sectionTitle: {
     fontSize: 20,

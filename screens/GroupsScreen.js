@@ -45,6 +45,22 @@ export default function GroupsScreen({ navigation }) {
     setFilteredGroups(filtered);
   }, [searchQuery, groups]);
 
+  const getGroupSections = (groups) => {
+    const myGroups = groups.filter(
+      (group) =>
+        group.membersList?.some((member) => member.id === userProfile?.id) ||
+        group.created_by === userProfile?.id
+    );
+
+    const availableGroups = groups.filter(
+      (group) =>
+        !group.membersList?.some((member) => member.id === userProfile?.id) &&
+        group.created_by !== userProfile?.id
+    );
+
+    return { myGroups, availableGroups };
+  };
+
   const handleAddGroup = () => {
     navigation.navigate("CreateGroup");
   };
@@ -59,6 +75,25 @@ export default function GroupsScreen({ navigation }) {
       if (!userProfile?.id) {
         console.error("User profile ID is missing");
         return;
+      }
+
+      // First check if a request already exists
+      const { data: existingRequest, error: checkError } = await supabase
+        .from("group_requests")
+        .select("*")
+        .eq("group_id", groupId)
+        .eq("user_id", userProfile.id)
+        .single();
+
+      if (checkError && checkError.code !== "PGRST116") {
+        // PGRST116 means no rows returned
+        console.error("Error checking existing request:", checkError);
+        return;
+      }
+
+      if (existingRequest) {
+        console.log("Request already exists:", existingRequest);
+        return; // Silently return if request exists
       }
 
       setPendingGroups([...pendingGroups, groupId]);
@@ -257,17 +292,35 @@ export default function GroupsScreen({ navigation }) {
         </TouchableOpacity>
       </View>
       <FlatList
-        data={filteredGroups}
-        renderItem={renderGroupCard}
-        keyExtractor={(item) => item.id}
+        data={[
+          { data: getGroupSections(filteredGroups).myGroups },
+          { data: getGroupSections(filteredGroups).availableGroups },
+        ]}
+        renderItem={({ item }) => (
+          <View>
+            {item.data.map((group) => (
+              <React.Fragment key={group.id}>
+                {renderGroupCard({ item: group })}
+              </React.Fragment>
+            ))}
+            {item.data.length === 0 && (
+              <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+                {item.title === "My Groups"
+                  ? "You haven't joined any groups yet"
+                  : "No available groups to join"}
+              </Text>
+            )}
+          </View>
+        )}
+        keyExtractor={(item, index) => index.toString()}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
             onRefresh={handleRefresh}
-            colors={[theme.primary]} // Android
-            tintColor={theme.primary} // iOS
+            colors={[theme.primary]}
+            tintColor={theme.primary}
           />
         }
       />
@@ -407,5 +460,18 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  sectionHeader: {
+    fontSize: 20,
+    fontWeight: "600",
+    marginBottom: 16,
+    marginTop: 24,
+  },
+  emptyText: {
+    textAlign: "center",
+    fontSize: 14,
+    fontStyle: "italic",
+    marginTop: 8,
+    marginBottom: 24,
   },
 });

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   StyleSheet,
   View,
@@ -21,6 +21,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import Modal from "react-native-modal";
 import { useAuth } from "../context/AuthContext";
 import { useUser } from "../context/UserContext";
+import { notificationService } from "../services/notificationService";
 
 export default function HomeScreen({ navigation }) {
   const { prayers, fetchPrayers } = usePrayers();
@@ -30,6 +31,7 @@ export default function HomeScreen({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const [isNotificationModalVisible, setNotificationModalVisible] =
     useState(false);
+  const [notifications, setNotifications] = useState([]);
 
   // Add debug logs
   console.log("Current user:", user);
@@ -194,6 +196,21 @@ export default function HomeScreen({ navigation }) {
     }
   };
 
+  // Add this function to fetch notifications
+  const fetchNotifications = async () => {
+    try {
+      const data = await notificationService.getNotifications();
+      setNotifications(data);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+    }
+  };
+
+  // Add this useEffect to load notifications
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <SafeAreaView
@@ -260,35 +277,39 @@ export default function HomeScreen({ navigation }) {
               </TouchableOpacity>
             </View>
 
-            {/* Example notification items */}
             <ScrollView style={styles.notificationList}>
-              <View style={styles.notificationItem}>
-                <View style={styles.notificationIcon}>
-                  <Ionicons name="person" size={20} color={theme.primary} />
-                </View>
-                <View style={styles.notificationContent}>
+              {notifications.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                  <Ionicons
+                    name="notifications-outline"
+                    size={48}
+                    color={theme.textSecondary}
+                  />
                   <Text
-                    style={[styles.notificationText, { color: theme.text }]}
+                    style={[styles.emptyText, { color: theme.textSecondary }]}
                   >
-                    John Doe commented on your prayer
+                    No notifications yet
                   </Text>
-                  <Text style={styles.notificationTime}>2 hours ago</Text>
                 </View>
-              </View>
-
-              <View style={styles.notificationItem}>
-                <View style={styles.notificationIcon}>
-                  <Ionicons name="heart" size={20} color={theme.primary} />
-                </View>
-                <View style={styles.notificationContent}>
-                  <Text
-                    style={[styles.notificationText, { color: theme.text }]}
-                  >
-                    Sarah Smith prayed for you
-                  </Text>
-                  <Text style={styles.notificationTime}>5 hours ago</Text>
-                </View>
-              </View>
+              ) : (
+                notifications.map((notification, index) => (
+                  <View style={styles.notificationItem} key={index}>
+                    <View style={styles.notificationIcon}>
+                      <Ionicons name="person" size={20} color={theme.primary} />
+                    </View>
+                    <View style={styles.notificationContent}>
+                      <Text
+                        style={[styles.notificationText, { color: theme.text }]}
+                      >
+                        {notification.message}
+                      </Text>
+                      <Text style={styles.notificationTime}>
+                        {notification.time}
+                      </Text>
+                    </View>
+                  </View>
+                ))
+              )}
             </ScrollView>
           </View>
         </Modal>
@@ -481,5 +502,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  emptyText: {
+    fontSize: 16,
+    fontWeight: "500",
+    marginTop: 8,
   },
 });
