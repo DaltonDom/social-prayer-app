@@ -55,11 +55,8 @@ export default function CreateGroupScreen({ navigation }) {
         quality: 0.8,
       });
 
-      console.log("Image picker result:", result);
-
       if (!result.canceled && result.assets && result.assets.length > 0) {
         setGroupImage(result.assets[0].uri);
-        console.log("Selected image URI:", result.assets[0].uri);
       }
     } catch (error) {
       console.error("Error picking image:", error);

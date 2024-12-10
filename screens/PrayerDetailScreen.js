@@ -22,6 +22,7 @@ import GroupDropdown from "../components/GroupDropdown";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useUser } from "../context/UserContext";
 import { LinearGradient } from "expo-linear-gradient";
+import { supabase } from "../lib/supabase";
 
 export default function PrayerDetailScreen({ route, navigation }) {
   const { theme, isDarkMode } = useTheme();
@@ -34,6 +35,7 @@ export default function PrayerDetailScreen({ route, navigation }) {
     getPrayer,
     deleteUpdate,
     deleteComment,
+    setPrayers,
   } = usePrayers();
   const { userProfile } = useUser();
   const [keyboardHeight] = useState(new Animated.Value(0));
@@ -59,21 +61,181 @@ export default function PrayerDetailScreen({ route, navigation }) {
 
   useEffect(() => {
     loadPrayer();
+
+    // Subscribe to real-time comments updates
+    const commentsSubscription = supabase
+      .channel(`prayer-comments-${prayerId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "prayer_comments",
+          filter: `prayer_id=eq.${prayerId}`,
+        },
+        async (payload) => {
+          switch (payload.eventType) {
+            case "INSERT":
+              // Fetch the new comment with user profile data
+              const { data: newComment, error: commentError } = await supabase
+                .from("prayer_comments")
+                .select(
+                  `
+                  *,
+                  profiles (
+                    id,
+                    first_name,
+                    last_name,
+                    profile_image_url
+                  )
+                `
+                )
+                .eq("id", payload.new.id)
+                .single();
+
+              if (commentError) {
+                return;
+              }
+
+              if (newComment) {
+                const transformedComment = {
+                  id: newComment.id,
+                  userName:
+                    `${newComment.profiles.first_name} ${newComment.profiles.last_name}`.trim(),
+                  userImage: newComment.profiles.profile_image_url,
+                  text: newComment.text,
+                  date: new Date(newComment.created_at)
+                    .toISOString()
+                    .split("T")[0],
+                  user_id: newComment.user_id,
+                };
+
+                setPrayer((currentPrayer) => {
+                  const existingComment = currentPrayer.comments_list?.find(
+                    (comment) => comment.id === transformedComment.id
+                  );
+
+                  if (existingComment) {
+                    return currentPrayer;
+                  }
+
+                  const updatedPrayer = {
+                    ...currentPrayer,
+                    comments_list: [
+                      transformedComment,
+                      ...(currentPrayer.comments_list || []),
+                    ],
+                    comment_count: (currentPrayer.comment_count || 0) + 1,
+                  };
+
+                  return updatedPrayer;
+                });
+              }
+              break;
+
+            case "DELETE":
+              if (payload.old && payload.old.id) {
+                setPrayer((currentPrayer) => ({
+                  ...currentPrayer,
+                  comments_list: currentPrayer.comments_list.filter(
+                    (comment) => comment.id !== payload.old.id
+                  ),
+                  comment_count: Math.max(
+                    0,
+                    (currentPrayer.comment_count || 0) - 1
+                  ),
+                }));
+              }
+              break;
+          }
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscriptions on unmount
+    return () => {
+      commentsSubscription.unsubscribe();
+    };
   }, [prayerId]);
+
+  useEffect(() => {
+    // Subscribe to prayer changes (including comments and updates)
+    const prayerChangesSubscription = supabase
+      .channel("prayer-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "prayers",
+        },
+        async (payload) => {
+          // Fetch the complete updated prayer data
+          const { data: updatedPrayer, error } = await supabase
+            .from("prayers")
+            .select(
+              `
+              *,
+              profiles!prayers_user_id_fkey (
+                id,
+                first_name,
+                last_name,
+                profile_image_url
+              ),
+              groups!prayers_group_id_fkey (
+                id,
+                name
+              )
+            `
+            )
+            .eq("id", payload.new?.id || payload.old?.id)
+            .single();
+
+          if (error) {
+            console.error("Error fetching updated prayer:", error);
+            return;
+          }
+
+          // Transform the prayer data
+          const transformedPrayer = {
+            ...updatedPrayer,
+            userName:
+              `${updatedPrayer.profiles.first_name} ${updatedPrayer.profiles.last_name}`.trim(),
+            userImage: updatedPrayer.profiles.profile_image_url,
+            date: new Date(updatedPrayer.created_at)
+              .toISOString()
+              .split("T")[0],
+            comments: updatedPrayer.comment_count || 0,
+            updates: updatedPrayer.updates?.length || 0,
+            groupName: updatedPrayer.groups?.name || null,
+          };
+
+          // Update the prayers state
+          setPrayers((currentPrayers) =>
+            currentPrayers.map((prayer) =>
+              prayer.id === transformedPrayer.id ? transformedPrayer : prayer
+            )
+          );
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscription on unmount
+    return () => {
+      prayerChangesSubscription.unsubscribe();
+    };
+  }, []);
 
   const loadPrayer = async () => {
     setLoading(true);
     try {
       const { data, error } = await getPrayer(prayerId);
       if (error) {
-        console.error("Error loading prayer:", error);
         Alert.alert("Error", "Failed to load prayer");
       } else {
-        console.log("Prayer loaded successfully:", data);
         setPrayer(data);
       }
     } catch (error) {
-      console.error("Error in loadPrayer:", error);
       Alert.alert("Error", "An unexpected error occurred");
     } finally {
       setLoading(false);
@@ -88,7 +250,6 @@ export default function PrayerDetailScreen({ route, navigation }) {
       } else {
         setNewComment("");
         Keyboard.dismiss();
-        loadPrayer();
       }
     }
   };
@@ -160,8 +321,6 @@ export default function PrayerDetailScreen({ route, navigation }) {
   };
 
   const handleDeleteUpdate = async (updateId) => {
-    console.log("Attempting to delete update:", updateId);
-
     Alert.alert(
       "Delete Update",
       "Are you sure you want to delete this update?",
@@ -171,13 +330,10 @@ export default function PrayerDetailScreen({ route, navigation }) {
           text: "Delete",
           style: "destructive",
           onPress: async () => {
-            console.log("Deleting update...");
             const { error } = await deleteUpdate(prayerId, updateId);
             if (error) {
-              console.error("Delete update error:", error);
               Alert.alert("Error", "Failed to delete update");
             } else {
-              console.log("Update deleted successfully");
               await loadPrayer(); // Make sure to await this
             }
           },
@@ -187,8 +343,6 @@ export default function PrayerDetailScreen({ route, navigation }) {
   };
 
   const handleDeleteComment = async (commentId) => {
-    console.log("Attempting to delete comment:", commentId);
-
     Alert.alert(
       "Delete Comment",
       "Are you sure you want to delete this comment?",
@@ -198,13 +352,10 @@ export default function PrayerDetailScreen({ route, navigation }) {
           text: "Delete",
           style: "destructive",
           onPress: async () => {
-            console.log("Deleting comment...");
             const { error } = await deleteComment(commentId);
             if (error) {
-              console.error("Delete comment error:", error);
               Alert.alert("Error", "Failed to delete comment");
             } else {
-              console.log("Comment deleted successfully");
               await loadPrayer(); // Make sure to await this
             }
           },
@@ -477,48 +628,48 @@ export default function PrayerDetailScreen({ route, navigation }) {
               </View>
             )}
 
-            {prayer.updates_list && prayer.updates_list.length > 0 ? (
-              prayer.updates_list.map((update) => (
-                <View
-                  key={update.id}
-                  style={[styles.updateCard, styles.cardShadow]}
-                >
-                  <View style={styles.updateHeader}>
-                    <View style={styles.updateInfo}>
-                      <Text style={styles.updateDate}>
-                        {new Date(update.created_at).toLocaleDateString()}
-                      </Text>
-                    </View>
-                    {userProfile?.id === prayer.user_id && (
-                      <TouchableOpacity
-                        onPress={() => handleDeleteUpdate(update.id)}
-                        style={[
-                          styles.deleteButton,
-                          { backgroundColor: "#fee2e2" },
-                        ]}
-                      >
-                        <Ionicons
-                          name="trash-outline"
-                          size={20}
-                          color="#ef4444"
-                        />
-                      </TouchableOpacity>
-                    )}
+            {prayer?.updates_list?.map((update) => (
+              <View
+                key={update.id}
+                style={[styles.updateCard, { backgroundColor: theme.card }]}
+              >
+                <View style={styles.updateHeader}>
+                  <View style={styles.updateInfo}>
+                    <Text
+                      style={[
+                        styles.updateDate,
+                        { color: theme.textSecondary },
+                      ]}
+                    >
+                      {new Date(update.created_at).toLocaleDateString()}
+                    </Text>
+                    <Text style={[styles.updateText, { color: theme.text }]}>
+                      {update.text}
+                    </Text>
                   </View>
-                  <Text style={styles.updateText}>{update.text}</Text>
+                  {isOwner && (
+                    <TouchableOpacity
+                      onPress={() => handleDeleteUpdate(update.id)}
+                      style={styles.deleteButton}
+                    >
+                      <Ionicons
+                        name="trash-outline"
+                        size={16}
+                        color="#ef4444"
+                      />
+                      <Text style={styles.deleteText}>Delete</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
-              ))
-            ) : (
-              <View style={[styles.emptyCard, styles.cardShadow]}>
-                <Ionicons name="refresh" size={24} style={styles.emptyIcon} />
-                <Text style={styles.emptyText}>No updates yet</Text>
               </View>
-            )}
+            ))}
           </View>
 
           {/* Comments Section */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Comments</Text>
+            <Text style={styles.sectionTitle}>
+              Comments ({prayer?.comments_list?.length || 0})
+            </Text>
             {prayer.comments_list && prayer.comments_list.length > 0 ? (
               prayer.comments_list.map((comment) => (
                 <View key={comment.id} style={styles.commentCard}>

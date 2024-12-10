@@ -19,7 +19,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 
 export default function AddPrayerScreen({ navigation }) {
-  const { addPrayer } = usePrayers();
+  const { addPrayer, createPrayer } = usePrayers();
   const [prayerData, setPrayerData] = useState({
     title: "",
     description: "",
@@ -46,7 +46,7 @@ export default function AddPrayerScreen({ navigation }) {
     name: group.name,
   }));
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!prayerData.title.trim()) {
       Alert.alert("Error", "Please enter a prayer title");
       return;
@@ -62,11 +62,15 @@ export default function AddPrayerScreen({ navigation }) {
       return;
     }
 
-    addPrayer({
+    const { error } = await createPrayer({
       ...prayerData,
       groupId: selectedGroup?.id,
-      groupName: selectedGroup?.name,
     });
+
+    if (error) {
+      Alert.alert("Error", "Failed to create prayer");
+      return;
+    }
 
     Alert.alert("Success", "Prayer request added successfully", [
       {

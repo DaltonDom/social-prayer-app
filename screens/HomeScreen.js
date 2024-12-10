@@ -22,9 +22,10 @@ import Modal from "react-native-modal";
 import { useAuth } from "../context/AuthContext";
 import { useUser } from "../context/UserContext";
 import { notificationService } from "../services/notificationService";
+import { supabase } from "../lib/supabase";
 
 export default function HomeScreen({ navigation }) {
-  const { prayers, fetchPrayers } = usePrayers();
+  const { prayers, fetchPrayers, setPrayers } = usePrayers();
   const { user } = useAuth();
   const { friendships } = useUser();
   const { theme } = useTheme();
@@ -34,13 +35,8 @@ export default function HomeScreen({ navigation }) {
   const [notifications, setNotifications] = useState([]);
 
   // Add debug logs
-  console.log("Current user:", user);
-  console.log("All prayers:", prayers);
 
   const filteredPrayers = prayers.filter((prayer) => {
-    // Log the full prayer object to see its structure
-    console.log("Full prayer object:", prayer);
-
     const isOwnPrayer = prayer.user_id === user.id;
     const isFriendsPrayer = friendships?.some(
       (friendship) =>
@@ -50,18 +46,8 @@ export default function HomeScreen({ navigation }) {
           friendship.user_id === prayer.user_id)
     );
 
-    // Debug log for each prayer
-    console.log("Prayer:", {
-      prayerId: prayer.id,
-      prayerUserId: prayer.user_id,
-      isOwnPrayer,
-      isFriendsPrayer,
-    });
-
     return isOwnPrayer || isFriendsPrayer;
   });
-
-  console.log("Filtered prayers:", filteredPrayers);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -147,9 +133,7 @@ export default function HomeScreen({ navigation }) {
           </View>
         </View>
 
-        <Text style={[styles.description, { color: theme.text }]}>
-          {item.description}
-        </Text>
+        <Text style={[styles.title, { color: theme.text }]}>{item.title}</Text>
 
         <View
           style={[
@@ -164,13 +148,13 @@ export default function HomeScreen({ navigation }) {
               color={theme.primary}
             />
             <Text style={[styles.footerText, { color: theme.primary }]}>
-              {item.comments} Comments
+              {item.comments || 0} Comments
             </Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.footerButton}>
             <Ionicons name="refresh-outline" size={16} color={theme.primary} />
             <Text style={[styles.footerText, { color: theme.primary }]}>
-              {item.updates} Updates
+              {item.updates || 0} Updates
             </Text>
           </TouchableOpacity>
         </View>
@@ -209,6 +193,202 @@ export default function HomeScreen({ navigation }) {
   // Add this useEffect to load notifications
   useEffect(() => {
     fetchNotifications();
+  }, []);
+
+  useEffect(() => {
+    // Subscribe to prayer changes (including comments and updates)
+    const prayerChangesSubscription = supabase
+      .channel("prayer-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "prayers",
+        },
+        async (payload) => {
+          // Fetch the complete updated prayer data with comment count
+          const { data: updatedPrayer, error } = await supabase
+            .from("prayers")
+            .select(
+              `
+              *,
+              profiles!prayers_user_id_fkey (
+                id,
+                first_name,
+                last_name,
+                profile_image_url
+              ),
+              groups!prayers_group_id_fkey (
+                id,
+                name
+              ),
+              prayer_comments (count),
+              updates
+            `
+            )
+            .eq("id", payload.new?.id || payload.old?.id)
+            .single();
+
+          if (error) {
+            console.error("Error fetching updated prayer:", error);
+            return;
+          }
+
+          // Transform the prayer data
+          const transformedPrayer = {
+            ...updatedPrayer,
+            userName:
+              `${updatedPrayer.profiles.first_name} ${updatedPrayer.profiles.last_name}`.trim(),
+            userImage: updatedPrayer.profiles.profile_image_url,
+            date: new Date(updatedPrayer.created_at)
+              .toISOString()
+              .split("T")[0],
+            comments: updatedPrayer.comment_count || 0,
+            updates: updatedPrayer.updates?.length || 0,
+            groupName: updatedPrayer.groups?.name || null,
+          };
+
+          // Update the prayers state
+          setPrayers((currentPrayers) => {
+            if (payload.eventType === "INSERT") {
+              // Add new prayer to the beginning of the list
+              return [transformedPrayer, ...currentPrayers];
+            } else {
+              const updatedPrayers = currentPrayers.map((prayer) =>
+                prayer.id === transformedPrayer.id ? transformedPrayer : prayer
+              );
+              return updatedPrayers;
+            }
+          });
+        }
+      )
+      .subscribe();
+
+    // Also subscribe to comment changes
+    const commentChangesSubscription = supabase
+      .channel("comment-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "prayer_comments",
+        },
+        async (payload) => {
+          if (
+            payload.eventType === "INSERT" ||
+            payload.eventType === "DELETE"
+          ) {
+            // Get the prayer_id from the comment
+            const prayerId = payload.new?.prayer_id || payload.old?.prayer_id;
+
+            // Fetch the updated prayer with the new comment count
+            const { data: updatedPrayer, error } = await supabase
+              .from("prayers")
+              .select(
+                `
+                *,
+                profiles!prayers_user_id_fkey (
+                  id,
+                  first_name,
+                  last_name,
+                  profile_image_url
+                ),
+                groups!prayers_group_id_fkey (
+                  id,
+                  name
+                )
+              `
+              )
+              .eq("id", prayerId)
+              .single();
+
+            if (error) {
+              console.error("Error fetching updated prayer:", error);
+              return;
+            }
+
+            // Transform and update the prayer in state
+            const transformedPrayer = {
+              ...updatedPrayer,
+              userName:
+                `${updatedPrayer.profiles.first_name} ${updatedPrayer.profiles.last_name}`.trim(),
+              userImage: updatedPrayer.profiles.profile_image_url,
+              date: new Date(updatedPrayer.created_at)
+                .toISOString()
+                .split("T")[0],
+              comments: updatedPrayer.comment_count || 0,
+              updates: updatedPrayer.updates?.length || 0,
+              groupName: updatedPrayer.groups?.name || null,
+            };
+
+            setPrayers((currentPrayers) =>
+              currentPrayers.map((prayer) =>
+                prayer.id === prayerId ? transformedPrayer : prayer
+              )
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscriptions on unmount
+    return () => {
+      prayerChangesSubscription.unsubscribe();
+      commentChangesSubscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    const fetchInitialPrayers = async () => {
+      try {
+        // Fetch prayers with all related data
+        const { data: prayers, error } = await supabase
+          .from("prayers")
+          .select(
+            `
+            *,
+            profiles!prayers_user_id_fkey (
+              id,
+              first_name,
+              last_name,
+              profile_image_url
+            ),
+            groups!prayers_group_id_fkey (
+              id,
+              name
+            ),
+            prayer_comments (count),
+            updates
+          `
+          )
+          .order("created_at", { ascending: false });
+
+        if (error) {
+          console.error("Error fetching prayers:", error);
+          return;
+        }
+
+        // Transform the data
+        const transformedPrayers = prayers.map((prayer) => ({
+          ...prayer,
+          userName:
+            `${prayer.profiles.first_name} ${prayer.profiles.last_name}`.trim(),
+          userImage: prayer.profiles.profile_image_url,
+          date: new Date(prayer.created_at).toISOString().split("T")[0],
+          comments: prayer.comment_count || 0,
+          updates: prayer.updates?.length || 0,
+          groupName: prayer.groups?.name || null,
+        }));
+
+        setPrayers(transformedPrayers);
+      } catch (error) {
+        console.error("Error in fetchInitialPrayers:", error);
+      }
+    };
+
+    fetchInitialPrayers();
   }, []);
 
   return (

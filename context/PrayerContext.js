@@ -1,8 +1,10 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import { useUser } from "./UserContext";
+import { Platform } from "react-native";
+import * as Crypto from "expo-crypto";
 
-const PrayerContext = createContext();
+export const PrayerContext = createContext();
 
 export function PrayerProvider({ children }) {
   const [prayers, setPrayers] = useState([]);
@@ -58,28 +60,41 @@ export function PrayerProvider({ children }) {
     }
   };
 
-  const createPrayer = async ({ title, description, category }) => {
+  const createPrayer = async ({ title, description, category, groupId }) => {
     try {
       const newPrayer = {
         title,
         description,
         category,
         user_id: userProfile.id,
+        group_id: groupId,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        prayer_count: 0,
+        comment_count: 0,
       };
 
       const { data, error } = await supabase
         .from("prayers")
         .insert([newPrayer])
-        .select()
+        .select(
+          `
+          *,
+          profiles!prayers_user_id_fkey (
+            id,
+            first_name,
+            last_name,
+            profile_image_url
+          ),
+          groups!prayers_group_id_fkey (
+            id,
+            name
+          )
+        `
+        )
         .single();
 
       if (error) throw error;
 
-      // Update local state
-      setPrayers((currentPrayers) => [data, ...currentPrayers]);
       return { data, error: null };
     } catch (error) {
       console.error("Error creating prayer:", error.message);
@@ -190,30 +205,41 @@ export function PrayerProvider({ children }) {
 
   const addUpdate = async (prayerId, updateText) => {
     try {
-      // Get the current prayer first
+      console.log("📝 Starting addUpdate for prayer:", prayerId);
+
+      if (!prayerId) {
+        throw new Error("Prayer ID is required");
+      }
+
+      // Get current prayer data
       const { data: currentPrayer, error: fetchError } = await supabase
         .from("prayers")
         .select("updates")
         .eq("id", prayerId)
         .single();
 
-      if (fetchError) throw fetchError;
+      if (fetchError) {
+        console.error("Error fetching current prayer:", fetchError);
+        throw fetchError;
+      }
 
-      // Create new update object
+      console.log("Current prayer data:", currentPrayer);
+
+      // Prepare new update
       const newUpdate = {
-        id: Date.now().toString(),
+        id: Crypto.randomUUID(),
         text: updateText,
         created_at: new Date().toISOString(),
       };
 
-      // Get current updates or initialize empty array
-      const currentUpdates = currentPrayer.updates || [];
+      // Add new update to updates array
+      const updates = [...(currentPrayer.updates || []), newUpdate];
 
-      // Add new update to the array
-      const { data, error } = await supabase
+      // Update the prayer
+      const { data: updatedPrayer, error: updateError } = await supabase
         .from("prayers")
         .update({
-          updates: [...currentUpdates, newUpdate],
+          updates,
           updated_at: new Date().toISOString(),
         })
         .eq("id", prayerId)
@@ -234,31 +260,36 @@ export function PrayerProvider({ children }) {
         )
         .single();
 
-      if (error) throw error;
+      if (updateError) {
+        console.error("Error updating prayer:", updateError);
+        throw updateError;
+      }
 
-      // Transform the data
-      const transformedData = {
-        ...data,
+      console.log("Prayer updated successfully:", updatedPrayer);
+
+      // Transform and update local state
+      const transformedPrayer = {
+        ...updatedPrayer,
         userName:
-          `${data.profiles.first_name} ${data.profiles.last_name}`.trim(),
-        userImage: data.profiles.profile_image_url,
-        date: new Date(data.created_at).toISOString().split("T")[0],
-        comments: data.comment_count || 0,
-        updates: data.updates?.length || 0,
-        updates_list: data.updates || [],
-        groupName: data.groups?.name || null,
+          `${updatedPrayer.profiles.first_name} ${updatedPrayer.profiles.last_name}`.trim(),
+        userImage: updatedPrayer.profiles.profile_image_url,
+        date: new Date(updatedPrayer.created_at).toISOString().split("T")[0],
+        comments: updatedPrayer.comment_count || 0,
+        updates: updates.length,
+        updates_list: updates,
+        groupName: updatedPrayer.groups?.name || null,
       };
 
       // Update local state
       setPrayers((currentPrayers) =>
         currentPrayers.map((prayer) =>
-          prayer.id === prayerId ? transformedData : prayer
+          prayer.id === prayerId ? transformedPrayer : prayer
         )
       );
 
-      return { data: transformedData, error: null };
+      return { data: newUpdate, error: null };
     } catch (error) {
-      console.error("Error adding update:", error.message);
+      console.error("Error in addUpdate:", error);
       return { data: null, error };
     }
   };
@@ -402,6 +433,8 @@ export function PrayerProvider({ children }) {
 
   const addComment = async (prayerId, commentText) => {
     try {
+      console.log("📝 Starting addComment for prayer:", prayerId);
+
       // First get the current comment count
       const { data: currentPrayer, error: countError } = await supabase
         .from("prayers")
@@ -409,7 +442,11 @@ export function PrayerProvider({ children }) {
         .eq("id", prayerId)
         .single();
 
-      if (countError) throw countError;
+      console.log("Current prayer data:", currentPrayer);
+      if (countError) {
+        console.error("Error fetching current prayer:", countError);
+        throw countError;
+      }
 
       // Create the comment
       const { data: commentData, error: commentError } = await supabase
@@ -421,62 +458,38 @@ export function PrayerProvider({ children }) {
             text: commentText,
           },
         ])
-        .select(
-          `
-          *,
-          profiles (
-            id,
-            first_name,
-            last_name,
-            profile_image_url
-          )
-        `
-        )
+        .select()
         .single();
 
-      if (commentError) throw commentError;
+      console.log("New comment created:", commentData);
+      if (commentError) {
+        console.error("Error creating comment:", commentError);
+        throw commentError;
+      }
 
       // Update the prayer's comment count
-      const { error: updateError } = await supabase
+      const newCount = (currentPrayer.comment_count || 0) + 1;
+      console.log("Updating prayer with new count:", newCount);
+
+      const { data: updatedPrayer, error: updateError } = await supabase
         .from("prayers")
         .update({
-          comment_count: (currentPrayer.comment_count || 0) + 1,
+          comment_count: newCount,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", prayerId);
+        .eq("id", prayerId)
+        .select()
+        .single();
 
-      if (updateError) throw updateError;
+      console.log("Prayer updated:", updatedPrayer);
+      if (updateError) {
+        console.error("Error updating prayer:", updateError);
+        throw updateError;
+      }
 
-      // Transform comment data
-      const transformedComment = {
-        id: commentData.id,
-        userName:
-          `${commentData.profiles.first_name} ${commentData.profiles.last_name}`.trim(),
-        userImage: commentData.profiles.profile_image_url,
-        text: commentData.text,
-        date: new Date(commentData.created_at).toISOString().split("T")[0],
-      };
-
-      // Update local state
-      setPrayers((currentPrayers) =>
-        currentPrayers.map((prayer) => {
-          if (prayer.id === prayerId) {
-            return {
-              ...prayer,
-              comments: (prayer.comments || 0) + 1,
-              comments_list: [
-                transformedComment,
-                ...(prayer.comments_list || []),
-              ],
-            };
-          }
-          return prayer;
-        })
-      );
-
-      return { data: transformedComment, error: null };
+      return { data: commentData, error: null };
     } catch (error) {
-      console.error("Error adding comment:", error.message);
+      console.error("Error in addComment:", error);
       return { data: null, error };
     }
   };
@@ -621,6 +634,11 @@ export function PrayerProvider({ children }) {
 
       if (fetchError) throw fetchError;
 
+      if (!comment || !comment.prayer_id) {
+        console.error("No prayer_id found for comment:", commentId);
+        throw new Error("Invalid prayer_id");
+      }
+
       // Delete the comment
       const { error: deleteError } = await supabase
         .from("prayer_comments")
@@ -688,6 +706,7 @@ export function PrayerProvider({ children }) {
         addComment,
         getComments,
         fetchPrayers,
+        setPrayers,
       }}
     >
       {children}
