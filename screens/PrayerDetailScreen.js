@@ -244,12 +244,22 @@ export default function PrayerDetailScreen({ route, navigation }) {
 
   const handleAddComment = async () => {
     if (newComment.trim()) {
-      const { error } = await addComment(prayerId, newComment);
-      if (error) {
+      try {
+        const { error } = await addComment(
+          prayerId,
+          newComment,
+          userProfile.id
+        );
+        if (error) {
+          Alert.alert("Error", "Failed to add comment");
+        } else {
+          setNewComment("");
+          Keyboard.dismiss();
+          // The real-time subscription will handle updating the UI
+        }
+      } catch (error) {
+        console.error("Error adding comment:", error);
         Alert.alert("Error", "Failed to add comment");
-      } else {
-        setNewComment("");
-        Keyboard.dismiss();
       }
     }
   };
@@ -352,11 +362,42 @@ export default function PrayerDetailScreen({ route, navigation }) {
           text: "Delete",
           style: "destructive",
           onPress: async () => {
-            const { error } = await deleteComment(commentId);
-            if (error) {
+            try {
+              // First get the prayer_id from the comment before deleting it
+              const { data: commentData, error: fetchError } = await supabase
+                .from("prayer_comments")
+                .select("prayer_id")
+                .eq("id", commentId)
+                .single();
+
+              if (fetchError) {
+                console.error("Error fetching comment:", fetchError);
+                Alert.alert("Error", "Failed to delete comment");
+                return;
+              }
+
+              // Now delete the comment
+              const { error: deleteError } = await deleteComment(commentId);
+
+              if (deleteError) {
+                Alert.alert("Error", "Failed to delete comment");
+              } else {
+                // The real-time subscription will handle updating the UI
+                // But we can also manually update the local state if needed
+                setPrayer((currentPrayer) => ({
+                  ...currentPrayer,
+                  comments_list: currentPrayer.comments_list.filter(
+                    (comment) => comment.id !== commentId
+                  ),
+                  comment_count: Math.max(
+                    0,
+                    (currentPrayer.comment_count || 0) - 1
+                  ),
+                }));
+              }
+            } catch (error) {
+              console.error("Error deleting comment:", error);
               Alert.alert("Error", "Failed to delete comment");
-            } else {
-              await loadPrayer(); // Make sure to await this
             }
           },
         },

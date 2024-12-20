@@ -243,21 +243,7 @@ export function PrayerProvider({ children }) {
           updated_at: new Date().toISOString(),
         })
         .eq("id", prayerId)
-        .select(
-          `
-          *,
-          profiles!prayers_user_id_fkey (
-            id,
-            first_name,
-            last_name,
-            profile_image_url
-          ),
-          groups!prayers_group_id_fkey (
-            id,
-            name
-          )
-        `
-        )
+        .select()
         .single();
 
       if (updateError) {
@@ -533,7 +519,7 @@ export function PrayerProvider({ children }) {
 
   const fetchPrayers = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: prayers, error } = await supabase
         .from("prayers")
         .select(
           `
@@ -554,29 +540,36 @@ export function PrayerProvider({ children }) {
 
       if (error) throw error;
 
-      // Transform the data to match the expected format
-      const transformedData = data.map((prayer) => ({
-        ...prayer,
-        userName:
-          `${prayer.profiles.first_name} ${prayer.profiles.last_name}`.trim(),
-        userImage: prayer.profiles.profile_image_url,
-        date: new Date(prayer.created_at).toISOString().split("T")[0],
-        comments: prayer.comment_count || 0,
-        updates: prayer.updates?.length || 0,
-        groupName: prayer.groups?.name || null,
-      }));
+      // Transform prayers with correct updates count
+      const transformedPrayers = prayers.map((prayer) => {
+        // Get updates count directly from the raw_updates field
+        const updatesCount = prayer.raw_updates || 0;
 
-      setPrayers(transformedData);
-      return { data: transformedData, error: null };
+        return {
+          ...prayer,
+          userName:
+            `${prayer.profiles.first_name} ${prayer.profiles.last_name}`.trim(),
+          userImage: prayer.profiles.profile_image_url,
+          date: new Date(prayer.created_at).toISOString().split("T")[0],
+          comment_count: prayer.comment_count || 0,
+          updates_count: updatesCount, // Use the raw_updates count
+          updates: prayer.updates || [],
+          groupName: prayer.groups?.name || null,
+        };
+      });
+
+      console.log("Transformed prayers with counts:", transformedPrayers[0]);
+      setPrayers(transformedPrayers);
+      return { data: transformedPrayers, error: null };
     } catch (error) {
-      console.error("Error fetching prayers:", error.message);
+      console.error("Error in fetchPrayers:", error);
       return { data: null, error };
     }
   };
 
   const deleteUpdate = async (prayerId, updateId) => {
     try {
-      // First get the current prayer and its updates
+      // Get current prayer data
       const { data: currentPrayer, error: fetchError } = await supabase
         .from("prayers")
         .select("updates")
@@ -586,22 +579,22 @@ export function PrayerProvider({ children }) {
       if (fetchError) throw fetchError;
 
       // Filter out the update to delete
-      const updatedUpdates = currentPrayer.updates.filter(
+      const updates = currentPrayer.updates.filter(
         (update) => update.id !== updateId
       );
 
-      // Update the prayer with the new updates array
-      const { data, error } = await supabase
+      // Update the prayer
+      const { data: updatedPrayer, error: updateError } = await supabase
         .from("prayers")
         .update({
-          updates: updatedUpdates,
+          updates,
           updated_at: new Date().toISOString(),
         })
         .eq("id", prayerId)
         .select()
         .single();
 
-      if (error) throw error;
+      if (updateError) throw updateError;
 
       // Update local state
       setPrayers((currentPrayers) =>
@@ -609,8 +602,8 @@ export function PrayerProvider({ children }) {
           prayer.id === prayerId
             ? {
                 ...prayer,
-                updates: updatedUpdates.length,
-                updates_list: updatedUpdates,
+                updates_count: updates.length,
+                updates: updates,
               }
             : prayer
         )

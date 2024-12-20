@@ -151,12 +151,6 @@ export default function HomeScreen({ navigation }) {
               {item.comments || 0} Comments
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.footerButton}>
-            <Ionicons name="refresh-outline" size={16} color={theme.primary} />
-            <Text style={[styles.footerText, { color: theme.primary }]}>
-              {item.updates || 0} Updates
-            </Text>
-          </TouchableOpacity>
         </View>
       </LinearGradient>
     </TouchableOpacity>
@@ -245,7 +239,6 @@ export default function HomeScreen({ navigation }) {
               .toISOString()
               .split("T")[0],
             comments: updatedPrayer.comment_count || 0,
-            updates: updatedPrayer.updates?.length || 0,
             groupName: updatedPrayer.groups?.name || null,
           };
 
@@ -319,7 +312,6 @@ export default function HomeScreen({ navigation }) {
                 .toISOString()
                 .split("T")[0],
               comments: updatedPrayer.comment_count || 0,
-              updates: updatedPrayer.updates?.length || 0,
               groupName: updatedPrayer.groups?.name || null,
             };
 
@@ -378,7 +370,6 @@ export default function HomeScreen({ navigation }) {
           userImage: prayer.profiles.profile_image_url,
           date: new Date(prayer.created_at).toISOString().split("T")[0],
           comments: prayer.comment_count || 0,
-          updates: prayer.updates?.length || 0,
           groupName: prayer.groups?.name || null,
         }));
 
@@ -582,7 +573,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
-    alignSelf: "flex-start",
+    alignSelf: "flex-end",
   },
   categoryIcon: {
     marginRight: 4,
@@ -599,7 +590,7 @@ const styles = StyleSheet.create({
   },
   cardFooter: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "flex-end",
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 8,

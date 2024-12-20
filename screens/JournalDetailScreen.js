@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
+  Platform,
 } from "react-native";
 import { useTheme } from "../context/ThemeContext";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -89,19 +90,28 @@ export default function JournalDetailScreen({ route, navigation }) {
     }
   };
 
+  const handleDatePress = () => {
+    setShowDatePicker(true);
+  };
+
   if (isEditing) {
     return (
       <SafeAreaView
         style={[styles.container, { backgroundColor: theme.background }]}
       >
-        <ScrollView style={styles.scrollView}>
-          <View style={[styles.card, { backgroundColor: theme.card }]}>
-            {/* Date Picker */}
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollViewContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.form}>
+            {/* Date Selection */}
+            <Text style={[styles.label, { color: theme.text }]}>Date</Text>
             <TouchableOpacity
-              style={[styles.dateButton, { backgroundColor: theme.searchBg }]}
-              onPress={() => setShowDatePicker(true)}
+              style={[styles.inputWrapper, { backgroundColor: theme.card }]}
+              onPress={handleDatePress}
             >
-              <Text style={[styles.dateButtonText, { color: theme.text }]}>
+              <Text style={[styles.input, { color: theme.text }]}>
                 {editedJournal.date}
               </Text>
             </TouchableOpacity>
@@ -110,7 +120,7 @@ export default function JournalDetailScreen({ route, navigation }) {
               <DateTimePicker
                 value={new Date(editedJournal.date)}
                 mode="date"
-                display="default"
+                display={Platform.OS === "ios" ? "inline" : "default"}
                 onChange={handleDateChange}
                 maximumDate={new Date()}
               />
@@ -166,7 +176,13 @@ export default function JournalDetailScreen({ route, navigation }) {
 
             {/* Content Input */}
             <TextInput
-              style={[styles.contentInput, { color: theme.text }]}
+              style={[
+                styles.contentInput,
+                {
+                  color: theme.text,
+                  borderColor: theme.dark ? "#2D3748" : "#E2E8F0", // Darker border for dark mode
+                },
+              ]}
               value={editedJournal.content}
               onChangeText={(text) =>
                 setEditedJournal({ ...editedJournal, content: text })
@@ -266,40 +282,40 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   card: {
-    margin: 16,
-    borderRadius: 16,
-    overflow: "hidden",
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    flex: 1,
+    margin: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   cardGradient: {
-    padding: 16,
+    padding: 24,
+    borderRadius: 16,
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 24,
+    paddingHorizontal: 8,
   },
   date: {
     fontSize: 14,
+    paddingVertical: 8,
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
-    marginBottom: 12,
+    marginBottom: 24,
+    paddingHorizontal: 8,
   },
   categoryTag: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
     alignSelf: "flex-start",
-    marginBottom: 16,
+    marginBottom: 12,
   },
   categoryIcon: {
     marginRight: 4,
@@ -311,46 +327,65 @@ const styles = StyleSheet.create({
   content: {
     fontSize: 16,
     lineHeight: 24,
+    paddingHorizontal: 8,
+    marginTop: 16,
   },
   titleInput: {
     fontSize: 24,
     fontWeight: "bold",
-    marginBottom: 12,
-    padding: 0,
+    marginBottom: 24,
+    padding: 12,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    borderRadius: 12,
+    marginHorizontal: 8,
   },
   contentInput: {
     fontSize: 16,
     lineHeight: 24,
     minHeight: 200,
     textAlignVertical: "top",
-    marginTop: 16,
+    marginTop: 24,
+    padding: 16,
+    paddingHorizontal: 20,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    borderRadius: 12,
+    marginHorizontal: 8,
   },
   categoryContainer: {
     flexDirection: "row",
-    marginBottom: 16,
-    gap: 8,
+    marginBottom: 32,
+    gap: 12,
+    paddingHorizontal: 8,
+    marginHorizontal: 8,
   },
   categoryButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginRight: 6,
   },
   buttonContainer: {
     flexDirection: "row",
     justifyContent: "flex-end",
     gap: 12,
-    marginTop: 16,
+    marginTop: 20,
+    marginHorizontal: 8,
+    marginRight: 8,
   },
   button: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
   },
   dateButton: {
-    padding: 12,
+    padding: 16,
     borderRadius: 8,
-    marginBottom: 16,
+    marginBottom: 24,
+    paddingHorizontal: 20,
+    marginHorizontal: 8,
   },
   dateButtonText: {
     fontSize: 14,
@@ -362,5 +397,26 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: "center",
     alignItems: "center",
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 8,
+    marginTop: 16,
+    marginHorizontal: 8,
+  },
+  inputWrapper: {
+    borderRadius: 16,
+    overflow: "hidden",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    marginHorizontal: 8,
+  },
+  input: {
+    padding: 12,
+    fontSize: 16,
   },
 });

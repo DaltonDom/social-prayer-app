@@ -124,12 +124,12 @@ function Navigation() {
           <Stack.Screen
             name="AddJournal"
             component={AddJournalScreen}
-            options={{ title: "New Journal Entry" }}
+            options={{ title: "New Journal Entry", headerBackTitle: "Back" }}
           />
           <Stack.Screen
             name="JournalDetail"
             component={JournalDetailScreen}
-            options={{ title: "Journal Entry" }}
+            options={{ title: "Journal Entry", headerBackTitle: "Back" }}
           />
           <Stack.Screen
             name="MyPrayersList"
@@ -144,7 +144,7 @@ function Navigation() {
           <Stack.Screen
             name="FriendDetail"
             component={FriendDetailScreen}
-            options={{ title: "Friend Profile" }}
+            options={{ title: "Friend Profile", headerBackTitle: "Back" }}
           />
           <Stack.Screen
             name="CreateGroup"

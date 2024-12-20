@@ -6,6 +6,7 @@ export const prayerService = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Not authenticated');
 
+    // Get prayers with raw comment count
     const { data, error } = await supabase
       .from('prayers')
       .select(`
@@ -38,7 +39,27 @@ export const prayerService = {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data;
+
+    // Get comment counts for each prayer
+    const transformedData = await Promise.all(data.map(async (prayer) => {
+      // Get raw comment count
+      const { count } = await supabase
+        .from('prayer_comments')
+        .select('*', { count: 'exact', head: true })
+        .eq('prayer_id', prayer.id);
+
+      return {
+        ...prayer,
+        comment_count: count,
+        updates_count: prayer.updates?.length || 0,
+        userName: `${prayer.profiles.first_name} ${prayer.profiles.last_name}`.trim(),
+        userImage: prayer.profiles.profile_image_url,
+        date: new Date(prayer.created_at).toISOString().split('T')[0],
+        groupName: prayer.groups?.name || null
+      };
+    }));
+
+    return transformedData;
   },
 
   // Get prayers for a specific group
@@ -112,5 +133,66 @@ export const prayerService = {
 
     if (error) throw error;
     return true;
+  },
+
+  // Add this function to your prayer service
+  const addComment = async (prayerId, text, userId) => {
+    try {
+      // First, insert the comment
+      const { data: newComment, error: insertError } = await supabase
+        .from('prayer_comments')
+        .insert([
+          {
+            prayer_id: prayerId,
+            user_id: userId,
+            text: text
+          }
+        ])
+        .select(`
+          *,
+          profiles (
+            id,
+            first_name,
+            last_name,
+            profile_image_url
+          )
+        `)
+        .single();
+
+      if (insertError) {
+        throw insertError;
+      }
+
+      // Get the actual comment count
+      const { count, error: countError } = await supabase
+        .from('prayer_comments')
+        .select('*', { count: 'exact', head: true })
+        .eq('prayer_id', prayerId);
+
+      if (!countError && count !== null) {
+        // Update the prayer's comment_count with the actual count
+        const { error: updateError } = await supabase
+          .from('prayers')
+          .update({ comment_count: count })
+          .eq('id', prayerId);
+
+        if (updateError) {
+          console.error("Error updating prayer count:", updateError);
+        }
+      }
+
+      // Transform and return the comment data
+      return {
+        id: newComment.id,
+        text: newComment.text,
+        user_id: newComment.user_id,
+        userName: `${newComment.profiles.first_name} ${newComment.profiles.last_name}`.trim(),
+        userImage: newComment.profiles.profile_image_url,
+        date: new Date(newComment.created_at).toISOString().split('T')[0]
+      };
+    } catch (error) {
+      console.error("Error in addComment:", error);
+      throw error;
+    }
   },
 };
