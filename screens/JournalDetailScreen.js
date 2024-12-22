@@ -106,36 +106,41 @@ export default function JournalDetailScreen({ route, navigation }) {
         >
           <View style={styles.form}>
             {/* Date Selection */}
-            <Text style={[styles.label, { color: theme.text }]}>Date</Text>
-            <TouchableOpacity
-              style={[styles.inputWrapper, { backgroundColor: theme.card }]}
-              onPress={handleDatePress}
-            >
-              <Text style={[styles.input, { color: theme.text }]}>
-                {editedJournal.date}
-              </Text>
-            </TouchableOpacity>
+            <View>
+              <TouchableOpacity
+                style={[styles.inputWrapper, { backgroundColor: theme.card }]}
+                onPress={handleDatePress}
+              >
+                <Text style={[styles.input, { color: theme.text }]}>
+                  {editedJournal.date}
+                </Text>
+              </TouchableOpacity>
 
-            {showDatePicker && (
-              <DateTimePicker
-                value={new Date(editedJournal.date)}
-                mode="date"
-                display={Platform.OS === "ios" ? "inline" : "default"}
-                onChange={handleDateChange}
-                maximumDate={new Date()}
-              />
-            )}
+              {showDatePicker && (
+                <View style={styles.datePickerContainer}>
+                  <DateTimePicker
+                    value={new Date(editedJournal.date)}
+                    mode="date"
+                    display={Platform.OS === "ios" ? "inline" : "default"}
+                    onChange={handleDateChange}
+                    maximumDate={new Date()}
+                  />
+                </View>
+              )}
+            </View>
 
             {/* Title Input */}
-            <TextInput
-              style={[styles.titleInput, { color: theme.text }]}
-              value={editedJournal.title}
-              onChangeText={(text) =>
-                setEditedJournal({ ...editedJournal, title: text })
-              }
-              placeholder="Title"
-              placeholderTextColor={theme.textSecondary}
-            />
+            <View>
+              <TextInput
+                style={[styles.titleInput, { color: theme.text }]}
+                value={editedJournal.title}
+                onChangeText={(text) =>
+                  setEditedJournal({ ...editedJournal, title: text })
+                }
+                placeholder="Title"
+                placeholderTextColor={theme.textSecondary}
+              />
+            </View>
 
             {/* Category Selection */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -180,7 +185,8 @@ export default function JournalDetailScreen({ route, navigation }) {
                 styles.contentInput,
                 {
                   color: theme.text,
-                  borderColor: theme.dark ? "#2D3748" : "#E2E8F0", // Darker border for dark mode
+                  borderColor: theme.dark ? "#2D3748" : "#E2E8F0",
+                  backgroundColor: theme.dark ? theme.card : "white",
                 },
               ]}
               value={editedJournal.content}
@@ -295,7 +301,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 24,
+    marginBottom: 32,
     paddingHorizontal: 8,
   },
   date: {
@@ -333,6 +339,7 @@ const styles = StyleSheet.create({
   titleInput: {
     fontSize: 24,
     fontWeight: "bold",
+    marginTop: 32,
     marginBottom: 24,
     padding: 12,
     paddingHorizontal: 16,
@@ -340,23 +347,25 @@ const styles = StyleSheet.create({
     borderColor: "#E2E8F0",
     borderRadius: 12,
     marginHorizontal: 8,
+    backgroundColor: "white",
   },
   contentInput: {
     fontSize: 16,
     lineHeight: 24,
     minHeight: 200,
     textAlignVertical: "top",
-    marginTop: 24,
+    marginTop: 12,
     padding: 16,
     paddingHorizontal: 20,
     borderWidth: 1,
     borderColor: "#E2E8F0",
     borderRadius: 12,
     marginHorizontal: 8,
+    backgroundColor: "white",
   },
   categoryContainer: {
     flexDirection: "row",
-    marginBottom: 32,
+    marginBottom: 16,
     gap: 12,
     paddingHorizontal: 8,
     marginHorizontal: 8,
@@ -383,7 +392,7 @@ const styles = StyleSheet.create({
   dateButton: {
     padding: 16,
     borderRadius: 8,
-    marginBottom: 24,
+    marginBottom: 6,
     paddingHorizontal: 20,
     marginHorizontal: 8,
   },
@@ -402,7 +411,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     marginBottom: 8,
-    marginTop: 16,
     marginHorizontal: 8,
   },
   inputWrapper: {
@@ -418,5 +426,15 @@ const styles = StyleSheet.create({
   input: {
     padding: 12,
     fontSize: 16,
+  },
+  datePickerContainer: {
+    marginBottom: 10,
+  },
+  form: {
+    flex: 1,
+    padding: 16,
+  },
+  formGroup: {
+    marginBottom: 0,
   },
 });

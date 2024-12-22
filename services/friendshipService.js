@@ -23,13 +23,15 @@ export const friendshipService = {
             id,
             first_name,
             last_name,
-            profile_image_url
+            profile_image_url,
+            email
           ),
           user:profiles!friendships_user_id_fkey (
             id,
             first_name,
             last_name,
-            profile_image_url
+            profile_image_url,
+            email
           )
         `
         )
@@ -73,7 +75,7 @@ export const friendshipService = {
       // Step 4: Get available users
       const { data: allUsers, error: usersError } = await supabase
         .from("profiles")
-        .select("id, first_name, last_name, profile_image_url");
+        .select("id, first_name, last_name, profile_image_url, email");
 
       if (usersError) throw usersError;
 

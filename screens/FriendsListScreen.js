@@ -30,7 +30,8 @@ export default function FriendsListScreen({ navigation }) {
     try {
       const data = await friendshipService.getFriendshipStatuses();
 
-      console.log("Raw data from service:", data); // Debug log
+      console.log("Friends data:", data.friends); // Add this debug log
+      console.log("Sample friend object:", data.friends[0]); // Add this to see structure of a single friend
 
       setFriends(data.friends || []);
       setPendingRequests(data.pendingReceived || []);
@@ -93,7 +94,8 @@ export default function FriendsListScreen({ navigation }) {
     return data.filter(
       (item) =>
         item.first_name?.toLowerCase().includes(query) ||
-        item.last_name?.toLowerCase().includes(query)
+        item.last_name?.toLowerCase().includes(query) ||
+        item.email?.toLowerCase().includes(query)
     );
   };
 
@@ -108,6 +110,9 @@ export default function FriendsListScreen({ navigation }) {
       <View style={styles.cardContent}>
         <Text style={[styles.name, { color: theme.text }]}>
           {item.first_name} {item.last_name}
+        </Text>
+        <Text style={[styles.emailText, { color: theme.textSecondary }]}>
+          {item.email}
         </Text>
       </View>
       <TouchableOpacity
@@ -132,6 +137,9 @@ export default function FriendsListScreen({ navigation }) {
       <View style={styles.cardContent}>
         <Text style={[styles.name, { color: theme.text }]}>
           {item.first_name} {item.last_name}
+        </Text>
+        <Text style={[styles.emailText, { color: theme.textSecondary }]}>
+          {item.email}
         </Text>
       </View>
       <View style={styles.actionButtons}>
@@ -168,6 +176,9 @@ export default function FriendsListScreen({ navigation }) {
         <Text style={[styles.name, { color: theme.text }]}>
           {item.first_name} {item.last_name}
         </Text>
+        <Text style={[styles.emailText, { color: theme.textSecondary }]}>
+          {item.email}
+        </Text>
       </View>
       <TouchableOpacity
         style={[styles.addButton, { backgroundColor: theme.primary }]}
@@ -189,6 +200,9 @@ export default function FriendsListScreen({ navigation }) {
       <View style={styles.cardContent}>
         <Text style={[styles.name, { color: theme.text }]}>
           {item.first_name} {item.last_name}
+        </Text>
+        <Text style={[styles.emailText, { color: theme.textSecondary }]}>
+          {item.email}
         </Text>
         <Text style={[styles.pendingText, { color: theme.textSecondary }]}>
           Request Sent
@@ -375,5 +389,9 @@ const styles = StyleSheet.create({
   pendingText: {
     fontSize: 12,
     fontWeight: "400",
+  },
+  emailText: {
+    fontSize: 12,
+    marginTop: 2,
   },
 });
