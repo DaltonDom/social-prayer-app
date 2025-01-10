@@ -11,6 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Image } from "react-native";
+import { supabase } from "../lib/supabase";
 
 const getCategoryIcon = (category) => {
   switch (category) {
@@ -46,26 +47,54 @@ export default function MyPrayersScreen({ route, navigation }) {
   const renderPrayerItem = ({ item }) => (
     <TouchableOpacity
       style={styles.card}
-      onPress={() => {
-        console.log("Prayer Item:", item);
+      onPress={async () => {
+        try {
+          const { data: prayerData, error } = await supabase
+            .from("prayers")
+            .select(
+              `
+              *,
+              prayer_comments(*)
+            `
+            )
+            .eq("id", item.id)
+            .single();
 
-        const formattedPrayer = {
-          ...item,
-          updates_list: Array.isArray(item.updates) ? item.updates : [],
-          comments: item.comments || 0,
-          category: item.category || "",
-          title: item.title || "",
-          description: item.description || "",
-          userName: item.userName || "",
-          userImage: item.userImage || "",
-          date: item.date || "",
-          groups: item.groups || null,
-        };
+          if (error) throw error;
 
-        navigation.navigate("PrayerDetail", {
-          prayerId: item.id,
-          prayer: formattedPrayer,
-        });
+          console.log("Raw prayer data:", prayerData);
+
+          // Create a new object with guaranteed structure
+          const formattedPrayer = {
+            ...prayerData,
+            // Handle the JSONB updates field correctly
+            updates_list: prayerData.updates || [],
+            updates: prayerData.updates?.length || 0,
+            prayer_comments: prayerData.prayer_comments || [],
+            id: prayerData.id,
+            title: prayerData.title || "",
+            description: prayerData.description || "",
+            category: prayerData.category || "",
+            date: item.date || "",
+            userName: item.userName || "",
+            userImage: item.userImage || "",
+            comments: prayerData.comment_count || 0,
+            groups: item.groups || null,
+            prayer_count: prayerData.prayer_count || 0,
+            user_id: prayerData.user_id,
+            is_private: prayerData.is_private || false,
+          };
+
+          console.log("Formatted prayer:", formattedPrayer);
+
+          navigation.navigate("PrayerDetail", {
+            prayerId: item.id,
+            prayer: formattedPrayer,
+          });
+        } catch (error) {
+          console.error("Error fetching prayer details:", error);
+          console.error("Error stack:", error.stack);
+        }
       }}
     >
       <LinearGradient

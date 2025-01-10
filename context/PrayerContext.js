@@ -383,6 +383,11 @@ export function PrayerProvider({ children }) {
       if (prayerResult.error) throw prayerResult.error;
       if (commentsResult.error) throw commentsResult.error;
 
+      // Ensure updates is always an array
+      const updates = Array.isArray(prayerResult.data.updates)
+        ? prayerResult.data.updates
+        : [];
+
       // Transform comments data
       const transformedComments = commentsResult.data.map((comment) => ({
         id: comment.id,
@@ -394,7 +399,7 @@ export function PrayerProvider({ children }) {
         date: new Date(comment.created_at).toISOString().split("T")[0],
       }));
 
-      // Transform prayer data
+      // Transform prayer data with guaranteed structure
       const transformedPrayer = {
         ...prayerResult.data,
         userName:
@@ -405,11 +410,12 @@ export function PrayerProvider({ children }) {
           .split("T")[0],
         comments: transformedComments.length,
         comments_list: transformedComments,
-        updates: prayerResult.data.updates?.length || 0,
-        updates_list: prayerResult.data.updates || [],
+        updates: updates.length,
+        updates_list: updates, // Using our guaranteed array
         groupName: prayerResult.data.groups?.name || null,
       };
 
+      console.log("Transformed prayer data:", transformedPrayer); // Debug log
       return { data: transformedPrayer, error: null };
     } catch (error) {
       console.error("Error in getPrayer:", error);
