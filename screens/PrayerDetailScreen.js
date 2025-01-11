@@ -23,6 +23,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useUser } from "../context/UserContext";
 import { LinearGradient } from "expo-linear-gradient";
 import { supabase } from "../lib/supabase";
+import { getRelativeTime } from "../utils/dateFormatters";
 
 export default function PrayerDetailScreen({ route, navigation }) {
   const { theme, isDarkMode } = useTheme();
@@ -104,9 +105,7 @@ export default function PrayerDetailScreen({ route, navigation }) {
                     `${newComment.profiles.first_name} ${newComment.profiles.last_name}`.trim(),
                   userImage: newComment.profiles.profile_image_url,
                   text: newComment.text,
-                  date: new Date(newComment.created_at)
-                    .toISOString()
-                    .split("T")[0],
+                  date: new Date(newComment.created_at).toISOString(),
                   user_id: newComment.user_id,
                 };
 
@@ -726,7 +725,7 @@ export default function PrayerDetailScreen({ route, navigation }) {
                         </Text>
                         <View style={styles.commentActions}>
                           <Text style={styles.commentDate}>
-                            {new Date(comment.date).toLocaleDateString()}
+                            {getRelativeTime(comment.date)}
                           </Text>
                           {userProfile?.id === comment.user_id && (
                             <TouchableOpacity
