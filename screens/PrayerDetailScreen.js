@@ -681,7 +681,7 @@ export default function PrayerDetailScreen({ route, navigation }) {
                         { color: theme.textSecondary },
                       ]}
                     >
-                      {new Date(update.created_at).toLocaleDateString()}
+                      {getRelativeTime(update.created_at)}
                     </Text>
                     <Text style={[styles.updateText, { color: theme.text }]}>
                       {update.text}

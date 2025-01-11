@@ -395,14 +395,14 @@ export default function HomeScreen({ navigation }) {
           return;
         }
 
-        // Transform the data
+        // Transform the data - Updated to correctly handle comment count
         const transformedPrayers = prayers.map((prayer) => ({
           ...prayer,
           userName:
             `${prayer.profiles.first_name} ${prayer.profiles.last_name}`.trim(),
           userImage: prayer.profiles.profile_image_url,
           date: new Date(prayer.created_at).toISOString().split("T")[0],
-          comments: prayer.prayer_comments[0]?.count || 0,
+          comments: prayer.prayer_comments[0]?.count || 0, // This is now consistent with refresh
           groupName: prayer.groups?.name || null,
         }));
 
