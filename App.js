@@ -21,6 +21,7 @@ import { UserProvider } from "./context/UserContext";
 import AuthScreen from "./screens/AuthScreen";
 import { View, ActivityIndicator } from "react-native";
 import { FriendshipProvider } from "./context/FriendshipContext";
+import { PaperProvider } from "react-native-paper";
 
 // Screen imports
 import HomeScreen from "./screens/HomeScreen";
@@ -205,19 +206,21 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <AuthProvider>
-          <UserProvider>
-            <PrayerProvider>
-              <JournalProvider>
-                <GroupProvider>
-                  <FriendshipProvider>
-                    <Navigation />
-                  </FriendshipProvider>
-                </GroupProvider>
-              </JournalProvider>
-            </PrayerProvider>
-          </UserProvider>
-        </AuthProvider>
+        <PaperProvider>
+          <AuthProvider>
+            <UserProvider>
+              <PrayerProvider>
+                <JournalProvider>
+                  <GroupProvider>
+                    <FriendshipProvider>
+                      <Navigation />
+                    </FriendshipProvider>
+                  </GroupProvider>
+                </JournalProvider>
+              </PrayerProvider>
+            </UserProvider>
+          </AuthProvider>
+        </PaperProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );

@@ -52,13 +52,48 @@ export default function HomeScreen({ navigation }) {
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await fetchPrayers();
+      const { data: prayers, error } = await supabase
+        .from("prayers")
+        .select(
+          `
+          *,
+          profiles!prayers_user_id_fkey (
+            id,
+            first_name,
+            last_name,
+            profile_image_url
+          ),
+          groups!prayers_group_id_fkey (
+            id,
+            name
+          ),
+          prayer_comments:prayer_comments(count)
+        `
+        )
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching prayers:", error);
+        return;
+      }
+
+      const transformedPrayers = prayers.map((prayer) => ({
+        ...prayer,
+        userName:
+          `${prayer.profiles.first_name} ${prayer.profiles.last_name}`.trim(),
+        userImage: prayer.profiles.profile_image_url,
+        date: new Date(prayer.created_at).toISOString().split("T")[0],
+        comments: prayer.prayer_comments[0]?.count || 0,
+        groupName: prayer.groups?.name || null,
+      }));
+
+      setPrayers(transformedPrayers);
     } catch (error) {
       console.error("Error refreshing prayers:", error);
     } finally {
       setRefreshing(false);
     }
-  }, [fetchPrayers]);
+  }, []);
 
   const renderPrayerCard = ({ item }) => (
     <TouchableOpacity
@@ -335,7 +370,6 @@ export default function HomeScreen({ navigation }) {
   useEffect(() => {
     const fetchInitialPrayers = async () => {
       try {
-        // Fetch prayers with all related data
         const { data: prayers, error } = await supabase
           .from("prayers")
           .select(
@@ -351,8 +385,7 @@ export default function HomeScreen({ navigation }) {
               id,
               name
             ),
-            prayer_comments (count),
-            updates
+            prayer_comments:prayer_comments(count)
           `
           )
           .order("created_at", { ascending: false });
@@ -369,7 +402,7 @@ export default function HomeScreen({ navigation }) {
             `${prayer.profiles.first_name} ${prayer.profiles.last_name}`.trim(),
           userImage: prayer.profiles.profile_image_url,
           date: new Date(prayer.created_at).toISOString().split("T")[0],
-          comments: prayer.comment_count || 0,
+          comments: prayer.prayer_comments[0]?.count || 0,
           groupName: prayer.groups?.name || null,
         }));
 
