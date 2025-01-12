@@ -71,6 +71,11 @@ export function GroupProvider({ children }) {
         const groupMembers =
           membersData?.filter((member) => member.group_id === group.id) || [];
 
+        // Find the current user's membership status
+        const userMembership = groupMembers.find(
+          (member) => member.user_id === userProfile?.id
+        );
+
         const membersList = groupMembers.map((member) => ({
           id: member.user.id,
           name: `${member.user.first_name} ${member.user.last_name}`.trim(),
@@ -92,15 +97,13 @@ export function GroupProvider({ children }) {
           creatorImage:
             group.profiles?.profile_image_url ||
             "https://via.placeholder.com/150",
-          isAdmin: group.created_by === userProfile?.id,
-          isMember: groupMembers.some(
-            (member) =>
-              member.user_id === userProfile?.id && member.role === "member"
-          ),
-          isPending: groupMembers.some(
-            (member) =>
-              member.user_id === userProfile?.id && member.role === "pending"
-          ),
+          isAdmin:
+            group.created_by === userProfile?.id ||
+            userMembership?.role === "admin",
+          isMember:
+            userMembership?.role === "member" ||
+            userMembership?.role === "admin",
+          isPending: userMembership?.role === "pending",
           memberCount: membersList.length,
           membersList: membersList,
           members: membersList.map((member) => member.name).join(", "),

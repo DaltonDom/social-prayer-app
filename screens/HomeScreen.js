@@ -83,7 +83,7 @@ export default function HomeScreen({ navigation }) {
           `${prayer.profiles.first_name} ${prayer.profiles.last_name}`.trim(),
         userImage: prayer.profiles.profile_image_url,
         date: new Date(prayer.created_at).toISOString().split("T")[0],
-        comments: prayer.prayer_comments[0]?.count || 0,
+        comments: prayer.prayer_comments[0].count,
         groupName: prayer.groups?.name || null,
       }));
 
@@ -395,6 +395,19 @@ export default function HomeScreen({ navigation }) {
           return;
         }
 
+        // Add detailed logging
+        console.log("Raw Supabase response:", JSON.stringify(prayers, null, 2));
+        console.log("Number of prayers returned:", prayers?.length);
+        if (prayers?.[0]) {
+          console.log("Sample prayer structure:", {
+            id: prayers[0].id,
+            title: prayers[0].title,
+            commentCount: prayers[0].prayer_comments?.[0]?.count,
+            profileData: prayers[0].profiles,
+            groupData: prayers[0].groups,
+          });
+        }
+
         // Transform the data - Updated to correctly handle comment count
         const transformedPrayers = prayers.map((prayer) => ({
           ...prayer,
@@ -402,7 +415,8 @@ export default function HomeScreen({ navigation }) {
             `${prayer.profiles.first_name} ${prayer.profiles.last_name}`.trim(),
           userImage: prayer.profiles.profile_image_url,
           date: new Date(prayer.created_at).toISOString().split("T")[0],
-          comments: prayer.prayer_comments[0]?.count || 0, // This is now consistent with refresh
+          comments:
+            prayer.comment_count || prayer.prayer_comments[0]?.count || 0,
           groupName: prayer.groups?.name || null,
         }));
 
@@ -413,6 +427,11 @@ export default function HomeScreen({ navigation }) {
     };
 
     fetchInitialPrayers();
+  }, []);
+
+  useEffect(() => {
+    // Force an immediate refresh when component mounts
+    onRefresh();
   }, []);
 
   return (

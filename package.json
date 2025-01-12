@@ -48,6 +48,7 @@
     "typescript": "^5.3.3"
   },
   "devDependencies": {
+    "@react-native-community/cli": "latest",
     "@babel/core": "^7.20.0"
   },
   "private": true
