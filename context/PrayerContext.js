@@ -33,7 +33,8 @@ export function PrayerProvider({ children }) {
           groups!prayers_group_id_fkey (
             id,
             name
-          )
+          ),
+          prayer_comments:prayer_comments(count)
         `
         )
         .order("created_at", { ascending: false });
@@ -47,7 +48,7 @@ export function PrayerProvider({ children }) {
           `${prayer.profiles.first_name} ${prayer.profiles.last_name}`.trim(),
         userImage: prayer.profiles.profile_image_url,
         date: new Date(prayer.created_at).toISOString().split("T")[0],
-        comments: prayer.comment_count || 0,
+        comments: prayer.prayer_comments[0]?.count || 0,
         updates: prayer.updates?.length || 0,
         groupName: prayer.groups?.name || null,
       }));
@@ -539,32 +540,25 @@ export function PrayerProvider({ children }) {
           groups!prayers_group_id_fkey (
             id,
             name
-          )
+          ),
+          prayer_comments:prayer_comments(count)
         `
         )
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      // Transform prayers with correct updates count
-      const transformedPrayers = prayers.map((prayer) => {
-        // Get updates count directly from the raw_updates field
-        const updatesCount = prayer.raw_updates || 0;
+      const transformedPrayers = prayers.map((prayer) => ({
+        ...prayer,
+        userName:
+          `${prayer.profiles.first_name} ${prayer.profiles.last_name}`.trim(),
+        userImage: prayer.profiles.profile_image_url,
+        date: new Date(prayer.created_at).toISOString().split("T")[0],
+        comments: prayer.prayer_comments[0]?.count || 0,
+        updates: prayer.updates?.length || 0,
+        groupName: prayer.groups?.name || null,
+      }));
 
-        return {
-          ...prayer,
-          userName:
-            `${prayer.profiles.first_name} ${prayer.profiles.last_name}`.trim(),
-          userImage: prayer.profiles.profile_image_url,
-          date: new Date(prayer.created_at).toISOString().split("T")[0],
-          comment_count: prayer.comment_count || 0,
-          updates_count: updatesCount, // Use the raw_updates count
-          updates: prayer.updates || [],
-          groupName: prayer.groups?.name || null,
-        };
-      });
-
-      console.log("Transformed prayers with counts:", transformedPrayers[0]);
       setPrayers(transformedPrayers);
       return { data: transformedPrayers, error: null };
     } catch (error) {
