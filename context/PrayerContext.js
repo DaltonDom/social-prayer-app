@@ -428,20 +428,7 @@ export function PrayerProvider({ children }) {
     try {
       console.log("📝 Starting addComment for prayer:", prayerId);
 
-      // First get the current comment count
-      const { data: currentPrayer, error: countError } = await supabase
-        .from("prayers")
-        .select("comment_count")
-        .eq("id", prayerId)
-        .single();
-
-      console.log("Current prayer data:", currentPrayer);
-      if (countError) {
-        console.error("Error fetching current prayer:", countError);
-        throw countError;
-      }
-
-      // Create the comment
+      // Create the comment first
       const { data: commentData, error: commentError } = await supabase
         .from("prayer_comments")
         .insert([
@@ -454,31 +441,30 @@ export function PrayerProvider({ children }) {
         .select()
         .single();
 
+      if (commentError) throw commentError;
       console.log("New comment created:", commentData);
-      if (commentError) {
-        console.error("Error creating comment:", commentError);
-        throw commentError;
-      }
 
-      // Update the prayer's comment count
-      const newCount = (currentPrayer.comment_count || 0) + 1;
-      console.log("Updating prayer with new count:", newCount);
+      // Update prayer's comment count using RPC for atomic increment
+      const { data: updatedPrayer, error: updateError } = await supabase.rpc(
+        "increment_comment_count",
+        { prayer_id: prayerId }
+      );
 
-      const { data: updatedPrayer, error: updateError } = await supabase
-        .from("prayers")
-        .update({
-          comment_count: newCount,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", prayerId)
-        .select()
-        .single();
-
+      if (updateError) throw updateError;
       console.log("Prayer updated:", updatedPrayer);
-      if (updateError) {
-        console.error("Error updating prayer:", updateError);
-        throw updateError;
-      }
+
+      // Update local state
+      setPrayers((currentPrayers) =>
+        currentPrayers.map((prayer) =>
+          prayer.id === prayerId
+            ? {
+                ...prayer,
+                comment_count: (prayer.comment_count || 0) + 1,
+                comments: (prayer.comments || 0) + 1,
+              }
+            : prayer
+        )
+      );
 
       return { data: commentData, error: null };
     } catch (error) {

@@ -235,60 +235,22 @@ export default function HomeScreen({ navigation }) {
           schema: "public",
           table: "prayers",
         },
-        async (payload) => {
-          // Fetch the complete updated prayer data with comment count
-          const { data: updatedPrayer, error } = await supabase
-            .from("prayers")
-            .select(
-              `
-              *,
-              profiles!prayers_user_id_fkey (
-                id,
-                first_name,
-                last_name,
-                profile_image_url
-              ),
-              groups!prayers_group_id_fkey (
-                id,
-                name
-              ),
-              prayer_comments (count),
-              updates
-            `
-            )
-            .eq("id", payload.new?.id || payload.old?.id)
-            .single();
-
-          if (error) {
-            console.error("Error fetching updated prayer:", error);
-            return;
+        (payload) => {
+          // Only update the prayer data directly from the payload
+          // without fetching again to avoid race conditions
+          if (payload.new) {
+            setPrayers((currentPrayers) =>
+              currentPrayers.map((prayer) =>
+                prayer.id === payload.new.id
+                  ? {
+                      ...prayer,
+                      ...payload.new,
+                      comments: payload.new.comment_count || 0,
+                    }
+                  : prayer
+              )
+            );
           }
-
-          // Transform the prayer data
-          const transformedPrayer = {
-            ...updatedPrayer,
-            userName:
-              `${updatedPrayer.profiles.first_name} ${updatedPrayer.profiles.last_name}`.trim(),
-            userImage: updatedPrayer.profiles.profile_image_url,
-            date: new Date(updatedPrayer.created_at)
-              .toISOString()
-              .split("T")[0],
-            comments: updatedPrayer.comment_count || 0,
-            groupName: updatedPrayer.groups?.name || null,
-          };
-
-          // Update the prayers state
-          setPrayers((currentPrayers) => {
-            if (payload.eventType === "INSERT") {
-              // Add new prayer to the beginning of the list
-              return [transformedPrayer, ...currentPrayers];
-            } else {
-              const updatedPrayers = currentPrayers.map((prayer) =>
-                prayer.id === transformedPrayer.id ? transformedPrayer : prayer
-              );
-              return updatedPrayers;
-            }
-          });
         }
       )
       .subscribe();
@@ -303,64 +265,15 @@ export default function HomeScreen({ navigation }) {
           schema: "public",
           table: "prayer_comments",
         },
-        async (payload) => {
-          if (
-            payload.eventType === "INSERT" ||
-            payload.eventType === "DELETE"
-          ) {
-            // Get the prayer_id from the comment
-            const prayerId = payload.new?.prayer_id || payload.old?.prayer_id;
-
-            // Fetch the updated prayer with the new comment count
-            const { data: updatedPrayer, error } = await supabase
-              .from("prayers")
-              .select(
-                `
-                *,
-                profiles!prayers_user_id_fkey (
-                  id,
-                  first_name,
-                  last_name,
-                  profile_image_url
-                ),
-                groups!prayers_group_id_fkey (
-                  id,
-                  name
-                )
-              `
-              )
-              .eq("id", prayerId)
-              .single();
-
-            if (error) {
-              console.error("Error fetching updated prayer:", error);
-              return;
-            }
-
-            // Transform and update the prayer in state
-            const transformedPrayer = {
-              ...updatedPrayer,
-              userName:
-                `${updatedPrayer.profiles.first_name} ${updatedPrayer.profiles.last_name}`.trim(),
-              userImage: updatedPrayer.profiles.profile_image_url,
-              date: new Date(updatedPrayer.created_at)
-                .toISOString()
-                .split("T")[0],
-              comments: updatedPrayer.comment_count || 0,
-              groupName: updatedPrayer.groups?.name || null,
-            };
-
-            setPrayers((currentPrayers) =>
-              currentPrayers.map((prayer) =>
-                prayer.id === prayerId ? transformedPrayer : prayer
-              )
-            );
-          }
+        (payload) => {
+          // Let the prayer changes subscription handle the update
+          // This prevents double-counting
+          return;
         }
       )
       .subscribe();
 
-    // Cleanup subscriptions on unmount
+    // Cleanup subscriptions
     return () => {
       prayerChangesSubscription.unsubscribe();
       commentChangesSubscription.unsubscribe();
