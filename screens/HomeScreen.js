@@ -109,7 +109,7 @@ export default function HomeScreen({ navigation }) {
         <LinearGradient
           colors={
             theme.dark
-              ? ["#1F2937", "#111827"] // dark mode colors (gray-800 to gray-900)
+              ? ["#2D2D2D", "#1A1A1A"] // dark mode colors (dark gray to near-black)
               : [theme.card, "#F8F7FF"] // light mode colors (unchanged)
           }
           style={styles.cardGradient}
