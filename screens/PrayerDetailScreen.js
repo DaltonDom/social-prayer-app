@@ -371,11 +371,14 @@ export default function PrayerDetailScreen({ route, navigation }) {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={[styles.container]}
+      style={[styles.container, { backgroundColor: theme.background }]}
       keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
       enabled={true}
     >
-      <SafeAreaView style={{ flex: 1 }} edges={["left", "right", "bottom"]}>
+      <SafeAreaView
+        style={{ flex: 1, backgroundColor: theme.background }}
+        edges={["left", "right", "bottom"]}
+      >
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={{ paddingBottom: 120 }}
@@ -383,182 +386,222 @@ export default function PrayerDetailScreen({ route, navigation }) {
         >
           {/* Prayer Card */}
           <View style={[styles.prayerCard, styles.cardShadow]}>
-            <View style={styles.cardHeader}>
-              <View style={styles.headerLeft}>
-                <Image
-                  source={{ uri: prayer?.userImage }}
-                  style={styles.profileImage}
-                />
-                <View style={styles.headerText}>
-                  <Text style={styles.userName}>{prayer?.userName}</Text>
-                  <Text style={styles.date}>{prayer?.date}</Text>
+            <LinearGradient
+              colors={
+                theme.dark
+                  ? ["#2D2D2D", "#1A1A1A"] // dark mode colors (dark gray to near-black)
+                  : [theme.card, "#F8F7FF"] // light mode colors (unchanged)
+              }
+              style={{ flex: 1, borderRadius: 12 }}
+            >
+              <View style={styles.cardHeader}>
+                <View style={styles.headerLeft}>
+                  <Image
+                    source={{ uri: prayer?.userImage }}
+                    style={styles.profileImage}
+                  />
+                  <View style={styles.headerText}>
+                    <Text style={[styles.userName, { color: theme.text }]}>
+                      {prayer?.userName}
+                    </Text>
+                    <Text style={[styles.date, { color: theme.textSecondary }]}>
+                      {prayer?.date}
+                    </Text>
+                  </View>
                 </View>
-              </View>
-              {isOwner && (
-                <TouchableOpacity
-                  onPress={isEditing ? handleSaveEdit : handleEdit}
-                  style={styles.editButton}
-                >
-                  <Ionicons
-                    name={isEditing ? "checkmark" : "pencil"}
-                    size={20}
-                    color={theme.primary}
-                  />
-                </TouchableOpacity>
-              )}
-            </View>
-
-            <View style={styles.cardContent}>
-              {isEditing ? (
-                <View style={styles.editContainer}>
-                  <TextInput
-                    style={[styles.editInput, { backgroundColor: theme.card }]}
-                    value={editedPrayer.title}
-                    onChangeText={(text) =>
-                      setEditedPrayer({ ...editedPrayer, title: text })
-                    }
-                    placeholder="Prayer title"
-                    placeholderTextColor={theme.textSecondary}
-                  />
-                  <TextInput
-                    style={[
-                      styles.editInput,
-                      styles.editDescription,
-                      { backgroundColor: theme.card },
-                    ]}
-                    value={editedPrayer.description}
-                    onChangeText={(text) =>
-                      setEditedPrayer({ ...editedPrayer, description: text })
-                    }
-                    placeholder="Prayer description"
-                    placeholderTextColor={theme.textSecondary}
-                    multiline
-                    numberOfLines={4}
-                  />
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    style={styles.categoryContainer}
+                {isOwner && (
+                  <TouchableOpacity
+                    onPress={isEditing ? handleSaveEdit : handleEdit}
+                    style={styles.editButton}
                   >
-                    {categories.map((category) => (
-                      <TouchableOpacity
-                        key={category}
-                        style={[styles.categoryButton]}
-                        onPress={() =>
-                          setEditedPrayer({
-                            ...editedPrayer,
-                            category: category,
-                          })
-                        }
-                      >
-                        <LinearGradient
-                          colors={
-                            editedPrayer.category === category
-                              ? theme.dark
-                                ? ["#581C87", "#1E3A8A"]
-                                : ["#E9D5FF", "#BFDBFE"]
-                              : ["transparent", "transparent"]
-                          }
-                          style={styles.categoryGradient}
-                        >
-                          <View style={styles.categoryContent}>
-                            <Ionicons
-                              name={getCategoryIcon(category)}
-                              size={14}
-                              color={
-                                editedPrayer.category === category
-                                  ? theme.dark
-                                    ? "#E9D5FF"
-                                    : "#6B21A8"
-                                  : theme.textSecondary
-                              }
-                            />
-                            <Text
-                              style={[
-                                styles.categoryText,
-                                {
-                                  color:
-                                    editedPrayer.category === category
-                                      ? theme.dark
-                                        ? "#E9D5FF"
-                                        : "#6B21A8"
-                                      : theme.textSecondary,
-                                },
-                              ]}
-                            >
-                              {category}
-                            </Text>
-                          </View>
-                        </LinearGradient>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
-              ) : (
-                <>
-                  <View style={styles.contentRow}>
-                    <View style={styles.descriptionContainer}>
-                      <Text style={styles.title}>{prayer.title}</Text>
-                      <Text style={styles.description}>
-                        {prayer.description}
-                      </Text>
-                    </View>
-                    <View style={styles.tagsContainer}>
-                      <LinearGradient
-                        colors={
-                          theme.dark
-                            ? ["#581C87", "#1E3A8A"]
-                            : ["#E9D5FF", "#BFDBFE"]
-                        }
-                        style={styles.categoryTag}
-                      >
-                        <Ionicons
-                          name={getCategoryIcon(prayer.category)}
-                          size={14}
-                          color={theme.dark ? "#E9D5FF" : "#6B21A8"}
-                          style={styles.categoryIcon}
-                        />
-                        <Text style={styles.categoryText}>
-                          {prayer.category}
-                        </Text>
-                      </LinearGradient>
+                    <Ionicons
+                      name={isEditing ? "checkmark" : "pencil"}
+                      size={20}
+                      color={theme.primary}
+                    />
+                  </TouchableOpacity>
+                )}
+              </View>
 
-                      {prayer.groups && (
+              <View style={styles.cardContent}>
+                {isEditing ? (
+                  <View style={styles.editContainer}>
+                    <TextInput
+                      style={[
+                        styles.editInput,
+                        { backgroundColor: theme.card },
+                      ]}
+                      value={editedPrayer.title}
+                      onChangeText={(text) =>
+                        setEditedPrayer({ ...editedPrayer, title: text })
+                      }
+                      placeholder="Prayer title"
+                      placeholderTextColor={theme.textSecondary}
+                    />
+                    <TextInput
+                      style={[
+                        styles.editInput,
+                        styles.editDescription,
+                        { backgroundColor: theme.card },
+                      ]}
+                      value={editedPrayer.description}
+                      onChangeText={(text) =>
+                        setEditedPrayer({ ...editedPrayer, description: text })
+                      }
+                      placeholder="Prayer description"
+                      placeholderTextColor={theme.textSecondary}
+                      multiline
+                      numberOfLines={4}
+                    />
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      style={styles.categoryContainer}
+                    >
+                      {categories.map((category) => (
+                        <TouchableOpacity
+                          key={category}
+                          style={[styles.categoryButton]}
+                          onPress={() =>
+                            setEditedPrayer({
+                              ...editedPrayer,
+                              category: category,
+                            })
+                          }
+                        >
+                          <LinearGradient
+                            colors={
+                              editedPrayer.category === category
+                                ? theme.dark
+                                  ? ["#581C87", "#1E3A8A"]
+                                  : ["#E9D5FF", "#BFDBFE"]
+                                : ["transparent", "transparent"]
+                            }
+                            style={styles.categoryGradient}
+                          >
+                            <View style={styles.categoryContent}>
+                              <Ionicons
+                                name={getCategoryIcon(category)}
+                                size={14}
+                                color={
+                                  editedPrayer.category === category
+                                    ? theme.dark
+                                      ? "#E9D5FF"
+                                      : "#6B21A8"
+                                    : theme.textSecondary
+                                }
+                              />
+                              <Text
+                                style={[
+                                  styles.categoryText,
+                                  {
+                                    color:
+                                      editedPrayer.category === category
+                                        ? theme.dark
+                                          ? "#E9D5FF"
+                                          : "#6B21A8"
+                                        : theme.textSecondary,
+                                  },
+                                ]}
+                              >
+                                {category}
+                              </Text>
+                            </View>
+                          </LinearGradient>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                ) : (
+                  <>
+                    <View style={styles.contentRow}>
+                      <View style={styles.descriptionContainer}>
+                        <Text
+                          style={[
+                            styles.title,
+                            { color: theme.dark ? "white" : "#1a1a1a" },
+                          ]}
+                        >
+                          {prayer.title}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.description,
+                            { color: theme.dark ? "white" : "#1a1a1a" },
+                          ]}
+                        >
+                          {prayer.description}
+                        </Text>
+                      </View>
+                      <View style={styles.tagsContainer}>
                         <LinearGradient
                           colors={
                             theme.dark
-                              ? ["#065F46", "#064E3B"]
-                              : ["#D1FAE5", "#A7F3D0"]
+                              ? ["#581C87", "#1E3A8A"]
+                              : ["#E9D5FF", "#BFDBFE"]
                           }
                           style={styles.categoryTag}
                         >
                           <Ionicons
-                            name="people"
+                            name={getCategoryIcon(prayer.category)}
                             size={14}
-                            color={theme.dark ? "#D1FAE5" : "#065F46"}
+                            color={theme.dark ? "white" : "#6B21A8"}
                             style={styles.categoryIcon}
                           />
                           <Text
                             style={[
                               styles.categoryText,
-                              { color: theme.dark ? "#D1FAE5" : "#065F46" },
+                              { color: theme.dark ? "white" : "#6B21A8" },
                             ]}
                           >
-                            {prayer.groups.name}
+                            {prayer.category}
                           </Text>
                         </LinearGradient>
-                      )}
+
+                        {prayer.groups && (
+                          <LinearGradient
+                            colors={
+                              theme.dark
+                                ? ["#065F46", "#064E3B"]
+                                : ["#D1FAE5", "#A7F3D0"]
+                            }
+                            style={styles.groupTag}
+                          >
+                            <Ionicons
+                              name="people"
+                              size={14}
+                              color={theme.dark ? "white" : "#065F46"}
+                              style={styles.categoryIcon}
+                            />
+                            <Text
+                              style={[
+                                styles.categoryText,
+                                { color: theme.dark ? "white" : "#065F46" },
+                              ]}
+                            >
+                              {prayer.groups.name}
+                            </Text>
+                          </LinearGradient>
+                        )}
+                      </View>
                     </View>
-                  </View>
-                </>
-              )}
-            </View>
+                  </>
+                )}
+              </View>
+            </LinearGradient>
           </View>
 
           {/* Updates Section */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Updates</Text>
+              <Text
+                style={[
+                  styles.sectionTitle,
+                  { color: theme.dark ? "#f5f5f5" : "#1a1a1a" },
+                ]}
+              >
+                Updates
+              </Text>
               {isOwner && (
                 <TouchableOpacity
                   style={styles.addUpdateButton}
@@ -651,12 +694,27 @@ export default function PrayerDetailScreen({ route, navigation }) {
 
           {/* Comments Section */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
+            <Text
+              style={[
+                styles.sectionTitle,
+                { color: theme.dark ? "#f5f5f5" : "#1a1a1a" },
+              ]}
+            >
               Comments ({prayer?.comments_list?.length || 0})
             </Text>
             {prayer.comments_list && prayer.comments_list.length > 0 ? (
               prayer.comments_list.map((comment) => (
-                <View key={comment.id} style={styles.commentCard}>
+                <View
+                  key={comment.id}
+                  style={[
+                    styles.commentCard,
+                    {
+                      backgroundColor: theme.dark
+                        ? "#2D2D2D"
+                        : "rgba(255, 255, 255, 0.7)",
+                    },
+                  ]}
+                >
                   <View style={styles.commentHeader}>
                     <Image
                       source={{ uri: comment.userImage }}
@@ -664,11 +722,21 @@ export default function PrayerDetailScreen({ route, navigation }) {
                     />
                     <View style={styles.commentContent}>
                       <View style={styles.commentMeta}>
-                        <Text style={styles.commentUserName}>
+                        <Text
+                          style={[
+                            styles.commentUserName,
+                            { color: theme.dark ? "white" : "#1a1a1a" },
+                          ]}
+                        >
                           {comment.userName}
                         </Text>
                         <View style={styles.commentActions}>
-                          <Text style={styles.commentDate}>
+                          <Text
+                            style={[
+                              styles.commentDate,
+                              { color: theme.dark ? "#9CA3AF" : "#666" },
+                            ]}
+                          >
                             {getRelativeTime(comment.date)}
                           </Text>
                           {userProfile?.id === comment.user_id && (
@@ -676,7 +744,11 @@ export default function PrayerDetailScreen({ route, navigation }) {
                               onPress={() => handleDeleteComment(comment.id)}
                               style={[
                                 styles.deleteButton,
-                                { backgroundColor: "#fee2e2" },
+                                {
+                                  backgroundColor: theme.dark
+                                    ? "#374151"
+                                    : "#fee2e2",
+                                },
                               ]}
                             >
                               <Ionicons
@@ -688,7 +760,14 @@ export default function PrayerDetailScreen({ route, navigation }) {
                           )}
                         </View>
                       </View>
-                      <Text style={styles.commentText}>{comment.text}</Text>
+                      <Text
+                        style={[
+                          styles.commentText,
+                          { color: theme.dark ? "white" : "#1a1a1a" },
+                        ]}
+                      >
+                        {comment.text}
+                      </Text>
                     </View>
                   </View>
                 </View>
@@ -706,13 +785,21 @@ export default function PrayerDetailScreen({ route, navigation }) {
           style={[
             styles.commentInputContainer,
             {
+              backgroundColor: theme.dark ? "#2D2D2D" : "white",
               paddingBottom: Platform.OS === "ios" ? 34 : 16,
             },
           ]}
         >
           <TextInput
-            style={styles.commentInput}
+            style={[
+              styles.commentInput,
+              {
+                backgroundColor: theme.dark ? "#1A1A1A" : "white",
+                color: theme.dark ? "white" : "#1a1a1a",
+              },
+            ]}
             placeholder="Add a comment..."
+            placeholderTextColor={theme.dark ? "#9CA3AF" : "#666"}
             value={newComment}
             onChangeText={setNewComment}
             multiline={false}
@@ -734,7 +821,6 @@ export default function PrayerDetailScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8f9ff",
   },
   scrollView: {
     flex: 1,
@@ -748,6 +834,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
+    overflow: "hidden",
   },
   cardHeader: {
     flexDirection: "row",
@@ -820,7 +907,7 @@ const styles = StyleSheet.create({
   },
   categoryIcon: {
     marginRight: 4,
-    color: "#6b46c1",
+    color: "white",
   },
   categoryText: {
     color: "#6b46c1",
@@ -931,13 +1018,6 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 16,
   },
-  categoryIcon: {
-    marginRight: 4,
-  },
-  categoryText: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
   editButton: {
     padding: 8,
     borderRadius: 20,
@@ -1045,11 +1125,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-  },
-  categoryText: {
-    fontSize: 12,
-    fontWeight: "600",
-    marginLeft: 4,
   },
   updateHeader: {
     flexDirection: "row",
