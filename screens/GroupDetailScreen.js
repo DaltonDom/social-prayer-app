@@ -24,7 +24,8 @@ export default function GroupDetailScreen({ route, navigation }) {
   const { theme } = useTheme();
   const { group } = route.params;
   const { getGroupPrayers } = usePrayers();
-  const { deleteGroup, uploadGroupImage, leaveGroup } = useGroups();
+  const { deleteGroup, uploadGroupImage, leaveGroup, refreshGroup } =
+    useGroups();
   const [isRequestModalVisible, setRequestModalVisible] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(group.name);
@@ -43,6 +44,32 @@ export default function GroupDetailScreen({ route, navigation }) {
       fetchMembershipRequests();
     }
   }, [group?.id]);
+
+  useEffect(() => {
+    const groupChangesSubscription = supabase
+      .channel(`group-${group.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "groups",
+          filter: `id=eq.${group.id}`,
+        },
+        async (payload) => {
+          // Refresh group data when changes occur
+          const { data: updatedGroup } = await refreshGroup(group.id);
+          if (updatedGroup) {
+            navigation.setParams({ group: updatedGroup });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      groupChangesSubscription.unsubscribe();
+    };
+  }, [group.id]);
 
   const fetchMembershipRequests = async () => {
     try {

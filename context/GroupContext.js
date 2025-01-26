@@ -514,6 +514,52 @@ export function GroupProvider({ children }) {
     }
   };
 
+  const refreshGroup = async (groupId) => {
+    try {
+      const { data: groupData, error: groupError } = await supabase
+        .from("groups")
+        .select(
+          `
+          *,
+          profiles!groups_created_by_fkey (
+            id,
+            first_name,
+            last_name,
+            profile_image_url
+          ),
+          group_members!inner (
+            user_id,
+            role
+          )
+        `
+        )
+        .eq("id", groupId)
+        .single();
+
+      if (groupError) throw groupError;
+
+      // Update groups state
+      setGroups((prevGroups) =>
+        prevGroups.map((group) =>
+          group.id === groupId
+            ? {
+                ...group,
+                created_by: groupData.created_by,
+                isAdmin: groupData.group_members.some(
+                  (m) => m.user_id === userProfile?.id && m.role === "admin"
+                ),
+              }
+            : group
+        )
+      );
+
+      return { data: groupData, error: null };
+    } catch (error) {
+      console.error("Error refreshing group:", error);
+      return { data: null, error };
+    }
+  };
+
   useEffect(() => {
     if (userProfile) {
       fetchGroups();
@@ -539,6 +585,7 @@ export function GroupProvider({ children }) {
         getGroupMembers,
         updateGroup,
         uploadGroupImage,
+        refreshGroup,
       }}
     >
       {children}
