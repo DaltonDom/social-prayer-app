@@ -95,101 +95,114 @@ export default function HomeScreen({ navigation }) {
     }
   }, []);
 
-  const renderPrayerCard = ({ item }) => (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={() => navigation.navigate("PrayerDetail", { prayerId: item.id })}
-    >
-      <LinearGradient
-        colors={[theme.card, "#F8F7FF"]}
-        style={styles.cardGradient}
-      >
-        <View style={styles.cardHeader}>
-          <View style={styles.cardHeaderLeft}>
-            <Image
-              source={{ uri: item.userImage }}
-              style={[styles.profileImage, styles.profileImageRing]}
-            />
-            <View style={styles.headerText}>
-              <Text style={[styles.userName, { color: theme.text }]}>
-                {item.userName}
-              </Text>
-              <Text style={[styles.date, { color: theme.textSecondary }]}>
-                {item.date}
-              </Text>
-            </View>
-          </View>
-          <View style={styles.tagsContainer}>
-            <LinearGradient
-              colors={
-                theme.dark ? ["#581C87", "#1E3A8A"] : ["#E9D5FF", "#BFDBFE"]
-              }
-              style={styles.categoryTag}
-            >
-              <Ionicons
-                name={getCategoryIcon(item.category)}
-                size={14}
-                color={theme.dark ? "#E9D5FF" : "#6B21A8"}
-                style={styles.categoryIcon}
-              />
-              <Text
-                style={[
-                  styles.categoryText,
-                  { color: theme.dark ? "#E9D5FF" : "#6B21A8" },
-                ]}
-              >
-                {item.category}
-              </Text>
-            </LinearGradient>
+  const renderPrayerCard = ({ item }) => {
+    // Add this console log to debug
+    console.log("Theme state:", theme.dark);
 
-            {item.groups && (
+    return (
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() =>
+          navigation.navigate("PrayerDetail", { prayerId: item.id })
+        }
+      >
+        <LinearGradient
+          colors={
+            theme.dark
+              ? ["#1F2937", "#111827"] // dark mode colors (gray-800 to gray-900)
+              : [theme.card, "#F8F7FF"] // light mode colors (unchanged)
+          }
+          style={styles.cardGradient}
+        >
+          <View style={styles.cardHeader}>
+            <View style={styles.cardHeaderLeft}>
+              <Image
+                source={{ uri: item.userImage }}
+                style={[styles.profileImage, styles.profileImageRing]}
+              />
+              <View style={styles.headerText}>
+                <Text style={[styles.userName, { color: theme.text }]}>
+                  {item.userName}
+                </Text>
+                <Text style={[styles.date, { color: theme.textSecondary }]}>
+                  {item.date}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.tagsContainer}>
               <LinearGradient
                 colors={
-                  theme.dark ? ["#065F46", "#064E3B"] : ["#D1FAE5", "#A7F3D0"]
+                  theme.dark ? ["#581C87", "#1E3A8A"] : ["#E9D5FF", "#BFDBFE"]
                 }
-                style={styles.groupTag}
+                style={styles.categoryTag}
               >
                 <Ionicons
-                  name="people"
+                  name={getCategoryIcon(item.category)}
                   size={14}
-                  color={theme.dark ? "#D1FAE5" : "#065F46"}
+                  color={theme.dark ? "#E9D5FF" : "#6B21A8"}
                   style={styles.categoryIcon}
                 />
                 <Text
                   style={[
                     styles.categoryText,
-                    { color: theme.dark ? "#D1FAE5" : "#065F46" },
+                    { color: theme.dark ? "#E9D5FF" : "#6B21A8" },
                   ]}
                 >
-                  {item.groups.name}
+                  {item.category}
                 </Text>
               </LinearGradient>
-            )}
+
+              {item.groups && (
+                <LinearGradient
+                  colors={
+                    theme.dark ? ["#065F46", "#064E3B"] : ["#D1FAE5", "#A7F3D0"]
+                  }
+                  style={styles.groupTag}
+                >
+                  <Ionicons
+                    name="people"
+                    size={14}
+                    color={theme.dark ? "#D1FAE5" : "#065F46"}
+                    style={styles.categoryIcon}
+                  />
+                  <Text
+                    style={[
+                      styles.categoryText,
+                      { color: theme.dark ? "#D1FAE5" : "#065F46" },
+                    ]}
+                  >
+                    {item.groups.name}
+                  </Text>
+                </LinearGradient>
+              )}
+            </View>
           </View>
-        </View>
 
-        <Text style={[styles.title, { color: theme.text }]}>{item.title}</Text>
+          <Text style={[styles.title, { color: theme.text }]}>
+            {item.title}
+          </Text>
 
-        <View
-          style={[
-            styles.cardFooter,
-            { backgroundColor: `${theme.background}50` },
-          ]}
-        >
-          <TouchableOpacity style={styles.footerButton}>
-            <Ionicons
-              name="chatbubble-outline"
-              size={16}
-              color={theme.primary}
-            />
-            <Text style={[styles.footerText, { color: theme.primary }]}>
-              {item.comments || 0} Comments
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </LinearGradient>
-    </TouchableOpacity>
-  );
+          <View
+            style={[
+              styles.cardFooter,
+              { backgroundColor: `${theme.background}50` },
+            ]}
+          >
+            <TouchableOpacity style={styles.footerButton}>
+              <Ionicons
+                name="chatbubble-outline"
+                size={16}
+                color={theme.primary}
+              />
+              <Text style={[styles.footerText, { color: theme.primary }]}>
+                {item.comments || 0} Comments
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </LinearGradient>
+      </TouchableOpacity>
+    );
+  };
 
   // Helper function to get category icons
   const getCategoryIcon = (category) => {

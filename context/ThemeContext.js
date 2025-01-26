@@ -63,7 +63,9 @@ export function ThemeProvider({ children }) {
     }
   };
 
-  const theme = isDarkMode ? themes.dark : themes.light;
+  const theme = isDarkMode
+    ? { ...themes.dark, dark: true }
+    : { ...themes.light, dark: false };
 
   if (isLoading) {
     return null; // Or a loading spinner if you prefer
