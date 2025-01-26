@@ -6,6 +6,7 @@ import {
   FlatList,
   Image,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../context/ThemeContext";
@@ -13,6 +14,7 @@ import { useGroups } from "../context/GroupContext";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "../lib/supabase";
 import { useFriendships } from "../context/FriendshipContext";
+import { Menu } from "react-native-paper";
 
 export default function GroupMembersScreen({ route, navigation }) {
   const { theme } = useTheme();
@@ -20,11 +22,17 @@ export default function GroupMembersScreen({ route, navigation }) {
   const [members, setMembers] = React.useState([]);
   const [currentUserId, setCurrentUserId] = React.useState(null);
   const { friendships, pendingFriendships } = useFriendships();
+  const [menuVisible, setMenuVisible] = React.useState(null);
+  const [isCurrentUserAdmin, setIsCurrentUserAdmin] = React.useState(false);
 
   React.useEffect(() => {
     getCurrentUser();
     fetchGroupMembers();
   }, [groupId]);
+
+  React.useEffect(() => {
+    checkCurrentUserAdminStatus();
+  }, [members, currentUserId]);
 
   const getCurrentUser = async () => {
     const {
@@ -102,6 +110,46 @@ export default function GroupMembersScreen({ route, navigation }) {
     }
   };
 
+  const checkCurrentUserAdminStatus = () => {
+    const currentUserMember = members.find(
+      (member) => member.id === currentUserId
+    );
+    setIsCurrentUserAdmin(currentUserMember?.isAdmin || false);
+  };
+
+  const handleTransferAdmin = async (newAdminId) => {
+    try {
+      // Start a transaction using RPC for atomicity
+      const { data, error } = await supabase.rpc("transfer_group_admin", {
+        p_group_id: groupId,
+        p_old_admin_id: currentUserId,
+        p_new_admin_id: newAdminId,
+      });
+
+      if (error) throw error;
+
+      // Refresh the members list
+      await fetchGroupMembers();
+
+      // Update local state immediately
+      setMembers((prevMembers) =>
+        prevMembers.map((member) => ({
+          ...member,
+          isAdmin: member.id === newAdminId,
+        }))
+      );
+
+      setIsCurrentUserAdmin(false);
+      setMenuVisible(null);
+
+      // Navigate back to refresh the group detail screen
+      navigation.goBack();
+    } catch (error) {
+      console.error("Error transferring admin role:", error);
+      Alert.alert("Error", "Failed to transfer admin role. Please try again.");
+    }
+  };
+
   const renderMember = ({ item }) => {
     const isCurrentUser = item.id === currentUserId;
     const isFriend = friendships.some(
@@ -142,6 +190,27 @@ export default function GroupMembersScreen({ route, navigation }) {
               </TouchableOpacity>
             )}
           </View>
+        )}
+
+        {isCurrentUserAdmin && !item.isAdmin && item.id !== currentUserId && (
+          <Menu
+            visible={menuVisible === item.id}
+            onDismiss={() => setMenuVisible(null)}
+            anchor={
+              <TouchableOpacity onPress={() => setMenuVisible(item.id)}>
+                <Ionicons
+                  name="ellipsis-vertical"
+                  size={24}
+                  color={theme.textSecondary}
+                />
+              </TouchableOpacity>
+            }
+          >
+            <Menu.Item
+              onPress={() => handleTransferAdmin(item.id)}
+              title="Transfer Admin Role"
+            />
+          </Menu>
         )}
       </View>
     );
@@ -250,5 +319,10 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 16,
     marginTop: 24,
+  },
+  actionContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
 });
