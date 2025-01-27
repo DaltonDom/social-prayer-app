@@ -146,54 +146,54 @@ export function UserProvider({ children }) {
 
   const uploadProfileImage = async (imageUri) => {
     try {
+      // Get file extension
       const ext = imageUri.split(".").pop().toLowerCase();
-
       const fileName = `${Date.now()}.${ext}`;
       const filePath = `${userProfile.id}/${fileName}`;
 
+      // Fetch the image and convert to blob
       const response = await fetch(imageUri);
       const blob = await response.blob();
 
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = async () => {
-          try {
-            const base64Data = reader.result.split(",")[1];
-            const { data, error: uploadError } = await supabase.storage
-              .from("profile-images")
-              .upload(filePath, decode(base64Data), {
-                contentType: `image/${ext}`,
-                upsert: true,
-              });
-
-            if (uploadError) throw uploadError;
-
-            const {
-              data: { publicUrl },
-            } = supabase.storage.from("profile-images").getPublicUrl(filePath);
-
-            const { error: updateError } = await supabase
-              .from("profiles")
-              .update({ profile_image_url: publicUrl })
-              .eq("id", userProfile.id);
-
-            if (updateError) throw updateError;
-
-            setUserProfile((prev) => ({
-              ...prev,
-              profile_image_url: publicUrl,
-            }));
-
-            resolve({ publicUrl, error: null });
-          } catch (error) {
-            reject({ publicUrl: null, error });
-          }
-        };
-        reader.onerror = () => {
-          reject({ publicUrl: null, error: new Error("Failed to read file") });
-        };
-        reader.readAsDataURL(blob);
+      // Create FormData and append the file
+      const formData = new FormData();
+      formData.append("file", {
+        uri: imageUri,
+        name: fileName,
+        type: `image/${ext}`,
       });
+
+      // Upload using formData
+      const { data, error: uploadError } = await supabase.storage
+        .from("profile-images")
+        .upload(filePath, formData.get("file"), {
+          contentType: `image/${ext}`,
+          cacheControl: "3600",
+          upsert: false,
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("profile-images").getPublicUrl(filePath);
+
+      // Update profile with new image URL
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ profile_image_url: publicUrl })
+        .eq("id", userProfile.id);
+
+      if (updateError) throw updateError;
+
+      // Update local state
+      setUserProfile((prev) => ({
+        ...prev,
+        profile_image_url: publicUrl,
+      }));
+
+      return { publicUrl, error: null };
     } catch (error) {
       console.error("Error uploading image:", error.message);
       return { publicUrl: null, error };

@@ -116,16 +116,69 @@ export default function EditProfileModal({
   };
 
   const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaType.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 1,
-    });
+    try {
+      // Request permission
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        alert("Sorry, we need camera roll permissions to make this work!");
+        return;
+      }
 
-    if (!result.canceled) {
-      setImage(result.assets[0].uri);
-      setEditedInfo({ ...editedInfo, profileImageUrl: result.assets[0].uri });
+      // Launch image picker with correct options
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: "images",
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.5,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        try {
+          // Get file extension
+          const imageUri = result.assets[0].uri;
+          const ext = imageUri.split(".").pop().toLowerCase();
+          const fileName = `${Date.now()}.${ext}`;
+          const filePath = `${userInfo.id}/${fileName}`;
+
+          // Create FormData and append the file
+          const formData = new FormData();
+          formData.append("file", {
+            uri: imageUri,
+            name: fileName,
+            type: `image/${ext}`,
+          });
+
+          // Upload using formData
+          const { data, error: uploadError } = await supabase.storage
+            .from("profile-images")
+            .upload(filePath, formData.get("file"), {
+              contentType: `image/${ext}`,
+              cacheControl: "3600",
+              upsert: false,
+            });
+
+          if (uploadError) throw uploadError;
+
+          // Get public URL
+          const {
+            data: { publicUrl },
+          } = supabase.storage.from("profile-images").getPublicUrl(filePath);
+
+          // Update local state
+          setImage(publicUrl);
+          setEditedInfo((prev) => ({
+            ...prev,
+            profileImageUrl: publicUrl,
+          }));
+        } catch (error) {
+          console.error("Error uploading image:", error);
+          Alert.alert("Error", "Failed to upload image");
+        }
+      }
+    } catch (error) {
+      console.error("Error picking image:", error);
+      Alert.alert("Error", "Failed to pick image");
     }
   };
 
