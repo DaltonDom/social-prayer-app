@@ -429,7 +429,10 @@ export default function PrayerDetailScreen({ route, navigation }) {
                     <TextInput
                       style={[
                         styles.editInput,
-                        { backgroundColor: theme.card },
+                        {
+                          backgroundColor: theme.card,
+                          color: theme.text,
+                        },
                       ]}
                       value={editedPrayer.title}
                       onChangeText={(text) =>
@@ -442,7 +445,10 @@ export default function PrayerDetailScreen({ route, navigation }) {
                       style={[
                         styles.editInput,
                         styles.editDescription,
-                        { backgroundColor: theme.card },
+                        {
+                          backgroundColor: theme.card,
+                          color: theme.text,
+                        },
                       ]}
                       value={editedPrayer.description}
                       onChangeText={(text) =>
@@ -542,20 +548,21 @@ export default function PrayerDetailScreen({ route, navigation }) {
                           }
                           style={styles.categoryTag}
                         >
-                          <Ionicons
-                            name={getCategoryIcon(prayer.category)}
-                            size={14}
-                            color={theme.dark ? "white" : "#6B21A8"}
-                            style={styles.categoryIcon}
-                          />
-                          <Text
-                            style={[
-                              styles.categoryText,
-                              { color: theme.dark ? "white" : "#6B21A8" },
-                            ]}
-                          >
-                            {prayer.category}
-                          </Text>
+                          <View style={styles.categoryContent}>
+                            <Ionicons
+                              name={getCategoryIcon(prayer.category)}
+                              size={14}
+                              color={theme.dark ? "#E9D5FF" : "#6B21A8"}
+                            />
+                            <Text
+                              style={[
+                                styles.categoryText,
+                                { color: theme.dark ? "#E9D5FF" : "#6B21A8" },
+                              ]}
+                            >
+                              {prayer.category}
+                            </Text>
+                          </View>
                         </LinearGradient>
 
                         {prayer.groups && (
@@ -567,20 +574,21 @@ export default function PrayerDetailScreen({ route, navigation }) {
                             }
                             style={styles.groupTag}
                           >
-                            <Ionicons
-                              name="people"
-                              size={14}
-                              color={theme.dark ? "white" : "#065F46"}
-                              style={styles.categoryIcon}
-                            />
-                            <Text
-                              style={[
-                                styles.categoryText,
-                                { color: theme.dark ? "white" : "#065F46" },
-                              ]}
-                            >
-                              {prayer.groups.name}
-                            </Text>
+                            <View style={styles.categoryContent}>
+                              <Ionicons
+                                name="people"
+                                size={14}
+                                color={theme.dark ? "#D1FAE5" : "#065F46"}
+                              />
+                              <Text
+                                style={[
+                                  styles.categoryText,
+                                  { color: theme.dark ? "#D1FAE5" : "#065F46" },
+                                ]}
+                              >
+                                {prayer.groups.name}
+                              </Text>
+                            </View>
                           </LinearGradient>
                         )}
                       </View>
@@ -773,8 +781,21 @@ export default function PrayerDetailScreen({ route, navigation }) {
                 </View>
               ))
             ) : (
-              <View style={styles.emptyCard}>
-                <Text style={styles.emptyText}>No comments yet</Text>
+              <View
+                style={[
+                  styles.emptyCard,
+                  {
+                    backgroundColor: theme.dark
+                      ? "#2D2D2D"
+                      : "rgba(255, 255, 255, 0.7)",
+                  },
+                ]}
+              >
+                <Text
+                  style={[styles.emptyText, { color: theme.textSecondary }]}
+                >
+                  No comments yet
+                </Text>
               </View>
             )}
           </View>
@@ -785,7 +806,7 @@ export default function PrayerDetailScreen({ route, navigation }) {
           style={[
             styles.commentInputContainer,
             {
-              backgroundColor: theme.dark ? "#2D2D2D" : "white",
+              backgroundColor: theme.background,
               paddingBottom: Platform.OS === "ios" ? 34 : 16,
             },
           ]}
@@ -828,7 +849,7 @@ const styles = StyleSheet.create({
   prayerCard: {
     margin: 16,
     borderRadius: 12,
-    backgroundColor: "white",
+    backgroundColor: "transparent",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
@@ -980,8 +1001,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     padding: 16,
     backgroundColor: "white",
-    borderTopWidth: 1,
-    borderTopColor: "#eee",
     alignItems: "center",
     paddingBottom: Platform.OS === "ios" ? 34 : 16,
   },
@@ -1004,7 +1023,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   cardShadow: {
-    backgroundColor: "white",
+    backgroundColor: "transparent",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
@@ -1156,5 +1175,12 @@ const styles = StyleSheet.create({
   },
   updateInfo: {
     flex: 1,
+  },
+  groupTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
   },
 });

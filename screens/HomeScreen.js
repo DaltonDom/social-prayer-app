@@ -185,10 +185,18 @@ export default function HomeScreen({ navigation }) {
           <View
             style={[
               styles.cardFooter,
-              { backgroundColor: `${theme.background}50` },
+              {
+                backgroundColor: theme.dark
+                  ? "rgba(255, 255, 255, 0.1)" // Lighter background for dark mode
+                  : `${theme.background}50`,
+                alignSelf: "flex-start", // Changed to flex-start
+                borderRadius: 16,
+                marginTop: 12,
+                marginLeft: "auto", // Added to push to right side
+              },
             ]}
           >
-            <TouchableOpacity style={styles.footerButton}>
+            <TouchableOpacity style={styles.footerButton} activeOpacity={0.7}>
               <Ionicons
                 name="chatbubble-outline"
                 size={16}
@@ -568,11 +576,9 @@ const styles = StyleSheet.create({
   },
   cardFooter: {
     flexDirection: "row",
-    justifyContent: "flex-end",
-    paddingVertical: 8,
+    paddingVertical: 6,
     paddingHorizontal: 12,
-    borderRadius: 8,
-    marginTop: 8,
+    width: "auto", // Added to ensure it only takes needed width
   },
   footerButton: {
     flexDirection: "row",

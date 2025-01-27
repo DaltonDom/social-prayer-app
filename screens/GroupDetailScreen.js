@@ -198,7 +198,7 @@ export default function GroupDetailScreen({ route, navigation }) {
       onPress={() => navigation.navigate("PrayerDetail", { prayerId: item.id })}
     >
       <LinearGradient
-        colors={[theme.card, "#F8F7FF"]}
+        colors={theme.dark ? ["#2D2D2D", "#1A1A1A"] : [theme.card, "#F8F7FF"]}
         style={styles.cardGradient}
       >
         <View style={styles.cardHeader}>
@@ -246,10 +246,18 @@ export default function GroupDetailScreen({ route, navigation }) {
         <View
           style={[
             styles.cardFooter,
-            { backgroundColor: `${theme.background}50` },
+            {
+              backgroundColor: theme.dark
+                ? "rgba(255, 255, 255, 0.1)" // Lighter background for dark mode
+                : `${theme.background}50`,
+              alignSelf: "flex-start",
+              borderRadius: 16,
+              marginTop: 12,
+              marginLeft: "auto",
+            },
           ]}
         >
-          <TouchableOpacity style={styles.footerButton}>
+          <TouchableOpacity style={styles.footerButton} activeOpacity={0.7}>
             <Ionicons
               name="chatbubble-outline"
               size={16}
@@ -257,12 +265,6 @@ export default function GroupDetailScreen({ route, navigation }) {
             />
             <Text style={[styles.footerText, { color: theme.primary }]}>
               {item.comments} Comments
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.footerButton}>
-            <Ionicons name="refresh-outline" size={16} color={theme.primary} />
-            <Text style={[styles.footerText, { color: theme.primary }]}>
-              {item.updates} Updates
             </Text>
           </TouchableOpacity>
         </View>
@@ -784,11 +786,9 @@ const styles = StyleSheet.create({
   },
   cardFooter: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 8,
+    paddingVertical: 6,
     paddingHorizontal: 12,
-    borderRadius: 8,
-    marginTop: 8,
+    width: "auto",
   },
   footerButton: {
     flexDirection: "row",
