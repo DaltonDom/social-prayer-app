@@ -14,8 +14,10 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "../lib/supabase";
+import { useTheme } from "../context/ThemeContext";
 
 export default function ChangePasswordModal({ visible, onClose }) {
+  const { theme } = useTheme();
   const [passwords, setPasswords] = useState({
     current: "",
     new: "",
@@ -81,52 +83,92 @@ export default function ChangePasswordModal({ visible, onClose }) {
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
+            <View
+              style={[
+                styles.modalContent,
+                { backgroundColor: theme?.dark ? "#1C1C1E" : "white" },
+              ]}
+            >
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Change Password</Text>
+                <Text
+                  style={[
+                    styles.modalTitle,
+                    { color: theme?.dark ? "white" : "#333" },
+                  ]}
+                >
+                  Change Password
+                </Text>
                 <TouchableOpacity onPress={onClose}>
-                  <Ionicons name="close" size={24} color="#333" />
+                  <Ionicons
+                    name="close"
+                    size={24}
+                    color={theme?.dark ? "white" : "#333"}
+                  />
                 </TouchableOpacity>
               </View>
 
               <View style={styles.inputContainer}>
-                <Text style={styles.label}>Current Password</Text>
+                <Text
+                  style={[
+                    styles.label,
+                    { color: theme?.dark ? "white" : "#666" },
+                  ]}
+                >
+                  Current Password
+                </Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: "black" }]}
                   value={passwords.current}
                   onChangeText={(text) =>
                     setPasswords({ ...passwords, current: text })
                   }
                   secureTextEntry
                   placeholder="Enter current password"
+                  placeholderTextColor="#666"
                   editable={!loading}
                 />
               </View>
 
               <View style={styles.inputContainer}>
-                <Text style={styles.label}>New Password</Text>
+                <Text
+                  style={[
+                    styles.label,
+                    { color: theme?.dark ? "white" : "#666" },
+                  ]}
+                >
+                  New Password
+                </Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: "black" }]}
                   value={passwords.new}
                   onChangeText={(text) =>
                     setPasswords({ ...passwords, new: text })
                   }
                   secureTextEntry
                   placeholder="Enter new password"
+                  placeholderTextColor="#666"
                   editable={!loading}
                 />
               </View>
 
               <View style={styles.inputContainer}>
-                <Text style={styles.label}>Confirm New Password</Text>
+                <Text
+                  style={[
+                    styles.label,
+                    { color: theme?.dark ? "white" : "#666" },
+                  ]}
+                >
+                  Confirm New Password
+                </Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: "black" }]}
                   value={passwords.confirm}
                   onChangeText={(text) =>
                     setPasswords({ ...passwords, confirm: text })
                   }
                   secureTextEntry
                   placeholder="Confirm new password"
+                  placeholderTextColor="#666"
                   editable={!loading}
                 />
               </View>
@@ -183,7 +225,6 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    color: "#666",
     marginBottom: 8,
   },
   input: {

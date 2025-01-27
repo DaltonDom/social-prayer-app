@@ -16,6 +16,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { supabase } from "../lib/supabase";
+import { useTheme } from "../context/ThemeContext";
 
 export default function EditProfileModal({
   visible,
@@ -23,6 +24,7 @@ export default function EditProfileModal({
   userInfo,
   onSave,
 }) {
+  const { theme } = useTheme();
   const [editedInfo, setEditedInfo] = useState({
     firstName: "",
     lastName: "",
@@ -194,11 +196,27 @@ export default function EditProfileModal({
         style={styles.modalContainer}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View style={styles.modalContent}>
+          <View
+            style={[
+              styles.modalContent,
+              { backgroundColor: theme?.dark ? "#1C1C1E" : "white" },
+            ]}
+          >
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Edit Profile</Text>
+              <Text
+                style={[
+                  styles.modalTitle,
+                  { color: theme?.dark ? "white" : "#333" },
+                ]}
+              >
+                Edit Profile
+              </Text>
               <TouchableOpacity onPress={onClose}>
-                <Ionicons name="close" size={24} color="#333" />
+                <Ionicons
+                  name="close"
+                  size={24}
+                  color={theme?.dark ? "white" : "#333"}
+                />
               </TouchableOpacity>
             </View>
 
@@ -213,7 +231,14 @@ export default function EditProfileModal({
             </View>
 
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>First Name</Text>
+              <Text
+                style={[
+                  styles.label,
+                  { color: theme?.dark ? "white" : "#666" },
+                ]}
+              >
+                First Name
+              </Text>
               <TextInput
                 style={styles.input}
                 value={editedInfo.firstName}
@@ -225,7 +250,14 @@ export default function EditProfileModal({
             </View>
 
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Last Name</Text>
+              <Text
+                style={[
+                  styles.label,
+                  { color: theme?.dark ? "white" : "#666" },
+                ]}
+              >
+                Last Name
+              </Text>
               <TextInput
                 style={styles.input}
                 value={editedInfo.lastName}
