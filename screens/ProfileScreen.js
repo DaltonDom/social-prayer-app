@@ -13,6 +13,8 @@ import {
   ActivityIndicator,
   Linking,
   Platform,
+  Modal,
+  TextInput,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { usePrayers } from "../context/PrayerContext";
@@ -523,7 +525,16 @@ export default function ProfileScreen({ navigation }) {
           Prayers
         </Text>
       </TouchableOpacity>
-      <View style={[styles.statDivider, { backgroundColor: theme.border }]} />
+      <View
+        style={[
+          styles.statDivider,
+          {
+            backgroundColor: theme.dark
+              ? "rgba(255, 255, 255, 0.1)"
+              : theme.border,
+          },
+        ]}
+      />
       <TouchableOpacity style={styles.statItem} onPress={navigateToFriendsList}>
         <Text style={[styles.statNumber, { color: theme.primary }]}>
           {totalFriends}
@@ -598,7 +609,15 @@ export default function ProfileScreen({ navigation }) {
         showsVerticalScrollIndicator={false}
       >
         {/* Profile Header */}
-        <View style={[styles.header, { backgroundColor: theme.card }]}>
+        <View
+          style={[
+            styles.header,
+            {
+              backgroundColor: theme.card,
+              borderBottomColor: theme.dark ? "transparent" : "#eee", // Remove border in dark mode
+            },
+          ]}
+        >
           <View style={styles.profileImageContainer}>
             <TouchableOpacity onPress={handleImagePick}>
               <Image
@@ -733,6 +752,12 @@ export default function ProfileScreen({ navigation }) {
         visible={editProfileVisible}
         onClose={() => setEditProfileVisible(false)}
         userInfo={userProfile}
+        style={{
+          backgroundColor: theme.dark ? theme.background : theme.card,
+        }}
+        textStyle={{
+          color: theme.text,
+        }}
         onSave={(updatedInfo) => {
           setUserInfo((prev) => ({
             ...prev,
@@ -756,11 +781,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    backgroundColor: "white",
     alignItems: "center",
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
   },
   profileImageContainer: {
     position: "relative",
@@ -973,5 +996,46 @@ const styles = StyleSheet.create({
   },
   requestsPreview: {
     marginTop: 16,
+  },
+  modal: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    width: "80%",
+    padding: 20,
+    borderRadius: 12,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingBottom: 12,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  modalBody: {
+    marginBottom: 20,
+  },
+  input: {
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#eee",
+    borderRadius: 8,
+  },
+  modalFooter: {
+    alignItems: "center",
+  },
+  button: {
+    padding: 12,
+    borderRadius: 8,
+    width: "100%",
+  },
+  buttonText: {
+    fontSize: 14,
+    fontWeight: "600",
   },
 });

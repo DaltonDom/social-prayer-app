@@ -98,7 +98,7 @@ export default function MyPrayersScreen({ route, navigation }) {
       }}
     >
       <LinearGradient
-        colors={[theme.card, "#F8F7FF"]}
+        colors={theme.dark ? ["#2D2D2D", "#1A1A1A"] : [theme.card, "#F8F7FF"]}
         style={styles.cardGradient}
       >
         <View style={styles.cardHeader}>
@@ -172,10 +172,18 @@ export default function MyPrayersScreen({ route, navigation }) {
         <View
           style={[
             styles.cardFooter,
-            { backgroundColor: `${theme.background}50` },
+            {
+              backgroundColor: theme.dark
+                ? "rgba(255, 255, 255, 0.1)"
+                : `${theme.background}50`,
+              alignSelf: "flex-start",
+              borderRadius: 16,
+              marginTop: 12,
+              marginLeft: "auto",
+            },
           ]}
         >
-          <TouchableOpacity style={styles.footerButton}>
+          <TouchableOpacity style={styles.footerButton} activeOpacity={0.7}>
             <Ionicons
               name="chatbubble-outline"
               size={16}
@@ -301,11 +309,9 @@ const styles = StyleSheet.create({
   },
   cardFooter: {
     flexDirection: "row",
-    justifyContent: "flex-end",
-    paddingVertical: 8,
+    paddingVertical: 6,
     paddingHorizontal: 12,
-    borderRadius: 8,
-    marginTop: 8,
+    width: "auto",
   },
   footerButton: {
     flexDirection: "row",

@@ -59,7 +59,11 @@ export default function JournalScreen({ navigation }) {
       onPress={() => navigation.navigate("JournalDetail", { journal: item })}
     >
       <LinearGradient
-        colors={[theme.card, "#F8F7FF"]}
+        colors={
+          theme.dark
+            ? ["#2D2D2D", "#1A1A1A"] // dark mode colors to match HomeScreen
+            : [theme.card, "#F8F7FF"] // light mode colors unchanged
+        }
         style={styles.cardGradient}
       >
         <View style={styles.cardHeader}>

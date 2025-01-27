@@ -132,7 +132,14 @@ export default function JournalDetailScreen({ route, navigation }) {
             {/* Title Input */}
             <View>
               <TextInput
-                style={[styles.titleInput, { color: theme.text }]}
+                style={[
+                  styles.titleInput,
+                  {
+                    color: theme.text,
+                    backgroundColor: theme.dark ? "#2D2D2D" : "white",
+                    borderColor: theme.dark ? "#404040" : "#E2E8F0",
+                  },
+                ]}
                 value={editedJournal.title}
                 onChangeText={(text) =>
                   setEditedJournal({ ...editedJournal, title: text })
@@ -185,8 +192,8 @@ export default function JournalDetailScreen({ route, navigation }) {
                 styles.contentInput,
                 {
                   color: theme.text,
-                  borderColor: theme.dark ? "#2D3748" : "#E2E8F0",
-                  backgroundColor: theme.dark ? theme.card : "white",
+                  backgroundColor: theme.dark ? "#2D2D2D" : "white",
+                  borderColor: theme.dark ? "#404040" : "#E2E8F0",
                 },
               ]}
               value={editedJournal.content}
@@ -226,7 +233,9 @@ export default function JournalDetailScreen({ route, navigation }) {
       <ScrollView style={styles.scrollView}>
         <View style={styles.card}>
           <LinearGradient
-            colors={[theme.card, "#F8F7FF"]}
+            colors={
+              theme.dark ? ["#2D2D2D", "#1A1A1A"] : [theme.card, "#F8F7FF"]
+            }
             style={styles.cardGradient}
           >
             <View style={styles.header}>
