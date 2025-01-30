@@ -38,8 +38,16 @@ export default function GroupDropdown({ groups, selectedGroup, onSelect }) {
         animationType="slide"
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setModalVisible(false)}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
+            style={[styles.modalContent, { backgroundColor: theme.card }]}
+          >
             <View
               style={[styles.modalHeader, { borderBottomColor: theme.border }]}
             >
@@ -84,8 +92,8 @@ export default function GroupDropdown({ groups, selectedGroup, onSelect }) {
                 </TouchableOpacity>
               )}
             />
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
     </>
   );
