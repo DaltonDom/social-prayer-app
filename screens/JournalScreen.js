@@ -183,7 +183,12 @@ export default function JournalScreen({ navigation }) {
       style={[styles.container, { backgroundColor: theme.background }]}
       edges={["right", "left", "bottom"]}
     >
-      <View style={styles.tabBar}>
+      <View
+        style={[
+          styles.tabBar,
+          { borderBottomColor: theme.dark ? theme.background : "#eee" },
+        ]}
+      >
         <TabButton name="list" icon="list" isActive={activeTab === "list"} />
         <TabButton
           name="calendar"
@@ -335,7 +340,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-around",
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
     paddingTop: Platform.OS === "ios" ? 50 : 20,
   },
   tabButton: {
