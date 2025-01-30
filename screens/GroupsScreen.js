@@ -303,13 +303,6 @@ export default function GroupsScreen({ navigation }) {
                 {renderGroupCard({ item: group })}
               </React.Fragment>
             ))}
-            {item.data.length === 0 && (
-              <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-                {item.title === "My Groups"
-                  ? "You haven't joined any groups yet"
-                  : "No available groups to join"}
-              </Text>
-            )}
           </View>
         )}
         keyExtractor={(item, index) => index.toString()}
