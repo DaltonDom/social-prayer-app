@@ -76,119 +76,104 @@ export default function ChangePasswordModal({ visible, onClose }) {
       visible={visible}
       onRequestClose={onClose}
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.container}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 60}
+      <TouchableOpacity
+        style={styles.modalContainer}
+        activeOpacity={1}
+        onPress={onClose}
       >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View style={styles.modalContainer}>
-            <View
+        <View
+          style={[
+            styles.modalContent,
+            { backgroundColor: theme?.dark ? "#1C1C1E" : "white" },
+          ]}
+        >
+          <View style={styles.modalHeader}>
+            <Text
               style={[
-                styles.modalContent,
-                { backgroundColor: theme?.dark ? "#1C1C1E" : "white" },
+                styles.modalTitle,
+                { color: theme?.dark ? "white" : "#333" },
               ]}
             >
-              <View style={styles.modalHeader}>
-                <Text
-                  style={[
-                    styles.modalTitle,
-                    { color: theme?.dark ? "white" : "#333" },
-                  ]}
-                >
-                  Change Password
-                </Text>
-                <TouchableOpacity onPress={onClose}>
-                  <Ionicons
-                    name="close"
-                    size={24}
-                    color={theme?.dark ? "white" : "#333"}
-                  />
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.inputContainer}>
-                <Text
-                  style={[
-                    styles.label,
-                    { color: theme?.dark ? "white" : "#666" },
-                  ]}
-                >
-                  Current Password
-                </Text>
-                <TextInput
-                  style={[styles.input, { color: "black" }]}
-                  value={passwords.current}
-                  onChangeText={(text) =>
-                    setPasswords({ ...passwords, current: text })
-                  }
-                  secureTextEntry
-                  placeholder="Enter current password"
-                  placeholderTextColor="#666"
-                  editable={!loading}
-                />
-              </View>
-
-              <View style={styles.inputContainer}>
-                <Text
-                  style={[
-                    styles.label,
-                    { color: theme?.dark ? "white" : "#666" },
-                  ]}
-                >
-                  New Password
-                </Text>
-                <TextInput
-                  style={[styles.input, { color: "black" }]}
-                  value={passwords.new}
-                  onChangeText={(text) =>
-                    setPasswords({ ...passwords, new: text })
-                  }
-                  secureTextEntry
-                  placeholder="Enter new password"
-                  placeholderTextColor="#666"
-                  editable={!loading}
-                />
-              </View>
-
-              <View style={styles.inputContainer}>
-                <Text
-                  style={[
-                    styles.label,
-                    { color: theme?.dark ? "white" : "#666" },
-                  ]}
-                >
-                  Confirm New Password
-                </Text>
-                <TextInput
-                  style={[styles.input, { color: "black" }]}
-                  value={passwords.confirm}
-                  onChangeText={(text) =>
-                    setPasswords({ ...passwords, confirm: text })
-                  }
-                  secureTextEntry
-                  placeholder="Confirm new password"
-                  placeholderTextColor="#666"
-                  editable={!loading}
-                />
-              </View>
-
-              <TouchableOpacity
-                style={[
-                  styles.changeButton,
-                  loading && styles.changeButtonDisabled,
-                ]}
-                onPress={handleChangePassword}
-                disabled={loading}
-              >
-                <Text style={styles.changeButtonText}>
-                  {loading ? "Changing Password..." : "Change Password"}
-                </Text>
-              </TouchableOpacity>
-            </View>
+              Change Password
+            </Text>
+            <TouchableOpacity onPress={onClose}>
+              <Ionicons
+                name="close"
+                size={24}
+                color={theme?.dark ? "white" : "#333"}
+              />
+            </TouchableOpacity>
           </View>
-        </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
+
+          <View style={styles.inputContainer}>
+            <Text
+              style={[styles.label, { color: theme?.dark ? "white" : "#666" }]}
+            >
+              Current Password
+            </Text>
+            <TextInput
+              style={[styles.input, { color: "black" }]}
+              value={passwords.current}
+              onChangeText={(text) =>
+                setPasswords({ ...passwords, current: text })
+              }
+              secureTextEntry
+              placeholder="Enter current password"
+              placeholderTextColor="#666"
+              editable={!loading}
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text
+              style={[styles.label, { color: theme?.dark ? "white" : "#666" }]}
+            >
+              New Password
+            </Text>
+            <TextInput
+              style={[styles.input, { color: "black" }]}
+              value={passwords.new}
+              onChangeText={(text) => setPasswords({ ...passwords, new: text })}
+              secureTextEntry
+              placeholder="Enter new password"
+              placeholderTextColor="#666"
+              editable={!loading}
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text
+              style={[styles.label, { color: theme?.dark ? "white" : "#666" }]}
+            >
+              Confirm New Password
+            </Text>
+            <TextInput
+              style={[styles.input, { color: "black" }]}
+              value={passwords.confirm}
+              onChangeText={(text) =>
+                setPasswords({ ...passwords, confirm: text })
+              }
+              secureTextEntry
+              placeholder="Confirm new password"
+              placeholderTextColor="#666"
+              editable={!loading}
+            />
+          </View>
+
+          <TouchableOpacity
+            style={[
+              styles.changeButton,
+              loading && styles.changeButtonDisabled,
+            ]}
+            onPress={handleChangePassword}
+            disabled={loading}
+          >
+            <Text style={styles.changeButtonText}>
+              {loading ? "Changing Password..." : "Change Password"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
     </Modal>
   );
 }

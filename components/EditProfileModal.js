@@ -191,89 +191,102 @@ export default function EditProfileModal({
       visible={visible}
       onRequestClose={onClose}
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      <TouchableOpacity
         style={styles.modalContainer}
+        activeOpacity={1}
+        onPress={onClose}
       >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View
-            style={[
-              styles.modalContent,
-              { backgroundColor: theme?.dark ? "#1C1C1E" : "white" },
-            ]}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
           >
-            <View style={styles.modalHeader}>
-              <Text
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+              <View
                 style={[
-                  styles.modalTitle,
-                  { color: theme?.dark ? "white" : "#333" },
+                  styles.modalContent,
+                  { backgroundColor: theme?.dark ? "#1C1C1E" : "white" },
                 ]}
               >
-                Edit Profile
-              </Text>
-              <TouchableOpacity onPress={onClose}>
-                <Ionicons
-                  name="close"
-                  size={24}
-                  color={theme?.dark ? "white" : "#333"}
-                />
-              </TouchableOpacity>
-            </View>
+                <View style={styles.modalHeader}>
+                  <Text
+                    style={[
+                      styles.modalTitle,
+                      { color: theme?.dark ? "white" : "#333" },
+                    ]}
+                  >
+                    Edit Profile
+                  </Text>
+                  <TouchableOpacity onPress={onClose}>
+                    <Ionicons
+                      name="close"
+                      size={24}
+                      color={theme?.dark ? "white" : "#333"}
+                    />
+                  </TouchableOpacity>
+                </View>
 
-            <View style={styles.imageContainer}>
-              <Image source={{ uri: image }} style={styles.profileImage} />
-              <TouchableOpacity
-                style={styles.changePhotoButton}
-                onPress={pickImage}
-              >
-                <Text style={styles.changePhotoText}>Change Photo</Text>
-              </TouchableOpacity>
-            </View>
+                <View style={styles.imageContainer}>
+                  <Image source={{ uri: image }} style={styles.profileImage} />
+                  <TouchableOpacity
+                    style={styles.changePhotoButton}
+                    onPress={pickImage}
+                  >
+                    <Text style={styles.changePhotoText}>Change Photo</Text>
+                  </TouchableOpacity>
+                </View>
 
-            <View style={styles.inputContainer}>
-              <Text
-                style={[
-                  styles.label,
-                  { color: theme?.dark ? "white" : "#666" },
-                ]}
-              >
-                First Name
-              </Text>
-              <TextInput
-                style={styles.input}
-                value={editedInfo.firstName}
-                onChangeText={(text) =>
-                  setEditedInfo({ ...editedInfo, firstName: text })
-                }
-                placeholder="Your first name"
-              />
-            </View>
+                <View style={styles.inputContainer}>
+                  <Text
+                    style={[
+                      styles.label,
+                      { color: theme?.dark ? "white" : "#666" },
+                    ]}
+                  >
+                    First Name
+                  </Text>
+                  <TextInput
+                    style={styles.input}
+                    value={editedInfo.firstName}
+                    onChangeText={(text) =>
+                      setEditedInfo({ ...editedInfo, firstName: text })
+                    }
+                    placeholder="Your first name"
+                  />
+                </View>
 
-            <View style={styles.inputContainer}>
-              <Text
-                style={[
-                  styles.label,
-                  { color: theme?.dark ? "white" : "#666" },
-                ]}
-              >
-                Last Name
-              </Text>
-              <TextInput
-                style={styles.input}
-                value={editedInfo.lastName}
-                onChangeText={(text) =>
-                  setEditedInfo({ ...editedInfo, lastName: text })
-                }
-                placeholder="Your last name"
-              />
-            </View>
+                <View style={styles.inputContainer}>
+                  <Text
+                    style={[
+                      styles.label,
+                      { color: theme?.dark ? "white" : "#666" },
+                    ]}
+                  >
+                    Last Name
+                  </Text>
+                  <TextInput
+                    style={styles.input}
+                    value={editedInfo.lastName}
+                    onChangeText={(text) =>
+                      setEditedInfo({ ...editedInfo, lastName: text })
+                    }
+                    placeholder="Your last name"
+                  />
+                </View>
 
-            <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-              <Text style={styles.saveButtonText}>Save Changes</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
+                <TouchableOpacity
+                  style={styles.saveButton}
+                  onPress={handleSave}
+                >
+                  <Text style={styles.saveButtonText}>Save Changes</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
+          </TouchableOpacity>
+        </KeyboardAvoidingView>
+      </TouchableOpacity>
     </Modal>
   );
 }
