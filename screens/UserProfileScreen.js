@@ -133,6 +133,12 @@ export default function UserProfileScreen({ route, navigation }) {
               }
               style={styles.categoryTag}
             >
+              <Ionicons
+                name={getCategoryIcon(item.category)}
+                size={14}
+                color={theme.dark ? "#E9D5FF" : "#6B21A8"}
+                style={styles.categoryIcon}
+              />
               <Text
                 style={[
                   styles.categoryText,
@@ -142,6 +148,30 @@ export default function UserProfileScreen({ route, navigation }) {
                 {item.category}
               </Text>
             </LinearGradient>
+
+            {item.groupName && (
+              <LinearGradient
+                colors={
+                  theme.dark ? ["#065F46", "#064E3B"] : ["#D1FAE5", "#A7F3D0"]
+                }
+                style={styles.groupTag}
+              >
+                <Ionicons
+                  name="people"
+                  size={14}
+                  color={theme.dark ? "#D1FAE5" : "#065F46"}
+                  style={styles.categoryIcon}
+                />
+                <Text
+                  style={[
+                    styles.categoryText,
+                    { color: theme.dark ? "#D1FAE5" : "#065F46" },
+                  ]}
+                >
+                  {item.groupName}
+                </Text>
+              </LinearGradient>
+            )}
           </View>
         </View>
 
@@ -154,6 +184,10 @@ export default function UserProfileScreen({ route, navigation }) {
               backgroundColor: theme.dark
                 ? "rgba(255, 255, 255, 0.1)"
                 : `${theme.background}50`,
+              alignSelf: "flex-start",
+              borderRadius: 16,
+              marginTop: 12,
+              marginLeft: "auto",
             },
           ]}
         >
@@ -171,6 +205,23 @@ export default function UserProfileScreen({ route, navigation }) {
       </LinearGradient>
     </TouchableOpacity>
   );
+
+  const getCategoryIcon = (category) => {
+    switch (category) {
+      case "Health":
+        return "fitness";
+      case "Family":
+        return "home";
+      case "Work":
+        return "briefcase";
+      case "Spiritual Growth":
+        return "leaf";
+      case "Relationships":
+        return "heart";
+      default:
+        return "bookmark";
+    }
+  };
 
   if (isLoading || !userProfile) {
     return (
@@ -263,9 +314,13 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   userName: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 8,
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 2,
+  },
+  date: {
+    fontSize: 12,
+    color: "#666",
   },
   statsContainer: {
     flexDirection: "row",
@@ -301,9 +356,88 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderRadius: 16,
     overflow: "hidden",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
   },
   cardGradient: {
     padding: 16,
+    paddingRight: 12,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 12,
+    paddingRight: 4,
+  },
+  cardHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  profileImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 12,
+  },
+  profileImageRing: {
+    borderWidth: 2,
+    borderColor: "#6B4EFF",
+  },
+  headerText: {
+    flex: 1,
+    marginRight: 12,
+  },
+  tagsContainer: {
+    flexDirection: "column",
+    gap: 4,
+    alignItems: "flex-end",
+    maxWidth: "40%",
+    marginRight: -4,
+  },
+  categoryTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  groupTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  categoryIcon: {
+    marginRight: 4,
+  },
+  categoryText: {
+    fontSize: 11,
+    fontWeight: "600",
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  cardFooter: {
+    flexDirection: "row",
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    width: "auto",
+  },
+  footerButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  footerText: {
+    fontSize: 12,
+    fontWeight: "500",
   },
   // ... rest of the styles from HomeScreen
 });

@@ -36,6 +36,7 @@ import MyPrayersScreen from "./screens/MyPrayersScreen";
 import FriendDetailScreen from "./screens/FriendDetailScreen";
 import GroupMembersScreen from "./screens/GroupMembersScreen";
 import AddGroupPrayerScreen from "./screens/AddGroupPrayerScreen";
+import UserProfileScreen from "./screens/UserProfileScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -189,6 +190,14 @@ function Navigation() {
             component={AddGroupPrayerScreen}
             options={{
               headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="UserProfileScreen"
+            component={UserProfileScreen}
+            options={{
+              title: "Profile",
+              headerBackTitle: "Back",
             }}
           />
         </Stack.Navigator>
