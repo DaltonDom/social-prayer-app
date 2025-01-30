@@ -185,10 +185,7 @@ export default function ProfileScreen({ navigation }) {
   };
 
   const navigateToFriendDetail = (friend) => {
-    navigation.navigate("FriendDetail", {
-      friend,
-      onUnfriend: removeFriend,
-    });
+    navigation.navigate("UserProfileScreen", { userId: friend.id });
   };
 
   const renderFriendItem = ({ item }) => (
@@ -488,8 +485,8 @@ export default function ProfileScreen({ navigation }) {
             <TouchableOpacity
               style={styles.friendCard}
               onPress={() =>
-                navigation.navigate("FriendProfile", {
-                  friendId: item.id,
+                navigation.navigate("UserProfileScreen", {
+                  userId: item.id,
                 })
               }
             >

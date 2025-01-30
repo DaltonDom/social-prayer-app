@@ -6,6 +6,7 @@ import NotificationsScreen from "../screens/NotificationsScreen";
 import GroupsScreen from "../screens/GroupsScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import JournalScreen from "../screens/JournalScreen";
+import UserProfileScreen from "../screens/UserProfileScreen";
 import { Ionicons } from "@expo/vector-icons";
 
 const Stack = createStackNavigator();
@@ -80,6 +81,14 @@ export default function AppNavigator() {
         name="MainTabs"
         component={TabNavigator}
         options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="UserProfile"
+        component={UserProfileScreen}
+        options={{
+          title: "Profile",
+          headerBackTitleVisible: false,
+        }}
       />
     </Stack.Navigator>
   );

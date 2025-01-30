@@ -36,7 +36,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./local/path/to/your/app-icon.png",
+          "icon": "./assets/icon.png",
           "color": "#ffffff"
         }
       ]

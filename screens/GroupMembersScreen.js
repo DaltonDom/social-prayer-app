@@ -221,9 +221,7 @@ export default function GroupMembersScreen({ route, navigation }) {
 
     return (
       <TouchableOpacity
-        onPress={() =>
-          navigation.navigate("FriendDetail", { friendId: item.id })
-        }
+        onPress={() => navigation.navigate("UserProfile", { userId: item.id })}
       >
         <MemberContent />
       </TouchableOpacity>
