@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Tefillah",
-    "slug": "Tefillah",
+    "name": "prayer-app",
+    "slug": "prayer-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -26,7 +26,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "b21eb06d-09e0-4e7f-815f-3da0afb21dc4"
+        "projectId": "prayer-app"
       }
     },
     "owner": "daltondom",
