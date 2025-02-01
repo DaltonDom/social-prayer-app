@@ -190,4 +190,38 @@ export const friendshipService = {
 
     if (error) throw error;
   },
+
+  async getUserFriends(userId) {
+    try {
+      const { data, error } = await supabase
+        .from("friendships")
+        .select(
+          `
+          *,
+          friend:friend_id(id, first_name, last_name, email, profile_image_url),
+          user:user_id(id, first_name, last_name, email, profile_image_url)
+        `
+        )
+        .or(`user_id.eq.${userId},friend_id.eq.${userId}`)
+        .eq("status", "accepted");
+
+      if (error) throw error;
+
+      // Transform the data to match the expected format
+      return data.map((friendship) => {
+        const friend =
+          friendship.user_id === userId ? friendship.friend : friendship.user;
+        return {
+          id: friend.id,
+          first_name: friend.first_name,
+          last_name: friend.last_name,
+          email: friend.email,
+          profile_image_url: friend.profile_image_url,
+        };
+      });
+    } catch (error) {
+      console.error("Error fetching user friends:", error);
+      throw error;
+    }
+  },
 };

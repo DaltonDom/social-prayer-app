@@ -191,7 +191,7 @@ export default function UserProfileScreen({ route, navigation }) {
             },
           ]}
         >
-          <TouchableOpacity style={styles.footerButton} activeOpacity={0.7}>
+          <View style={styles.footerButton}>
             <Ionicons
               name="chatbubble-outline"
               size={16}
@@ -200,7 +200,7 @@ export default function UserProfileScreen({ route, navigation }) {
             <Text style={[styles.footerText, { color: theme.primary }]}>
               {item.comments || 0} Comments
             </Text>
-          </TouchableOpacity>
+          </View>
         </View>
       </LinearGradient>
     </TouchableOpacity>
@@ -247,17 +247,14 @@ export default function UserProfileScreen({ route, navigation }) {
           </Text>
 
           <View style={styles.statsContainer}>
-            <TouchableOpacity
-              style={styles.statItem}
-              onPress={() => navigation.navigate("UserPrayers", { userId })}
-            >
+            <View style={styles.statItem}>
               <Text style={[styles.statNumber, { color: theme.primary }]}>
                 {userPrayers.length}
               </Text>
               <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
                 Prayers
               </Text>
-            </TouchableOpacity>
+            </View>
 
             <View
               style={[styles.statDivider, { backgroundColor: theme.border }]}
@@ -265,7 +262,7 @@ export default function UserProfileScreen({ route, navigation }) {
 
             <TouchableOpacity
               style={styles.statItem}
-              onPress={() => navigation.navigate("UserFriends", { userId })}
+              onPress={() => navigation.navigate("FriendsList", { userId })}
             >
               <Text style={[styles.statNumber, { color: theme.primary }]}>
                 {friendsCount}

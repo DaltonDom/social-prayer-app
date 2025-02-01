@@ -15,7 +15,8 @@ import { useTheme } from "../context/ThemeContext";
 import { friendshipService } from "../services/friendshipService";
 import { Ionicons } from "@expo/vector-icons";
 
-export default function FriendsListScreen({ navigation }) {
+export default function FriendsListScreen({ route, navigation }) {
+  const { userId } = route.params || {}; // Get userId if provided, otherwise undefined
   const { theme } = useTheme();
   const [friends, setFriends] = useState([]);
   const [pendingRequests, setPendingRequests] = useState([]);
@@ -28,15 +29,19 @@ export default function FriendsListScreen({ navigation }) {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const data = await friendshipService.getFriendshipStatuses();
+      // If userId is provided, fetch only that user's friends
+      // Otherwise fetch all friendship statuses
+      const data = userId
+        ? await friendshipService.getUserFriends(userId)
+        : await friendshipService.getFriendshipStatuses();
 
-      console.log("Friends data:", data.friends); // Add this debug log
-      console.log("Sample friend object:", data.friends[0]); // Add this to see structure of a single friend
-
-      setFriends(data.friends || []);
-      setPendingRequests(data.pendingReceived || []);
-      setPendingSent(data.pendingSent || []);
-      setAvailableUsers(data.availableUsers || []);
+      setFriends(userId ? data || [] : data.friends || []);
+      if (!userId) {
+        // Only set these if viewing own friends list
+        setPendingRequests(data.pendingReceived || []);
+        setPendingSent(data.pendingSent || []);
+        setAvailableUsers(data.availableUsers || []);
+      }
     } catch (error) {
       console.error("Error fetching friends:", error);
     } finally {
@@ -231,40 +236,52 @@ export default function FriendsListScreen({ navigation }) {
       style={[styles.container, { backgroundColor: theme.background }]}
       edges={["left", "right"]}
     >
-      <View style={[styles.searchContainer, { backgroundColor: theme.card }]}>
-        <Ionicons
-          name="search"
-          size={20}
-          color={theme.textSecondary}
-          style={styles.searchIcon}
-        />
-        <TextInput
-          style={[styles.searchInput, { color: theme.text }]}
-          placeholder="Search friends..."
-          placeholderTextColor={theme.textSecondary}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-      </View>
+      {!userId && ( // Only show search when viewing own friends
+        <View style={[styles.searchContainer, { backgroundColor: theme.card }]}>
+          <Ionicons
+            name="search"
+            size={20}
+            color={theme.textSecondary}
+            style={styles.searchIcon}
+          />
+          <TextInput
+            style={[styles.searchInput, { color: theme.text }]}
+            placeholder="Search friends..."
+            placeholderTextColor={theme.textSecondary}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
+      )}
 
       <FlatList
         data={[
-          {
-            data: filterData(pendingRequests) || [],
-            renderItem: renderPendingRequest,
-          },
-          {
-            data: filterData(pendingSent) || [],
-            renderItem: renderPendingSent,
-          },
+          // Only show these sections when viewing own friends
+          ...(!userId
+            ? [
+                {
+                  data: filterData(pendingRequests) || [],
+                  renderItem: renderPendingRequest,
+                },
+                {
+                  data: filterData(pendingSent) || [],
+                  renderItem: renderPendingSent,
+                },
+              ]
+            : []),
           {
             data: filterData(friends) || [],
             renderItem: renderFriend,
           },
-          {
-            data: filterData(availableUsers) || [],
-            renderItem: renderPotentialFriend,
-          },
+          // Only show available users when viewing own friends
+          ...(!userId
+            ? [
+                {
+                  data: filterData(availableUsers) || [],
+                  renderItem: renderPotentialFriend,
+                },
+              ]
+            : []),
         ]}
         renderItem={({ item: section }) => (
           <>
@@ -315,6 +332,7 @@ const styles = StyleSheet.create({
   },
   section: {
     paddingHorizontal: 16,
+    paddingTop: 8,
   },
   sectionTitle: {
     fontSize: 20,
