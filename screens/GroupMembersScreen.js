@@ -215,13 +215,13 @@ export default function GroupMembersScreen({ route, navigation }) {
       </View>
     );
 
-    if (isCurrentUser) {
-      return <MemberContent />;
-    }
-
-    return (
+    return isCurrentUser ? (
+      <MemberContent />
+    ) : (
       <TouchableOpacity
-        onPress={() => navigation.navigate("UserProfile", { userId: item.id })}
+        onPress={() =>
+          navigation.navigate("UserProfileScreen", { userId: item.id })
+        }
       >
         <MemberContent />
       </TouchableOpacity>
