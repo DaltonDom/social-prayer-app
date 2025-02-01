@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "prayer-app",
-    "slug": "prayer-app",
+    "name": "Tefillah",
+    "slug": "Tefillah",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

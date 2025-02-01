@@ -234,7 +234,7 @@ export default function UserProfileScreen({ route, navigation }) {
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.background }]}
-      edges={["top"]}
+      edges={["left", "right"]}
     >
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={[styles.header, { backgroundColor: theme.card }]}>
@@ -306,17 +306,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 20,
     borderBottomWidth: 1,
+    marginTop: -1,
   },
   profileImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     marginBottom: 16,
   },
   userName: {
-    fontSize: 14,
+    paddingTop: 10,
+    fontSize: 16,
     fontWeight: "600",
-    marginBottom: 2,
+    marginBottom: 8,
   },
   date: {
     fontSize: 12,
@@ -364,18 +366,17 @@ const styles = StyleSheet.create({
   },
   cardGradient: {
     padding: 16,
-    paddingRight: 12,
   },
   cardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
     marginBottom: 12,
-    paddingRight: 4,
   },
   cardHeaderLeft: {
     flexDirection: "row",
     alignItems: "center",
+    flex: 1,
   },
   profileImage: {
     width: 40,
@@ -395,8 +396,6 @@ const styles = StyleSheet.create({
     flexDirection: "column",
     gap: 4,
     alignItems: "flex-end",
-    maxWidth: "40%",
-    marginRight: -4,
   },
   categoryTag: {
     flexDirection: "row",
@@ -429,6 +428,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 12,
     width: "auto",
+    marginLeft: "auto",
   },
   footerButton: {
     flexDirection: "row",
