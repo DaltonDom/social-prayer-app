@@ -206,32 +206,43 @@ export default function ProfileScreen({ navigation }) {
       const { status } =
         await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== "granted") {
-        alert("Sorry, we need camera roll permissions to make this work!");
+        Alert.alert(
+          "Permission Required",
+          "Please grant access to your photo library to change profile picture."
+        );
         return;
       }
 
-      // Launch image picker with correct enum value - using lowercase 'images'
+      // Launch image picker with correct mediaTypes enum value
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: "images", // Fixed: using lowercase string value
+        mediaTypes: "images",
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.5,
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        const { publicUrl, error } = await uploadProfileImage(
-          result.assets[0].uri
-        );
-        if (error) {
-          console.error("Error uploading image:", error);
-          Alert.alert("Error", "Failed to upload image");
-        } else {
-          console.log("Image uploaded successfully:", publicUrl);
+        setIsLoading(true);
+        try {
+          const { publicUrl, error } = await uploadProfileImage(
+            result.assets[0].uri
+          );
+          if (error) {
+            console.error("Error uploading image:", error);
+            Alert.alert(
+              "Upload Failed",
+              "Failed to upload image. Please try again."
+            );
+          } else {
+            console.log("Image uploaded successfully:", publicUrl);
+          }
+        } finally {
+          setIsLoading(false);
         }
       }
     } catch (error) {
-      console.error("Error picking image:", error);
-      Alert.alert("Error", "Failed to pick image");
+      console.error("Error in handleImagePick:", error);
+      Alert.alert("Error", `Failed to pick image: ${error.message}`);
     }
   };
 
