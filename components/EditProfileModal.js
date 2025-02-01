@@ -196,96 +196,78 @@ export default function EditProfileModal({
         activeOpacity={1}
         onPress={onClose}
       >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        <View
+          style={[
+            styles.modalContent,
+            { backgroundColor: theme?.dark ? "#1C1C1E" : "white" },
+          ]}
         >
-          <TouchableOpacity
-            activeOpacity={1}
-            onPress={(e) => e.stopPropagation()}
-          >
-            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-              <View
-                style={[
-                  styles.modalContent,
-                  { backgroundColor: theme?.dark ? "#1C1C1E" : "white" },
-                ]}
-              >
-                <View style={styles.modalHeader}>
-                  <Text
-                    style={[
-                      styles.modalTitle,
-                      { color: theme?.dark ? "white" : "#333" },
-                    ]}
-                  >
-                    Edit Profile
-                  </Text>
-                  <TouchableOpacity onPress={onClose}>
-                    <Ionicons
-                      name="close"
-                      size={24}
-                      color={theme?.dark ? "white" : "#333"}
-                    />
-                  </TouchableOpacity>
-                </View>
+          <View style={styles.modalHeader}>
+            <Text
+              style={[
+                styles.modalTitle,
+                { color: theme?.dark ? "white" : "#333" },
+              ]}
+            >
+              Edit Profile
+            </Text>
+            <TouchableOpacity onPress={onClose}>
+              <Ionicons
+                name="close"
+                size={24}
+                color={theme?.dark ? "white" : "#333"}
+              />
+            </TouchableOpacity>
+          </View>
 
-                <View style={styles.imageContainer}>
-                  <Image source={{ uri: image }} style={styles.profileImage} />
-                  <TouchableOpacity
-                    style={styles.changePhotoButton}
-                    onPress={pickImage}
-                  >
-                    <Text style={styles.changePhotoText}>Change Photo</Text>
-                  </TouchableOpacity>
-                </View>
+          <View style={styles.imageContainer}>
+            <Image source={{ uri: image }} style={styles.profileImage} />
+            <TouchableOpacity
+              style={styles.changePhotoButton}
+              onPress={pickImage}
+            >
+              <Text style={styles.changePhotoText}>Change Photo</Text>
+            </TouchableOpacity>
+          </View>
 
-                <View style={styles.inputContainer}>
-                  <Text
-                    style={[
-                      styles.label,
-                      { color: theme?.dark ? "white" : "#666" },
-                    ]}
-                  >
-                    First Name
-                  </Text>
-                  <TextInput
-                    style={styles.input}
-                    value={editedInfo.firstName}
-                    onChangeText={(text) =>
-                      setEditedInfo({ ...editedInfo, firstName: text })
-                    }
-                    placeholder="Your first name"
-                  />
-                </View>
+          <View style={styles.inputContainer}>
+            <Text
+              style={[styles.label, { color: theme?.dark ? "white" : "#666" }]}
+            >
+              First Name
+            </Text>
+            <TextInput
+              style={[styles.input, { color: "black" }]}
+              value={editedInfo.firstName}
+              onChangeText={(text) =>
+                setEditedInfo({ ...editedInfo, firstName: text })
+              }
+              placeholder="Your first name"
+              placeholderTextColor="#666"
+            />
+          </View>
 
-                <View style={styles.inputContainer}>
-                  <Text
-                    style={[
-                      styles.label,
-                      { color: theme?.dark ? "white" : "#666" },
-                    ]}
-                  >
-                    Last Name
-                  </Text>
-                  <TextInput
-                    style={styles.input}
-                    value={editedInfo.lastName}
-                    onChangeText={(text) =>
-                      setEditedInfo({ ...editedInfo, lastName: text })
-                    }
-                    placeholder="Your last name"
-                  />
-                </View>
+          <View style={styles.inputContainer}>
+            <Text
+              style={[styles.label, { color: theme?.dark ? "white" : "#666" }]}
+            >
+              Last Name
+            </Text>
+            <TextInput
+              style={[styles.input, { color: "black" }]}
+              value={editedInfo.lastName}
+              onChangeText={(text) =>
+                setEditedInfo({ ...editedInfo, lastName: text })
+              }
+              placeholder="Your last name"
+              placeholderTextColor="#666"
+            />
+          </View>
 
-                <TouchableOpacity
-                  style={styles.saveButton}
-                  onPress={handleSave}
-                >
-                  <Text style={styles.saveButtonText}>Save Changes</Text>
-                </TouchableOpacity>
-              </View>
-            </TouchableWithoutFeedback>
+          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+            <Text style={styles.saveButtonText}>Save Changes</Text>
           </TouchableOpacity>
-        </KeyboardAvoidingView>
+        </View>
       </TouchableOpacity>
     </Modal>
   );
@@ -302,7 +284,8 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
-    maxHeight: "90%",
+    paddingBottom: Platform.OS === "ios" ? 40 : 30,
+    maxHeight: Platform.OS === "ios" ? "75%" : "85%",
   },
   modalHeader: {
     flexDirection: "row",
@@ -339,7 +322,6 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    color: "#666",
     marginBottom: 8,
   },
   input: {
@@ -353,7 +335,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     alignItems: "center",
-    marginTop: 16,
+    marginTop: 24,
   },
   saveButtonText: {
     color: "white",
